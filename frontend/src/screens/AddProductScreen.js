@@ -17,7 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import { createProduce } from '../services/api';
 
-export default function AddProductScreen() {
+export default function AddProductScreen({ navigation }) {
   // Form States
   const [cropName, setCropName] = useState('Tomatoes');
   const [category, setCategory] = useState('Vegetables');
@@ -89,7 +89,7 @@ export default function AddProductScreen() {
 
       await createProduce(payload);
       setLoading(false);
-      Alert.alert('Success!', 'PRODUCT ADDED! Your listing is saved in MongoDB.', [{ text: 'OK' }]);
+      navigation.navigate('ProductAddedSuccess');
     } catch (error) {
       setLoading(false);
       console.error(error);

@@ -20,8 +20,8 @@ app.get('/', (req, res) => {
 });
 
 // Import Farmer Routes (Member 1)
-//const produceRoutes = require('./routes/produceRoutes');
-//app.use('/api/produce', produceRoutes);
+const produceRoutes = require('./routes/produceRoutes');
+app.use('/api/produce', produceRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
