@@ -247,7 +247,10 @@ export default function AddProductScreen({ navigation }) {
           </View>
 
           {/* 7. Voice input banner (Screen #56) */}
-          <TouchableOpacity style={styles.voiceBanner}>
+          <TouchableOpacity 
+            style={styles.voiceBanner}
+            onPress={() => navigation.navigate('VoiceListing')}
+          >
             <View style={styles.rowAlign}>
               <Ionicons name="mic" size={24} color="#2e7d32" />
               <View style={{ marginLeft: 12 }}>
