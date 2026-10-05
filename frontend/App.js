@@ -1,4 +1,5 @@
 import React from 'react';
+import { View, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -12,16 +13,64 @@ import VoiceListingScreen from './src/screens/VoiceListingScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
+  const isWeb = Platform.OS === 'web';
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="MarketPrices">
-        <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
-        <Stack.Screen name="AddProduct" component={AddProductScreen} />
-        <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
-        <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
-        <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
-        <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={styles.webContainer}>
+      <View style={styles.phoneChassis}>
+        {/* Realistic iPhone Dynamic Island (Only shows on Web) */}
+        {isWeb && <View style={styles.dynamicIsland} />}
+
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="MarketPrices">
+            <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
+            <Stack.Screen name="AddProduct" component={AddProductScreen} />
+            <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
+            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
+            <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  webContainer: {
+    flex: 1,
+    backgroundColor: Platform.OS === 'web' ? '#d8e1ea' : '#fff', // Soft gray desktop background
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: Platform.OS === 'web' ? '100vh' : '100%',
+    paddingVertical: Platform.OS === 'web' ? 20 : 0,
+  },
+  phoneChassis: {
+    flex: 1,
+    width: '100%',
+    maxWidth: Platform.OS === 'web' ? 412 : '100%',
+    maxHeight: Platform.OS === 'web' ? 860 : '100%',
+    backgroundColor: '#fff',
+    borderRadius: Platform.OS === 'web' ? 48 : 0, // Curved phone corners
+    borderWidth: Platform.OS === 'web' ? 10 : 0,  // Realistic black phone bezel
+    borderColor: '#111827',
+    overflow: 'hidden',
+    position: 'relative',
+    // 3D Drop Shadow around the phone
+    shadowColor: '#000',
+    shadowOpacity: Platform.OS === 'web' ? 0.25 : 0,
+    shadowOffset: { width: 0, height: 16 },
+    shadowRadius: 36,
+    elevation: 10,
+  },
+  dynamicIsland: {
+    position: 'absolute',
+    top: 10,
+    alignSelf: 'center',
+    width: 110,
+    height: 26,
+    backgroundColor: '#000',
+    borderRadius: 13,
+    zIndex: 99999, // Keeps notch above screens
+  },
+});

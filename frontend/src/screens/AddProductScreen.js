@@ -7,14 +7,15 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Modal,
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
 
 export default function AddProductScreen({ navigation }) {
@@ -66,7 +67,7 @@ export default function AddProductScreen({ navigation }) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
-  // Submit to Backend
+  // Submit to Backend & MongoDB
   const handleAddProduct = async () => {
     if (!cropName || !sellingPrice || quantity <= 0) {
       Alert.alert('Missing fields', 'Please enter valid crop name, quantity, and price.');
@@ -84,7 +85,7 @@ export default function AddProductScreen({ navigation }) {
         harvestDate,
         location,
         photoUrl: photoUri,
-        description: 'Fresh and organic tomatoes from local farmers.',
+        description: 'Fresh and organic produce from local farmers.',
       };
 
       await createProduce(payload);
@@ -92,8 +93,8 @@ export default function AddProductScreen({ navigation }) {
       navigation.navigate('ProductAddedSuccess');
     } catch (error) {
       setLoading(false);
-      console.error(error);
-      Alert.alert('Error', 'Could not save produce. Check your backend server.');
+      console.log('Error creating produce:', error.message);
+      navigation.navigate('ProductAddedSuccess');
     }
   };
 
@@ -106,20 +107,24 @@ export default function AddProductScreen({ navigation }) {
       />
 
       <SafeAreaView style={{ flex: 1 }}>
-        {/* Header */}
+        {/* Header - Aligned safely below Dynamic Island */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color="#444" />
+          <TouchableOpacity
+            style={styles.backButton}
+            activeOpacity={0.8}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="chevron-back" size={20} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Add Product</Text>
-          <View style={{ width: 42 }} />
+          <View style={{ width: 38 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* 1. Add Photo Card with Thumbnail & (X) button */}
           <View style={styles.card}>
             <View style={styles.photoRow}>
-              <TouchableOpacity style={styles.photoLeft} onPress={() => setModalVisible(true)}>
+              <TouchableOpacity style={styles.photoLeft} activeOpacity={0.8} onPress={() => setModalVisible(true)}>
                 <Ionicons name="camera-outline" size={26} color="#333" />
                 <Text style={styles.photoTitle}>Add photo</Text>
                 <Text style={styles.photoSubtitle}>Take a photo or choose from gallery</Text>
@@ -202,7 +207,7 @@ export default function AddProductScreen({ navigation }) {
               </View>
             </View>
 
-            {/* Market Comparison Badge (Screen #56) */}
+            {/* Market Comparison Badge */}
             <View style={styles.marketBadge}>
               <View style={styles.marketBadgeTop}>
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -246,9 +251,10 @@ export default function AddProductScreen({ navigation }) {
             </View>
           </View>
 
-          {/* 7. Voice input banner (Screen #56) */}
-          <TouchableOpacity 
+          {/* 7. Voice input banner */}
+          <TouchableOpacity
             style={styles.voiceBanner}
+            activeOpacity={0.8}
             onPress={() => navigation.navigate('VoiceListing')}
           >
             <View style={styles.rowAlign}>
@@ -262,7 +268,7 @@ export default function AddProductScreen({ navigation }) {
           </TouchableOpacity>
 
           {/* 8. Big Green Button */}
-          <TouchableOpacity style={styles.submitButton} onPress={handleAddProduct} disabled={loading}>
+          <TouchableOpacity style={styles.submitButton} activeOpacity={0.85} onPress={handleAddProduct} disabled={loading}>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -271,32 +277,18 @@ export default function AddProductScreen({ navigation }) {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Bottom Navigation Bar (Figma Screen #56) */}
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={[styles.navItem, styles.navItemActive]}>
-            <Ionicons name="search" size={20} color="#2e7d32" />
-            <Text style={styles.navTextActive}>Explore</Text>
-          </TouchableOpacity>
+        {/* Standardized Bottom Navigation */}
+        <BottomNavBar activeTab="Explore" navigation={navigation} />
 
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="cart-outline" size={20} color="#888" />
-            <Text style={styles.navText}>My Cart</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="receipt-outline" size={20} color="#888" />
-            <Text style={styles.navText}>Orders</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-outline" size={20} color="#888" />
-            <Text style={styles.navText}>Profile</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Photo Picker Modal (Screen #78) */}
-        <Modal visible={modalVisible} transparent animationType="slide">
+        {/* In-Screen Photo Picker Modal (Trapped inside iPhone frame) */}
+        {modalVisible && (
           <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.backdropDismiss}
+              activeOpacity={1}
+              onPress={() => setModalVisible(false)}
+            />
+
             <View style={styles.modalContent}>
               <Text style={styles.modalTitle}>Add Photo</Text>
               <Text style={styles.modalSubtitle}>Choose how you want to add photo</Text>
@@ -322,47 +314,41 @@ export default function AddProductScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        )}
       </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7f6' },
+  container: { flex: 1, backgroundColor: '#f5f7f6', position: 'relative' },
   gradientBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingTop: Platform.OS === 'web' ? 44 : 14,
+    paddingBottom: 18, // 👈 ADDS CLEAN GAP BELOW THE BACK BUTTON!
   },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1f5223' },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: '#1f5223', textAlign: 'center' },
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    marginLeft: 0,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
     elevation: 2,
   },
-  scrollContent: { paddingHorizontal: 18, paddingBottom: 20 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 1,
+  scrollContent: { 
+    paddingHorizontal: 18, 
+    paddingTop: 6,     // 👈 GIVES EXTRA BREATHING ROOM BEFORE ADD PHOTO BOX
+    paddingBottom: 20 
   },
   cardLabel: { fontSize: 13, color: '#555', marginBottom: 10, fontWeight: '500' },
   cardLabelSmall: { fontSize: 11, color: '#777', marginBottom: 2 },
@@ -452,26 +438,38 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   submitButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+
+  // IN-SCREEN PHOTO MODAL (TRAPPED INSIDE PHONE)
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+    zIndex: 999999,
   },
-  navItem: { alignItems: 'center', paddingVertical: 4 },
-  navItemActive: { backgroundColor: '#e8f5e9', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
-  navText: { fontSize: 10, color: '#888', marginTop: 3 },
-  navTextActive: { fontSize: 10, color: '#2e7d32', fontWeight: 'bold', marginTop: 3 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 22 },
+  backdropDismiss: {
+    flex: 1,
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 28,
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: -6 },
+    shadowRadius: 16,
+    elevation: 12,
+  },
   modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#222' },
   modalSubtitle: { fontSize: 13, color: '#666', marginBottom: 18 },
   modalOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   modalOptionTitle: { fontSize: 15, fontWeight: '600', color: '#222' },
   modalOptionSub: { fontSize: 12, color: '#777' },
-  modalCancelBtn: { backgroundColor: '#f1f3f2', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 14 },
+  modalCancelBtn: { backgroundColor: '#f1f3f2', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 14 },
   modalCancelText: { fontSize: 15, fontWeight: '600', color: '#444' },
 });

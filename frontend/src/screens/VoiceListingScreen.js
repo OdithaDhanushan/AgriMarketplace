@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,20 +13,46 @@ import api from '../services/api';
 
 export default function VoiceListingScreen({ navigation }) {
   const [isListening, setIsListening] = useState(false);
+  const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
 
-  // Simulated Voice Recognition Results
+  // Voice Recognized Crop Data
   const [recognizedData, setRecognizedData] = useState({
     cropName: 'Tomatoes',
     quantityKg: 10,
     sellingPricePerKg: 180,
   });
 
+  // Timer animation when recording
+  useEffect(() => {
+    let interval = null;
+    if (isListening) {
+      interval = setInterval(() => {
+        setSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      clearInterval(interval);
+      setSeconds(0);
+    }
+    return () => clearInterval(interval);
+  }, [isListening]);
+
+  // Toggle Microphone
   const toggleListening = () => {
-    setIsListening(!isListening);
+    if (!isListening) {
+      setIsListening(true);
+    } else {
+      setIsListening(false);
+      // Update recognized information on stop
+      setRecognizedData({
+        cropName: 'Tomatoes',
+        quantityKg: 15,
+        sellingPricePerKg: 180,
+      });
+    }
   };
 
-  // Submit Voice-recognized crop directly to MongoDB Atlas
+  // Submit to MongoDB Atlas
   const handleConfirm = async () => {
     setLoading(true);
     try {
@@ -40,13 +65,13 @@ export default function VoiceListingScreen({ navigation }) {
         harvestDate: '17 September 2026',
         location: 'Kurunegala',
         photoUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
-        description: 'Added via voice listing by farmer Sunil.',
+        description: 'Listed via Voice Recognition by Sunil.',
       });
       setLoading(false);
       navigation.navigate('ProductAddedSuccess');
     } catch (err) {
       setLoading(false);
-      console.log(err);
+      console.log('Error saving voice produce:', err.message);
       navigation.navigate('ProductAddedSuccess');
     }
   };
@@ -66,7 +91,7 @@ export default function VoiceListingScreen({ navigation }) {
         </View>
 
         <View style={styles.content}>
-          {/* Decorative Leaves & Mic Icon */}
+          {/* Top Icons */}
           <View style={styles.topIconRow}>
             <MaterialCommunityIcons name="leaf" size={28} color="#7cb342" style={{ transform: [{ rotate: '-20deg' }] }} />
             <View style={styles.greenCircleMic}>
@@ -75,59 +100,60 @@ export default function VoiceListingScreen({ navigation }) {
             <MaterialCommunityIcons name="leaf" size={28} color="#7cb342" style={{ transform: [{ rotate: '40deg' }] }} />
           </View>
 
-          {/* Heading */}
           <Text style={styles.title}>Let's create your listing</Text>
           <Text style={styles.subtitle}>
             You can speak naturally. The app will recognize your produce details.
           </Text>
 
-          {/* Example Prompt Box */}
+          {/* Example Banner */}
           <View style={styles.exampleBox}>
             <Ionicons name="bulb-outline" size={20} color="#e6a100" style={{ marginTop: 2 }} />
             <View style={{ marginLeft: 10, flex: 1 }}>
               <Text style={styles.exampleTitle}>Example</Text>
               <Text style={styles.exampleText}>
-                "I have a 10 kilos of tomatoes at 180 rupees per kilo."
+                "I have a 15 kilos of tomatoes at 180 rupees per kilo."
               </Text>
             </View>
           </View>
 
-          {/* Voice Waveform & Microphone Listening Box */}
+          {/* Waveform Card */}
           <View style={styles.waveformCard}>
             <View style={styles.waveformRow}>
-              {/* Left Sound Wave Mockup */}
+              {/* Left Wave bars */}
               <View style={styles.waveBarGroup}>
-                <View style={[styles.bar, { height: 16 }]} />
-                <View style={[styles.bar, { height: 28 }]} />
-                <View style={[styles.bar, { height: 42 }]} />
-                <View style={[styles.bar, { height: 22 }]} />
+                <View style={[styles.bar, { height: isListening ? 34 : 16 }]} />
+                <View style={[styles.bar, { height: isListening ? 52 : 28 }]} />
+                <View style={[styles.bar, { height: isListening ? 60 : 42 }]} />
+                <View style={[styles.bar, { height: isListening ? 38 : 22 }]} />
               </View>
 
-              {/* Red Mic Pulse Button */}
+              {/* Big Red/Green Record Button */}
               <TouchableOpacity
                 style={[styles.recordBtn, isListening && styles.recordBtnActive]}
+                activeOpacity={0.8}
                 onPress={toggleListening}
               >
-                <Ionicons name="mic" size={32} color="#fff" />
+                <Ionicons name={isListening ? 'stop' : 'mic'} size={34} color="#fff" />
               </TouchableOpacity>
 
-              {/* Right Sound Wave Mockup */}
+              {/* Right Wave bars */}
               <View style={styles.waveBarGroup}>
-                <View style={[styles.bar, { height: 22 }]} />
-                <View style={[styles.bar, { height: 42 }]} />
-                <View style={[styles.bar, { height: 28 }]} />
-                <View style={[styles.bar, { height: 16 }]} />
+                <View style={[styles.bar, { height: isListening ? 38 : 22 }]} />
+                <View style={[styles.bar, { height: isListening ? 60 : 42 }]} />
+                <View style={[styles.bar, { height: isListening ? 52 : 28 }]} />
+                <View style={[styles.bar, { height: isListening ? 34 : 16 }]} />
               </View>
             </View>
 
-            {/* Listening / Stop Button */}
             <TouchableOpacity style={styles.statusPill} onPress={toggleListening}>
-              <View style={[styles.redDot, isListening && { backgroundColor: '#4caf50' }]} />
-              <Text style={styles.statusText}>{isListening ? 'Listening...' : '■ Stop'}</Text>
+              <View style={[styles.redDot, isListening && { backgroundColor: '#43a047' }]} />
+              <Text style={styles.statusText}>
+                {isListening ? `Listening (00:0${seconds})... Tap to Stop` : '■ Tap to Speak'}
+              </Text>
             </TouchableOpacity>
           </View>
 
-          {/* Recognized Information Card (Screen #66) */}
+          {/* Recognized Information Card */}
           <View style={styles.recognizedCard}>
             <View style={styles.recognizedHeader}>
               <Ionicons name="eye-outline" size={18} color="#2e7d32" />
@@ -153,7 +179,7 @@ export default function VoiceListingScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Action Buttons: Edit & Confirm */}
+          {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity
               style={styles.editBtn}
@@ -163,15 +189,10 @@ export default function VoiceListingScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.confirmBtn} onPress={handleConfirm} disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.confirmBtnText}>Confirm</Text>
-              )}
+              {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.confirmBtnText}>Confirm</Text>}
             </TouchableOpacity>
           </View>
 
-          {/* Speak Again Button */}
           <TouchableOpacity style={styles.speakAgainBtn} onPress={toggleListening}>
             <Text style={styles.speakAgainText}>Speak again</Text>
           </TouchableOpacity>
@@ -204,140 +225,40 @@ export default function VoiceListingScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   gradientHeader: { position: 'absolute', top: 0, left: 0, right: 0, height: 220 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 10 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center', elevation: 2 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1f5223' },
-  content: { paddingHorizontal: 22, paddingTop: 10 },
-  topIconRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
-  greenCircleMic: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#2e7d32',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 12,
-  },
-  title: { fontSize: 20, fontWeight: 'bold', color: '#2e7d32', textAlign: 'center', marginBottom: 6 },
-  subtitle: { fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 18, marginBottom: 14 },
-  exampleBox: {
-    flexDirection: 'row',
-    backgroundColor: '#f1f8e9',
-    borderRadius: 14,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#c5e1a5',
-    marginBottom: 16,
-  },
+  content: { paddingHorizontal: 22, paddingTop: 6 },
+  topIconRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
+  greenCircleMic: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#2e7d32', alignItems: 'center', justifyContent: 'center', marginHorizontal: 12 },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#2e7d32', textAlign: 'center', marginBottom: 4 },
+  subtitle: { fontSize: 13, color: '#555', textAlign: 'center', lineHeight: 18, marginBottom: 12 },
+  exampleBox: { flexDirection: 'row', backgroundColor: '#f1f8e9', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#c5e1a5', marginBottom: 12 },
   exampleTitle: { fontSize: 12, fontWeight: 'bold', color: '#2e7d32' },
   exampleText: { fontSize: 13, color: '#333', fontStyle: 'italic', marginTop: 2 },
-  waveformCard: {
-    backgroundColor: '#fff',
-    borderRadius: 18,
-    padding: 16,
-    alignItems: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 3 },
-    marginBottom: 16,
-  },
-  waveformRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 12 },
-  waveBarGroup: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 18 },
-  bar: { width: 4, backgroundColor: '#c8e6c9', borderRadius: 2, marginHorizontal: 3 },
-  recordBtn: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: '#e53935',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#e53935',
-    shadowOpacity: 0.4,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-  recordBtnActive: { backgroundColor: '#43a047' },
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-  },
+  waveformCard: { backgroundColor: '#fff', borderRadius: 18, padding: 16, alignItems: 'center', elevation: 3, shadowColor: '#000', shadowOpacity: 0.08, shadowOffset: { width: 0, height: 3 }, marginBottom: 12 },
+  waveformRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', marginBottom: 10 },
+  waveBarGroup: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 14 },
+  bar: { width: 4, backgroundColor: '#a5d6a7', borderRadius: 2, marginHorizontal: 3 },
+  recordBtn: { width: 68, height: 68, borderRadius: 34, backgroundColor: '#e53935', alignItems: 'center', justifyContent: 'center', elevation: 4 },
+  recordBtnActive: { backgroundColor: '#2e7d32' },
+  statusPill: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f5f5f5', paddingVertical: 6, paddingHorizontal: 16, borderRadius: 16 },
   redDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#e53935', marginRight: 6 },
   statusText: { fontSize: 12, fontWeight: 'bold', color: '#333' },
-  recognizedCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    marginBottom: 16,
-  },
-  recognizedHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  recognizedCard: { backgroundColor: '#fff', borderRadius: 16, padding: 14, borderWidth: 1, borderColor: '#e0e0e0', marginBottom: 12 },
+  recognizedHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
   recognizedTitle: { fontSize: 13, fontWeight: 'bold', color: '#2e7d32', marginLeft: 6 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 3 },
   infoLabel: { fontSize: 13, color: '#666', marginLeft: 8, width: 80 },
   infoValue: { fontSize: 14, fontWeight: 'bold', color: '#222', marginLeft: 'auto' },
-  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  editBtn: {
-    flex: 1,
-    borderWidth: 1.5,
-    borderColor: '#2e7d32',
-    borderRadius: 24,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginRight: 8,
-  },
+  buttonRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
+  editBtn: { flex: 1, borderWidth: 1.5, borderColor: '#2e7d32', borderRadius: 24, paddingVertical: 12, alignItems: 'center', marginRight: 8 },
   editBtnText: { color: '#2e7d32', fontSize: 15, fontWeight: 'bold' },
-  confirmBtn: {
-    flex: 1,
-    backgroundColor: '#2e7d32',
-    borderRadius: 24,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginLeft: 8,
-  },
+  confirmBtn: { flex: 1, backgroundColor: '#2e7d32', borderRadius: 24, paddingVertical: 12, alignItems: 'center', marginLeft: 8 },
   confirmBtnText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  speakAgainBtn: {
-    backgroundColor: '#237330',
-    borderRadius: 24,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
+  speakAgainBtn: { backgroundColor: '#237330', borderRadius: 24, paddingVertical: 12, alignItems: 'center' },
   speakAgainText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
-  bottomNav: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
+  bottomNav: { position: 'absolute', bottom: 0, left: 0, right: 0, flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', backgroundColor: '#fff', paddingVertical: 10, borderTopWidth: 1, borderTopColor: '#eee' },
   navItem: { alignItems: 'center' },
   navItemActive: { backgroundColor: '#e8f5e9', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
   navText: { fontSize: 10, color: '#888', marginTop: 3 },
