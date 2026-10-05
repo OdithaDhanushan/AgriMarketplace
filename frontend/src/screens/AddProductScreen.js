@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -29,6 +29,9 @@ const TRANSLATIONS = {
     cropHeading: "What are you selling?",
     cropPlaceholder: "Type vegetable or fruit name here...",
     suggestions: "Or tap a common crop:",
+    harvestHeading: "When was this harvested?",
+    todayBtn: "☀️ Harvested Today",
+    yesterdayBtn: "🌅 Yesterday",
     qtyHeading: "How much quantity do you have?",
     qtyUnit: "Kilograms (kg)",
     priceHeading: "Your Selling Price (Per Kilogram)",
@@ -45,6 +48,9 @@ const TRANSLATIONS = {
     cropHeading: "ඔබ විකුණන්නේ කුමක්ද?",
     cropPlaceholder: "එළවළු හෝ පලතුරු වර්ගය මෙහි ලියන්න...",
     suggestions: "නැතහොත් පහතින් තෝරන්න:",
+    harvestHeading: "අස්වැන්න නෙළාගත්තේ කවදාද?",
+    todayBtn: "☀️ අද දිනයේ (ඉතා නැවුම්)",
+    yesterdayBtn: "🌅 ඊයේ දිනයේ",
     qtyHeading: "ඔබ සතුව ඇති ප්‍රමාණය කොපමණද?",
     qtyUnit: "කිලෝග්‍රෑම් (kg)",
     priceHeading: "ඔබගේ විකුණුම් මිල (කිලෝවකට)",
@@ -61,6 +67,9 @@ const TRANSLATIONS = {
     cropHeading: "நீங்கள் என்ன விற்கிறீர்கள்?",
     cropPlaceholder: "காய் அல்லது பழத்தின் பெயரை உள்ளிடவும்...",
     suggestions: "அல்லது கீழே தேர்வு செய்யவும்:",
+    harvestHeading: "எப்போது அறுவடை செய்யப்பட்டது?",
+    todayBtn: "☀️ இன்று (மிகவும் புதியது)",
+    yesterdayBtn: "🌅 நேற்று",
     qtyHeading: "உங்களிடம் உள்ள அளவு எவ்வளவு?",
     qtyUnit: "கிலோகிராம் (kg)",
     priceHeading: "உங்கள் விற்பனை விலை (கிலோவுக்கு)",
@@ -72,19 +81,32 @@ const TRANSLATIONS = {
 
 const SUGGESTIONS = ['Tomatoes', 'Carrots', 'Potatoes', 'Onions', 'Cabbage', 'Pumpkin', 'Beans'];
 
-export default function AddProductScreen({ navigation }) {
-  const [selectedLanguage, setSelectedLanguage] = useState('EN'); // 'සිං' | 'EN' | 'த'
+export default function AddProductScreen({ route, navigation }) {
+  const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.EN;
 
-  // Real Empty Form States (Zero Dummy Values!)
+  // Real Form States
   const [cropName, setCropName] = useState('');
   const [quantity, setQuantity] = useState(0);
   const [sellingPrice, setSellingPrice] = useState('');
   const [photoUri, setPhotoUri] = useState(null);
   const [location] = useState('Kurunegala');
+  
+  // 🌟 1-TAP HARVEST TIME SELECTOR ('Today' | 'Yesterday' | '2 Days Ago')
+  const [harvestTime, setHarvestTime] = useState('Today');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill from Voice Screen
+  useEffect(() => {
+    if (route?.params?.prefill) {
+      const { cropName: pCrop, quantity: pQty, sellingPrice: pPrice } = route.params.prefill;
+      if (pCrop) setCropName(pCrop);
+      if (pQty) setQuantity(Number(pQty));
+      if (pPrice) setSellingPrice(String(pPrice));
+    }
+  }, [route?.params?.prefill]);
 
   const handleSuggestionPress = (name) => {
     setCropName(name);
@@ -94,7 +116,7 @@ export default function AddProductScreen({ navigation }) {
     setModalVisible(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Gallery permission is required to choose photos.');
+      Alert.alert('Permission needed', 'Gallery permission is required.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -110,7 +132,7 @@ export default function AddProductScreen({ navigation }) {
     setModalVisible(false);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Camera permission is required to take crop photos.');
+      Alert.alert('Permission needed', 'Camera permission is required.');
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -135,6 +157,11 @@ export default function AddProductScreen({ navigation }) {
       return;
     }
 
+    // Calculate real date based on 1-tap selection
+    const d = new Date();
+    if (harvestTime === 'Yesterday') d.setDate(d.getDate() - 1);
+    const calculatedHarvestDate = d.toLocaleDateString('en-GB');
+
     setLoading(true);
     try {
       const payload = {
@@ -143,10 +170,11 @@ export default function AddProductScreen({ navigation }) {
         quantityKg: Number(quantity),
         sellingPricePerKg: Number(sellingPrice),
         marketPricePerKg: Number(sellingPrice),
-        harvestDate: new Date().toLocaleDateString('en-GB'),
+        harvestDate: calculatedHarvestDate,
+        freshness: harvestTime, // 'Today' | 'Yesterday'
         location,
         photoUrl: photoUri || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
-        description: `Fresh organic ${cropName.trim()} listed by local farmer.`,
+        description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer Sunil.`,
       };
 
       await createProduce(payload);
@@ -163,9 +191,8 @@ export default function AddProductScreen({ navigation }) {
       <LinearGradient colors={['#bfe3b4', '#d8eed1', '#f5f7f6', '#ffffff']} style={styles.gradientBackground} />
 
       <SafeAreaView style={{ flex: 1 }}>
-        {/* HEADER: Perfectly Centered Title with Balanced 3-Box Flexbox */}
+        {/* Header */}
         <View style={styles.header}>
-          {/* 1. Left Side: Back Button (Width: 85px) */}
           <View style={styles.headerSide}>
             <TouchableOpacity
               style={styles.backButton}
@@ -176,14 +203,12 @@ export default function AddProductScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* 2. Middle: Dead-Center Visible Title */}
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle} numberOfLines={1}>
               {t.title}
             </Text>
           </View>
 
-          {/* 3. Right Side: Language Switcher (Exact same 85px width as Left!) */}
           <View style={[styles.headerSide, { alignItems: 'flex-end' }]}>
             <View style={styles.langPill}>
               {['සිං', 'EN', 'த'].map((lang) => (
@@ -202,7 +227,7 @@ export default function AddProductScreen({ navigation }) {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 🎙️ PROMINENT VOICE SHORTCUT */}
+          {/* Top Voice Banner */}
           <TouchableOpacity
             style={styles.voiceBannerTop}
             activeOpacity={0.85}
@@ -218,7 +243,7 @@ export default function AddProductScreen({ navigation }) {
             <Ionicons name="chevron-forward" size={20} color="#2e7d32" />
           </TouchableOpacity>
 
-          {/* 1. REALISTIC EMPTY CAMERA / PHOTO UPLOAD BOX */}
+          {/* 1. Photo Dropzone */}
           <TouchableOpacity
             style={[styles.photoCard, photoUri ? styles.photoCardFilled : styles.photoCardEmpty]}
             activeOpacity={0.85}
@@ -246,7 +271,7 @@ export default function AddProductScreen({ navigation }) {
             )}
           </TouchableOpacity>
 
-          {/* 2. TYPEABLE "WHAT ARE YOU SELLING?" */}
+          {/* 2. Typeable Crop Box */}
           <View style={styles.sectionCard}>
             <Text style={styles.sectionHeading}>{t.cropHeading}</Text>
             <View style={styles.textInputBox}>
@@ -282,39 +307,113 @@ export default function AddProductScreen({ navigation }) {
             </ScrollView>
           </View>
 
-          {/* 3. QUANTITY BOX (Starts at 0, Stepper or Direct Type!) */}
+          {/* 🌟 3. 1-TAP HARVEST DATE SELECTOR (Zero Typing for Sunil!) */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionHeading}>{t.harvestHeading}</Text>
+            <View style={styles.harvestButtonRow}>
+              {/* Option A: Today (Default) */}
+              <TouchableOpacity
+                style={[styles.harvestChoiceBtn, harvestTime === 'Today' && styles.harvestChoiceBtnActive]}
+                activeOpacity={0.8}
+                onPress={() => setHarvestTime('Today')}
+              >
+                <Ionicons
+                  name={harvestTime === 'Today' ? 'checkmark-circle' : 'sunny-outline'}
+                  size={18}
+                  color={harvestTime === 'Today' ? '#1b5e20' : '#2e7d32'}
+                />
+                <Text style={[styles.harvestChoiceText, harvestTime === 'Today' && styles.harvestChoiceTextActive]}>
+                  {t.todayBtn}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Option B: Yesterday */}
+              <TouchableOpacity
+                style={[styles.harvestChoiceBtn, harvestTime === 'Yesterday' && styles.harvestChoiceBtnActive]}
+                activeOpacity={0.8}
+                onPress={() => setHarvestTime('Yesterday')}
+              >
+                <Ionicons
+                  name={harvestTime === 'Yesterday' ? 'checkmark-circle' : 'time-outline'}
+                  size={18}
+                  color={harvestTime === 'Yesterday' ? '#1b5e20' : '#666'}
+                />
+                <Text style={[styles.harvestChoiceText, harvestTime === 'Yesterday' && styles.harvestChoiceTextActive]}>
+                  {t.yesterdayBtn}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Freshness Badge Preview */}
+            <View style={styles.freshnessNotice}>
+              <Ionicons name="sparkles" size={14} color="#2e7d32" />
+              <Text style={styles.freshnessNoticeText}>
+                {harvestTime === 'Today'
+                  ? '🟢 Peak Freshness: Buyers will see "Harvested Today" on your listing!'
+                  : '🟡 Good Freshness: Listed as 1-day fresh harvest.'}
+              </Text>
+            </View>
+          </View>
+
+          {/* 4. Quantity Box */}
           <View style={styles.sectionCard}>
             <Text style={styles.sectionHeading}>{t.qtyHeading}</Text>
-            <View style={styles.stepperRow}>
+
+            <View style={styles.stepperContainer}>
               <TouchableOpacity
-                style={styles.stepBtn}
+                style={styles.stepCircleBtn}
                 activeOpacity={0.7}
-                onPress={() => setQuantity((prev) => Math.max(0, prev - 5))}
+                onPress={() => setQuantity((prev) => Math.max(0, prev - 1))}
               >
                 <Text style={styles.stepSymbol}>-</Text>
               </TouchableOpacity>
 
-              <View style={styles.qtyBox}>
-                <TextInput
-                  style={styles.qtyInput}
-                  keyboardType="numeric"
-                  value={String(quantity)}
-                  onChangeText={(val) => setQuantity(Number(val) || 0)}
-                />
-                <Text style={styles.qtyUnit}>{t.qtyUnit}</Text>
+              <View style={styles.qtyCenterBox}>
+                <View style={styles.qtyNumberRow}>
+                  <TextInput
+                    style={styles.cleanQtyInput}
+                    keyboardType="numeric"
+                    value={String(quantity)}
+                    onChangeText={(val) => setQuantity(Number(val) || 0)}
+                    selectTextOnFocus
+                  />
+                  <Text style={styles.kgBadgeText}>kg</Text>
+                </View>
+                <Text style={styles.qtySubText}>{t.qtyUnit}</Text>
               </View>
 
               <TouchableOpacity
-                style={styles.stepBtn}
+                style={styles.stepCircleBtn}
                 activeOpacity={0.7}
-                onPress={() => setQuantity((prev) => prev + 5)}
+                onPress={() => setQuantity((prev) => prev + 1)}
               >
                 <Text style={styles.stepSymbol}>+</Text>
               </TouchableOpacity>
             </View>
+
+            {/* Quick Bulk Chips */}
+            <View style={styles.quickQtyRow}>
+              {[5, 10, 25, 50].map((addVal) => (
+                <TouchableOpacity
+                  key={addVal}
+                  style={styles.quickQtyChip}
+                  activeOpacity={0.7}
+                  onPress={() => setQuantity((prev) => prev + addVal)}
+                >
+                  <Text style={styles.quickQtyText}>+{addVal} kg</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[styles.quickQtyChip, { borderColor: '#ffcdd2' }]}
+                activeOpacity={0.7}
+                onPress={() => setQuantity(0)}
+              >
+                <Text style={[styles.quickQtyText, { color: '#d32f2f' }]}>Clear</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* 4. SELLING PRICE BOX (Starts Empty with "0" Placeholder!) */}
+          {/* 5. Selling Price Box */}
           <View style={styles.sectionCard}>
             <Text style={styles.sectionHeading}>{t.priceHeading}</Text>
             <View style={styles.priceInputRow}>
@@ -340,7 +439,7 @@ export default function AddProductScreen({ navigation }) {
             )}
           </View>
 
-          {/* 5. BIG POST BUTTON */}
+          {/* 6. Post Button */}
           <TouchableOpacity
             style={styles.submitBtn}
             activeOpacity={0.85}
@@ -408,8 +507,6 @@ export default function AddProductScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f6f8f7', position: 'relative' },
   gradientBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
-
-  // Balanced 3-Box Header (Left 85px | Center Flex 1 | Right 85px)
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -418,21 +515,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 44 : 14,
     paddingBottom: 16,
   },
-  headerSide: {
-    width: 85,
-    justifyContent: 'center',
-  },
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#1f5223',
-    textAlign: 'center',
-  },
+  headerSide: { width: 85, justifyContent: 'center' },
+  headerCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: '#1f5223', textAlign: 'center' },
   backButton: {
     width: 38,
     height: 38,
@@ -482,13 +567,7 @@ const styles = StyleSheet.create({
   voiceTitleTop: { fontSize: 15, fontWeight: 'bold', color: '#1b5e20' },
   voiceSubTop: { fontSize: 12, color: '#388e3c', marginTop: 2 },
 
-  photoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 14,
-    elevation: 1,
-  },
+  photoCard: { backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden', marginBottom: 14, elevation: 1 },
   photoCardEmpty: {
     borderWidth: 2,
     borderColor: '#81c784',
@@ -497,10 +576,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     alignItems: 'center',
   },
-  photoCardFilled: {
-    borderWidth: 1.5,
-    borderColor: '#e2e8f0',
-  },
+  photoCardFilled: { borderWidth: 1.5, borderColor: '#e2e8f0' },
   emptyPhotoContent: { alignItems: 'center' },
   cameraIconCircle: {
     width: 66,
@@ -565,29 +641,86 @@ const styles = StyleSheet.create({
   suggestionText: { fontSize: 12, fontWeight: '600', color: '#2e7d32' },
   suggestionTextActive: { color: '#fff' },
 
-  stepperRow: {
+  // 1-Tap Harvest Buttons
+  harvestButtonRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  harvestChoiceBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8faf9',
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  harvestChoiceBtnActive: {
+    backgroundColor: '#e8f5e9',
+    borderColor: '#2e7d32',
+    borderWidth: 2,
+  },
+  harvestChoiceText: { fontSize: 13, fontWeight: '600', color: '#555', marginLeft: 6 },
+  harvestChoiceTextActive: { color: '#1b5e20', fontWeight: 'bold' },
+  freshnessNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f8e9',
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 10,
+  },
+  freshnessNoticeText: { fontSize: 11, color: '#2e7d32', fontWeight: '600', marginLeft: 6, flex: 1 },
+
+  // Stepper Styles
+  stepperContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#f8faf9',
-    borderRadius: 16,
-    padding: 8,
-    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1.5,
     borderColor: '#e2e8f0',
   },
-  stepBtn: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+  stepCircleBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#2e7d32',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 2,
   },
   stepSymbol: { fontSize: 26, fontWeight: 'bold', color: '#fff', lineHeight: 30 },
-  qtyBox: { alignItems: 'center', flex: 1 },
-  qtyInput: { fontSize: 28, fontWeight: '900', color: '#1b5e20', textAlign: 'center', minWidth: 60 },
-  qtyUnit: { fontSize: 12, fontWeight: '600', color: '#666' },
+  qtyCenterBox: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  qtyNumberRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' },
+  cleanQtyInput: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#1b5e20',
+    textAlign: 'center',
+    minWidth: 50,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+  },
+  kgBadgeText: { fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginLeft: 4 },
+  qtySubText: { fontSize: 11, color: '#777', marginTop: 2 },
+  quickQtyRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  quickQtyChip: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  quickQtyText: { fontSize: 11, fontWeight: 'bold', color: '#2e7d32' },
 
+  // Price
   priceInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -611,6 +744,7 @@ const styles = StyleSheet.create({
   },
   benchmarkText: { fontSize: 12, color: '#2e7d32', fontWeight: '600', marginLeft: 6 },
 
+  // Submit Button
   submitBtn: {
     backgroundColor: '#237330',
     borderRadius: 28,
@@ -623,6 +757,7 @@ const styles = StyleSheet.create({
   submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
   rowCenter: { flexDirection: 'row', alignItems: 'center' },
 
+  // Modal
   modalOverlay: {
     position: 'absolute',
     top: 0,

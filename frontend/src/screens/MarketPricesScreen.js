@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -13,10 +13,20 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import BottomNavBar from '../components/BottomNavBar';
+import api from '../services/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Precise Chart Dimensions strictly contained inside the 412px Phone Chassis
 const chartWidth = 300;
 const chartHeight = 110;
+
+// Helper: Real live current date (e.g. "Mon 5 Oct 2026")
+const getTodayFormattedDate = () => {
+  const today = new Date();
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${days[today.getDay()]} ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
+};
 
 // REGIONAL ECONOMIC CENTER DATA MAP (Sri Lankan Markets)
 const REGIONAL_MARKET_DATA = {
@@ -42,7 +52,6 @@ const REGIONAL_MARKET_DATA = {
     ],
     otherProduce: [
       { name: 'Carrots', price: 220, tag: '↗ Rs. 15', tagType: 'green', photo: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=150' },
-      // 🍉 Watermelon photo matching your Figma design!
       { name: 'Watermelon', price: 190, tag: '→ 0', tagType: 'gray', photo: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=300' },
       { name: 'Potatoes', price: 140, tag: '↗ Rs. 5', tagType: 'green', photo: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=150' },
       { name: 'Cabbage', price: 260, tag: '↘ Rs. 10', tagType: 'red', photo: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=150' },
@@ -193,6 +202,23 @@ const REGIONAL_MARKET_DATA = {
 export default function MarketPricesScreen({ navigation }) {
   const [selectedMarket, setSelectedMarket] = useState('Kurunegala Market');
   const [marketModalVisible, setMarketModalVisible] = useState(false);
+  const [liveProduce, setLiveProduce] = useState([]);
+
+  // 🌟 Automatically re-fetches from MongoDB EVERY TIME screen opens!
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchProduce();
+    }, [])
+  );
+
+  const fetchProduce = async () => {
+    try {
+      const res = await api.get('/produce');
+      setLiveProduce(res.data || []); // 👈 Always updates the live list!
+    } catch (err) {
+      console.log('Notice: MongoDB produce fetch:', err.message);
+    }
+  };
 
   const currentData = REGIONAL_MARKET_DATA[selectedMarket] || REGIONAL_MARKET_DATA['Kurunegala Market'];
   const [activeDay, setActiveDay] = useState(currentData.weeklyTrend[6]);
@@ -205,6 +231,17 @@ export default function MarketPricesScreen({ navigation }) {
     }
     setMarketModalVisible(false);
   };
+
+  // 🌟 DYNAMIC LATEST PRODUCT LOGIC:
+  // If Sunil has added a crop in MongoDB Atlas, feature it! Otherwise show market highlight.
+  const latestCrop = liveProduce.length > 0 ? liveProduce[0] : null;
+  const isFarmerListing = Boolean(latestCrop);
+
+  const featuredCropName = latestCrop ? latestCrop.cropName : currentData.featured.cropName;
+  const featuredPrice = latestCrop ? latestCrop.sellingPricePerKg : currentData.featured.todayPrice;
+  const featuredPhoto = latestCrop ? latestCrop.photoUrl : currentData.featured.photoUrl;
+  const featuredLocation = latestCrop ? latestCrop.location : currentData.location;
+  const featuredQty = latestCrop ? latestCrop.quantityKg : 20;
 
   // Safe inner coordinate calculation strictly within card borders
   const prices = currentData.weeklyTrend.map((d) => d.price);
@@ -228,8 +265,7 @@ export default function MarketPricesScreen({ navigation }) {
     <View style={styles.container}>
       {/* Scrollable Content */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        {/* 1. Header with Inset Back Button */}
-        {/* 1. Header with Vegetable Farm Photo (Roundness: 0) */}
+        {/* 1. Header with Farm Photo (0 Roundness & Inset 20px Back Button) */}
         <ImageBackground
           source={{ uri: 'https://images.unsplash.com/photo-1595974482597-4b8da8879bc5?w=1000' }}
           style={styles.headerBackground}
@@ -237,7 +273,6 @@ export default function MarketPricesScreen({ navigation }) {
         >
           <SafeAreaView style={styles.headerOverlay}>
             <View style={styles.topRow}>
-              {/* Back Button */}
               <TouchableOpacity style={styles.circleBtn} activeOpacity={0.8}>
                 <Ionicons name="chevron-back" size={20} color="#333" />
               </TouchableOpacity>
@@ -268,42 +303,64 @@ export default function MarketPricesScreen({ navigation }) {
             </View>
           </View>
 
-          {/* 3. Featured Card with STRICTLY CONTAINED Chart */}
+          {/* 3. Featured Card (Displays Sunil's Latest Added Crop from MongoDB!) */}
           <View style={styles.featuredCard}>
+            {/* Top Indicator Badge */}
+            <View style={styles.featuredBadgeRow}>
+              <View style={[styles.badgePill, isFarmerListing && styles.badgePillActive]}>
+                <Ionicons
+                  name={isFarmerListing ? 'sparkles' : 'stats-chart'}
+                  size={14}
+                  color={isFarmerListing ? '#1b5e20' : '#2e7d32'}
+                />
+                <Text style={[styles.badgeText, isFarmerListing && styles.badgeTextActive]}>
+                  {isFarmerListing ? '🌱 Your Latest Listing' : 'Market Highlight'}
+                </Text>
+              </View>
+
+              {isFarmerListing && (
+                <Text style={styles.stockBadgeText}>
+                  {featuredQty} kg in stock
+                </Text>
+              )}
+            </View>
+
+            {/* Clickable Product Content */}
             <TouchableOpacity
               style={styles.featuredTop}
               activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate('ProductDetail', {
-                  item: {
-                    _id: `tomatoes_${currentData.location.toLowerCase()}`,
-                    cropName: currentData.featured.cropName,
-                    sellingPricePerKg: currentData.featured.todayPrice,
-                    yesterdayPrice: currentData.featured.yesterdayPrice,
-                    quantityKg: 20,
-                    location: currentData.location,
-                    photoUrl: currentData.featured.photoUrl,
-                    description: `Fresh tomatoes priced at ${selectedMarket} standards.`,
+                  item: latestCrop || {
+                    _id: `crop_${currentData.location.toLowerCase()}`,
+                    cropName: featuredCropName,
+                    sellingPricePerKg: featuredPrice,
+                    yesterdayPrice: featuredPrice - 10,
+                    quantityKg: featuredQty,
+                    location: featuredLocation,
+                    photoUrl: featuredPhoto,
+                    description: `Fresh ${featuredCropName.toLowerCase()} sourced for ${selectedMarket}.`,
                   },
                 })
               }
             >
-              <Image source={{ uri: currentData.featured.photoUrl }} style={styles.featuredImage} />
+              <Image source={{ uri: featuredPhoto }} style={styles.featuredImage} />
               <View style={styles.featuredDetails}>
                 <View style={styles.rowAlign}>
                   <MaterialCommunityIcons name="sprout" size={18} color="#2e7d32" />
-                  <Text style={styles.featuredCropName}>{currentData.featured.cropName}</Text>
+                  <Text style={styles.featuredCropName}>{featuredCropName}</Text>
                   <Ionicons name="chevron-forward" size={18} color="#777" style={{ marginLeft: 'auto' }} />
                 </View>
 
                 <View style={[styles.rowAlign, { marginTop: 4 }]}>
                   <Ionicons name="trending-up" size={16} color="#2e7d32" />
-                  <Text style={styles.priceChange}>{currentData.featured.changeText}</Text>
-                  <Text style={styles.priceChangeSub}>{currentData.featured.changeSub}</Text>
+                  <Text style={styles.priceChange}>
+                    {isFarmerListing ? 'Active on Market' : currentData.featured.changeText}
+                  </Text>
                 </View>
 
                 <Text style={styles.featuredPrice}>
-                  Rs. {currentData.featured.todayPrice} <Text style={styles.perKg}>/kg</Text>
+                  Rs. {featuredPrice} <Text style={styles.perKg}>/kg</Text>
                 </Text>
               </View>
             </TouchableOpacity>
@@ -312,7 +369,7 @@ export default function MarketPricesScreen({ navigation }) {
             <View style={styles.tooltipBanner}>
               <View style={styles.rowAlign}>
                 <Ionicons name="information-circle-outline" size={16} color="#2e7d32" />
-                <Text style={styles.tooltipDayText}>{activeDay.day}'s Price ({currentData.location}):</Text>
+                <Text style={styles.tooltipDayText}>{activeDay.day}'s Market Benchmark:</Text>
               </View>
               <Text style={styles.tooltipPriceText}>
                 Rs. {activeDay.price} /kg <Text style={styles.tooltipChange}>({activeDay.change})</Text>
@@ -387,54 +444,88 @@ export default function MarketPricesScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {/* 5. 2x2 Grid */}
+          {/* 5. 2x2 Grid: Guarantees 4 Distinct, Unique Crops! */}
           <View style={styles.grid}>
-            {currentData.otherProduce.map((prod, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.gridCard}
-                activeOpacity={0.8}
-                onPress={() =>
-                  navigation.navigate('ProductDetail', {
-                    item: {
-                      _id: `${prod.name.toLowerCase()}_${currentData.location.toLowerCase()}`,
-                      cropName: prod.name,
-                      sellingPricePerKg: prod.price,
-                      yesterdayPrice: prod.price - 10,
-                      quantityKg: 30,
-                      location: currentData.location,
-                      photoUrl: prod.photo,
-                      description: `Fresh ${prod.name.toLowerCase()} sourced for ${selectedMarket}.`,
-                    },
-                  })
+            {(() => {
+              // 1. Keep track of names already shown (exclude the top featured crop)
+              const seenCropNames = new Set([featuredCropName.toLowerCase()]);
+              const uniqueFarmerCrops = [];
+
+              // 2. Extract only UNIQUE crops from farmer's MongoDB list
+              for (const p of liveProduce) {
+                const lowerName = p.cropName.toLowerCase();
+                if (!seenCropNames.has(lowerName)) {
+                  seenCropNames.add(lowerName);
+                  uniqueFarmerCrops.push({
+                    _id: p._id,
+                    name: p.cropName,
+                    price: p.sellingPricePerKg,
+                    tag: '🌱 Your Crop',
+                    tagType: 'green',
+                    photo: p.photoUrl || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200',
+                    isRealItem: true,
+                    rawItem: p,
+                  });
                 }
-              >
-                <Image source={{ uri: prod.photo }} style={styles.gridThumb} />
-                <Text style={styles.gridCropTitle}>{prod.name}</Text>
-                <Text style={styles.gridPrice}>
-                  Rs. {prod.price} <Text style={styles.gridPerKg}>/kg</Text>
-                </Text>
-                <View
-                  style={[
-                    styles.tag,
-                    prod.tagType === 'green' && styles.tagGreen,
-                    prod.tagType === 'gray' && styles.tagGray,
-                    prod.tagType === 'red' && styles.tagRed,
-                  ]}
+              }
+
+              // 3. Fill the remaining empty slots with distinct market produce
+              const remainingMarketProduce = currentData.otherProduce
+                .filter((m) => !seenCropNames.has(m.name.toLowerCase()))
+                .map((m) => ({ ...m, isRealItem: false }));
+
+              // 4. Combine into exactly 4 distinct items
+              const distinctList = [...uniqueFarmerCrops, ...remainingMarketProduce].slice(0, 4);
+
+              return distinctList.map((prod, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.gridCard}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    navigation.navigate('ProductDetail', {
+                      item: prod.isRealItem
+                        ? prod.rawItem
+                        : {
+                            _id: `${prod.name.toLowerCase()}_${currentData.location.toLowerCase()}`,
+                            cropName: prod.name,
+                            sellingPricePerKg: prod.price,
+                            yesterdayPrice: prod.price - 10,
+                            quantityKg: 30,
+                            location: currentData.location,
+                            photoUrl: prod.photo,
+                            description: `Fresh ${prod.name.toLowerCase()} sourced for ${selectedMarket}.`,
+                          },
+                    })
+                  }
                 >
-                  <Text
+                  <Image source={{ uri: prod.photo }} style={styles.gridThumb} />
+                  <Text style={styles.gridCropTitle}>{prod.name}</Text>
+                  <Text style={styles.gridPrice}>
+                    Rs. {prod.price} <Text style={styles.gridPerKg}>/kg</Text>
+                  </Text>
+                  <View
                     style={[
-                      styles.tagText,
-                      prod.tagType === 'green' && styles.tagTextGreen,
-                      prod.tagType === 'gray' && styles.tagTextGray,
-                      prod.tagType === 'red' && styles.tagTextRed,
+                      styles.tag,
+                      prod.tagType === 'green' && styles.tagGreen,
+                      prod.tagType === 'gray' && styles.tagGray,
+                      prod.tagType === 'red' && styles.tagRed,
                     ]}
                   >
-                    {prod.tag}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+                    <Text
+                      style={[
+                        styles.tagText,
+                        prod.tagType === 'green' && styles.tagTextGreen,
+                        prod.tagType === 'gray' && styles.tagTextGray,
+                        prod.tagType === 'red' && styles.tagTextRed,
+                      ]}
+                    >
+                      {prod.tag}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ));
+            })()}
           </View>
 
           {/* 6. + Add Product Button */}
@@ -493,21 +584,13 @@ export default function MarketPricesScreen({ navigation }) {
   );
 }
 
-// Get today's real live date (e.g. "Sun 5 Oct 2026")
-const getTodayFormattedDate = () => {
-  const today = new Date();
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  return `${days[today.getDay()]} ${today.getDate()} ${months[today.getMonth()]} ${today.getFullYear()}`;
-};
-
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f6f8f7', position: 'relative' },
   scrollContent: { paddingBottom: 16 },
   headerBackground: { width: '100%', height: 215 },
   headerOverlay: {
     flex: 1,
-    paddingHorizontal: 26,
+    paddingHorizontal: 20, // 👈 20px Inset
     paddingTop: Platform.OS === 'web' ? 44 : 14,
   },
   topRow: {
@@ -516,11 +599,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     height: 40,
   },
-  headerOverlay: {
-    flex: 1,
-    paddingHorizontal: 20, // 👈 Set to 20
-    paddingTop: Platform.OS === 'web' ? 44 : 14,
-  },
   circleBtn: {
     width: 38,
     height: 38,
@@ -528,7 +606,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 20, // 👈 Set to 20
+    marginLeft: 20, // 👈 20px Inset
   },
   mainTitle: {
     fontSize: 22,
@@ -564,6 +642,8 @@ const styles = StyleSheet.create({
   },
   todayTitle: { fontSize: 15, fontWeight: 'bold', color: '#222' },
   todayDate: { fontSize: 12, color: '#777' },
+
+  // Featured Card Styles
   featuredCard: {
     backgroundColor: '#eaf4eb',
     borderRadius: 18,
@@ -573,6 +653,30 @@ const styles = StyleSheet.create({
     borderColor: '#d2ebd5',
     overflow: 'hidden',
   },
+  featuredBadgeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  badgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+  },
+  badgePillActive: {
+    backgroundColor: '#c8e6c9',
+    borderColor: '#81c784',
+  },
+  badgeText: { fontSize: 11, fontWeight: 'bold', color: '#2e7d32', marginLeft: 4 },
+  badgeTextActive: { color: '#1b5e20' },
+  stockBadgeText: { fontSize: 11, fontWeight: 'bold', color: '#1b5e20' },
+
   featuredTop: { flexDirection: 'row' },
   featuredImage: { width: 95, height: 75, borderRadius: 12 },
   featuredDetails: { flex: 1, marginLeft: 14 },

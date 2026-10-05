@@ -21,20 +21,19 @@ const chartHeight = 110;
 // REGIONAL ECONOMIC MULTIPLIERS FOR SRI LANKAN MARKETS
 const REGIONAL_MARKETS = {
   'Kurunegala Market': { rate: 1.0, location: 'Kurunegala' },
-  'Colombo Market': { rate: 1.25, location: 'Colombo' },    // +25% Urban transport
-  'Dambulla Market': { rate: 0.82, location: 'Dambulla' },   // -18% Wholesale hub
-  'Kandy Market': { rate: 1.10, location: 'Kandy' },         // +10% Central hub
-  'Matale Market': { rate: 0.95, location: 'Matale' },       // -5% Farm gate
-  'Gampaha Market': { rate: 1.18, location: 'Gampaha' },     // +18% Suburb
+  'Colombo Market': { rate: 1.25, location: 'Colombo' },
+  'Dambulla Market': { rate: 0.82, location: 'Dambulla' },
+  'Kandy Market': { rate: 1.10, location: 'Kandy' },
+  'Matale Market': { rate: 0.95, location: 'Matale' },
+  'Gampaha Market': { rate: 1.18, location: 'Gampaha' },
 };
 
-// BASELINE BENCHMARKS FOR CROPS (Kurunegala Baseline)
 const CROP_BASELINES = {
-  Carrots: { yesterday: 210, today: 220 },
-  Cabbage: { yesterday: 220, today: 230 },
-  Tomatoes: { yesterday: 170, today: 180 },
-  Potatoes: { yesterday: 135, today: 140 },
-  Leeks: { yesterday: 190, today: 190 },
+  Carrots: { yesterday: 210, today: 220, shelfLife: '7 days' },
+  Cabbage: { yesterday: 220, today: 230, shelfLife: '10 days' },
+  Tomatoes: { yesterday: 170, today: 180, shelfLife: '5 days' },
+  Potatoes: { yesterday: 135, today: 140, shelfLife: '21 days' },
+  Leeks: { yesterday: 190, today: 190, shelfLife: '3 days' },
 };
 
 export default function ProductDetailScreen({ route, navigation }) {
@@ -45,36 +44,32 @@ export default function ProductDetailScreen({ route, navigation }) {
     yesterdayPrice: 210,
     quantityKg: 30,
     location: 'Kurunegala',
+    freshness: 'Today',
+    harvestDate: 'Today',
     photoUrl: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=500',
     description: 'Fresh and organic produce from local farmers.',
   };
 
-  // Market Selection States
   const [selectedMarket, setSelectedMarket] = useState(
     item.location ? `${item.location} Market` : 'Kurunegala Market'
   );
   const [marketModalVisible, setMarketModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
 
-  // Regional Multiplier calculation
   const marketInfo = REGIONAL_MARKETS[selectedMarket] || REGIONAL_MARKETS['Kurunegala Market'];
   const multiplier = marketInfo.rate;
   const currentLocation = marketInfo.location;
 
-  // Baseline data for this crop
   const cropBaseline = CROP_BASELINES[item.cropName] || CROP_BASELINES['Carrots'];
   const officialTodayMarketPrice = Math.round(cropBaseline.today * multiplier);
   const fixedYesterdayPrice = Math.round(cropBaseline.yesterday * multiplier);
 
-  // Sunil's Selling Price & Quantity
   const [sellingPrice, setSellingPrice] = useState(officialTodayMarketPrice);
   const [quantity, setQuantity] = useState(item.quantityKg || 30);
 
-  // Form states inside Edit Modal
   const [editPriceInput, setEditPriceInput] = useState(String(sellingPrice));
   const [editQtyInput, setEditQtyInput] = useState(String(quantity));
 
-  // Switch Market Handler
   const handleSelectMarket = (m) => {
     setSelectedMarket(m);
     const newRate = REGIONAL_MARKETS[m]?.rate || 1.0;
@@ -90,7 +85,6 @@ export default function ProductDetailScreen({ route, navigation }) {
     setEditModalVisible(true);
   };
 
-  // CRUD: UPDATE
   const handleUpdate = async () => {
     const newPriceNum = Number(editPriceInput);
     const newQtyNum = Number(editQtyInput);
@@ -122,26 +116,34 @@ export default function ProductDetailScreen({ route, navigation }) {
     );
   };
 
-  // CRUD: DELETE
+  const executeDelete = async () => {
+    try {
+      if (item._id && item._id.length === 24) {
+        await api.delete(`/produce/${item._id}`);
+      }
+    } catch (e) {
+      console.log(e);
+    }
+
+    if (Platform.OS === 'web') {
+      window.alert(`${item.cropName} listing removed successfully.`);
+    } else {
+      Alert.alert('Deleted', `${item.cropName} removed successfully.`);
+    }
+
+    navigation.navigate('MarketPrices', { refresh: Date.now() });
+  };
+
   const handleDelete = () => {
-    Alert.alert('Delete Listing', `Are you sure you want to remove ${item.cropName} from marketplace?`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            if (item._id && item._id.length === 24) {
-              await api.delete(`/produce/${item._id}`);
-            }
-          } catch (e) {
-            console.log(e);
-          }
-          Alert.alert('Deleted', `${item.cropName} removed successfully.`);
-          navigation.navigate('MarketPrices');
-        },
-      },
-    ]);
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm(`Are you sure you want to delete ${item.cropName} from the marketplace?`);
+      if (confirmed) executeDelete();
+    } else {
+      Alert.alert('Delete Listing', `Are you sure you want to remove ${item.cropName}?`, [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: executeDelete },
+      ]);
+    }
   };
 
   // --- ECONOMIC COMPARISON CALCULATIONS ---
@@ -152,7 +154,7 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const marketDifference = sellingPrice - officialTodayMarketPrice;
 
-  // 7-Day Trend data based on the selected market rate
+  // 7-Day Trend
   const weeklyHistory = [
     { day: 'MON', price: Math.round(cropBaseline.today * multiplier * 0.88), change: '- Rs. 10' },
     { day: 'TUE', price: Math.round(cropBaseline.today * multiplier * 0.92), change: '+ Rs. 8' },
@@ -182,6 +184,9 @@ export default function ProductDetailScreen({ route, navigation }) {
 
   const fillPathData = `${pathData} L ${points[points.length - 1].x} ${chartHeight - 15} L ${points[0].x} ${chartHeight - 15} Z`;
 
+  // Freshness calculation
+  const isHarvestedToday = item.freshness === 'Today' || !item.freshness;
+
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -194,7 +199,7 @@ export default function ProductDetailScreen({ route, navigation }) {
           <View style={{ width: 38 }} />
         </SafeAreaView>
 
-        {/* 📍 CLICKABLE LOCATION DROPDOWN PILL */}
+        {/* Location Dropdown Pill */}
         <TouchableOpacity
           style={styles.locationPill}
           activeOpacity={0.8}
@@ -217,6 +222,23 @@ export default function ProductDetailScreen({ route, navigation }) {
             <Text style={styles.cropTitle}>{item.cropName}</Text>
           </View>
           <Text style={styles.cropSub}>Fresh and organic {item.cropName.toLowerCase()} from local farmers</Text>
+
+          {/* 🌟 PROMINENT FRESHNESS & SHELF LIFE BADGE */}
+          <View style={[styles.freshnessBadgeContainer, !isHarvestedToday && styles.freshnessBadgeAmber]}>
+            <View style={styles.rowAlign}>
+              <Ionicons
+                name={isHarvestedToday ? 'sparkles' : 'time'}
+                size={18}
+                color={isHarvestedToday ? '#1b5e20' : '#b7791f'}
+              />
+              <Text style={[styles.freshnessBadgeTitle, !isHarvestedToday && { color: '#b7791f' }]}>
+                {isHarvestedToday ? '🌱 Harvested Today (Peak Freshness)' : '🌿 Harvested Yesterday'}
+              </Text>
+            </View>
+            <Text style={styles.shelfLifeText}>
+              Estimated Shelf Life: ~{cropBaseline.shelfLife} remaining
+            </Text>
+          </View>
 
           {/* Big Selling Price */}
           <View style={[styles.rowAlign, { marginTop: 10 }]}>
@@ -309,7 +331,7 @@ export default function ProductDetailScreen({ route, navigation }) {
             )}
           </View>
 
-          {/* OFFICIAL STABLE 7-DAY MARKET CHART */}
+          {/* OFFICIAL 7-DAY CHART */}
           <Text style={styles.chartHeaderTitle}>
             Official {currentLocation} Market Trend (7 Days)
           </Text>
@@ -399,7 +421,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         </View>
       </ScrollView>
 
-      {/* 📍 IN-SCREEN SELECT MARKET MODAL (Trapped inside iPhone frame) */}
+      {/* Select Market Bottom Sheet */}
       {marketModalVisible && (
         <View style={styles.inScreenModalOverlay}>
           <TouchableOpacity
@@ -438,7 +460,7 @@ export default function ProductDetailScreen({ route, navigation }) {
         </View>
       )}
 
-      {/* Edit Modal (Updates Live on Screen) */}
+      {/* Edit Modal */}
       {editModalVisible && (
         <View style={styles.editModalOverlay}>
           <TouchableOpacity
@@ -497,7 +519,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 0,
+    marginLeft: 20,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
@@ -522,6 +544,23 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, marginTop: 14 },
   cropTitle: { fontSize: 22, fontWeight: 'bold', color: '#222', marginLeft: 6 },
   cropSub: { fontSize: 13, color: '#666', marginTop: 4 },
+
+  // Freshness & Shelf Life Badge Container
+  freshnessBadgeContainer: {
+    backgroundColor: '#e8f5e9',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1.5,
+    borderColor: '#c8e6c9',
+  },
+  freshnessBadgeAmber: {
+    backgroundColor: '#fff8e1',
+    borderColor: '#ffe082',
+  },
+  freshnessBadgeTitle: { fontSize: 14, fontWeight: 'bold', color: '#1b5e20', marginLeft: 6 },
+  shelfLifeText: { fontSize: 12, color: '#555', marginTop: 4, marginLeft: 24 },
+
   priceHighlight: { fontSize: 26, fontWeight: '900', color: '#222' },
   perKg: { fontSize: 14, color: '#666', fontWeight: 'normal' },
   todayPriceBadge: { backgroundColor: '#eaf4eb', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 },
@@ -638,13 +677,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 10,
   },
-  backdropDismiss: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
+  backdropDismiss: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   inputLabel: { fontSize: 13, color: '#555', marginTop: 10, marginBottom: 4 },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 12, fontSize: 16, color: '#222' },
   saveBtn: { backgroundColor: '#2e7d32', borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 20 },
