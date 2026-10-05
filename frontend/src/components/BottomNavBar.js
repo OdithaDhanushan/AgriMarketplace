@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function BottomNavBar({ activeTab = 'Explore', navigation }) {
   return (
     <View style={styles.bottomNav}>
+      {/* 1. Explore (Home / Dashboard) */}
       <TouchableOpacity
         style={[styles.navItem, activeTab === 'Explore' && styles.navItemActive]}
         onPress={() => navigation && navigation.navigate('MarketPrices')}
@@ -19,19 +20,31 @@ export default function BottomNavBar({ activeTab = 'Explore', navigation }) {
         </Text>
       </TouchableOpacity>
 
+      {/* 2. My Cart */}
       <TouchableOpacity style={styles.navItem}>
         <Ionicons name="cart-outline" size={20} color="#888" />
         <Text style={styles.navText}>My Cart</Text>
       </TouchableOpacity>
 
+      {/* 3. Orders */}
       <TouchableOpacity style={styles.navItem}>
         <Ionicons name="receipt-outline" size={20} color="#888" />
         <Text style={styles.navText}>Orders</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.navItem}>
-        <Ionicons name="person-outline" size={20} color="#888" />
-        <Text style={styles.navText}>Profile</Text>
+      {/* 4. Profile (Navigates to FarmerProfileScreen) */}
+      <TouchableOpacity
+        style={[styles.navItem, activeTab === 'Profile' && styles.navItemActive]}
+        onPress={() => navigation && navigation.navigate('FarmerProfile')}
+      >
+        <Ionicons
+          name={activeTab === 'Profile' ? 'person' : 'person-outline'}
+          size={20}
+          color={activeTab === 'Profile' ? '#2e7d32' : '#888'}
+        />
+        <Text style={activeTab === 'Profile' ? styles.navTextActive : styles.navText}>
+          Profile
+        </Text>
       </TouchableOpacity>
     </View>
   );

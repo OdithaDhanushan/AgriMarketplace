@@ -9,6 +9,8 @@ import ProductAddedSuccess from './src/screens/ProductAddedSuccess';
 import ProductDetailScreen from './src/screens/ProductDetailScreen';
 import OtherProductsScreen from './src/screens/OtherProductsScreen';
 import VoiceListingScreen from './src/screens/VoiceListingScreen';
+import FarmerProfileScreen from './src/screens/FarmerProfileScreen';
+import FarmerDashboardScreen from './src/screens/FarmerDashboardScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -18,9 +20,7 @@ export default function App() {
   return (
     <View style={styles.webContainer}>
       <View style={styles.phoneChassis}>
-        {/* Realistic iPhone Dynamic Island (Only shows on Web) */}
         {isWeb && <View style={styles.dynamicIsland} />}
-
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="MarketPrices">
             <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
@@ -29,6 +29,8 @@ export default function App() {
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
             <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
+            <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />
+            <Stack.Screen name="FarmerDashboard" component={FarmerDashboardScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </View>
@@ -39,11 +41,11 @@ export default function App() {
 const styles = StyleSheet.create({
   webContainer: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#d8e1ea' : '#fff', // Soft gray desktop background
+    backgroundColor: Platform.OS === 'web' ? '#d8e1ea' : '#fff',
     alignItems: 'center',
     justifyContent: 'center',
     height: Platform.OS === 'web' ? '100vh' : '100%',
-    paddingVertical: Platform.OS === 'web' ? 20 : 0,
+    paddingVertical: Platform.OS === 'web' ? 24 : 0,
   },
   phoneChassis: {
     flex: 1,
@@ -51,12 +53,11 @@ const styles = StyleSheet.create({
     maxWidth: Platform.OS === 'web' ? 412 : '100%',
     maxHeight: Platform.OS === 'web' ? 860 : '100%',
     backgroundColor: '#fff',
-    borderRadius: Platform.OS === 'web' ? 48 : 0, // Curved phone corners
-    borderWidth: Platform.OS === 'web' ? 10 : 0,  // Realistic black phone bezel
+    borderRadius: Platform.OS === 'web' ? 48 : 0,
+    borderWidth: Platform.OS === 'web' ? 10 : 0,
     borderColor: '#111827',
     overflow: 'hidden',
     position: 'relative',
-    // 3D Drop Shadow around the phone
     shadowColor: '#000',
     shadowOpacity: Platform.OS === 'web' ? 0.25 : 0,
     shadowOffset: { width: 0, height: 16 },
@@ -71,6 +72,6 @@ const styles = StyleSheet.create({
     height: 26,
     backgroundColor: '#000',
     borderRadius: 13,
-    zIndex: 99999, // Keeps notch above screens
+    zIndex: 99999,
   },
 });

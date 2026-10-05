@@ -400,18 +400,22 @@ export default function MarketPricesScreen({ navigation }) {
                   <Path d={fillPathData} fill="url(#chartGradient)" />
                   <Path d={pathData} stroke="#2e7d32" strokeWidth="2.5" fill="none" strokeLinecap="round" />
 
-                  {points.map((p, i) => (
-                    <Circle
+                  {points && points.length > 0 && points.map((p, i) => {
+                    if (!p || typeof p.x !== 'number' || typeof p.y !== 'number') return null;
+                    const isActive = activeDay && activeDay.day === p.day;
+                    return (
+                      <Circle
                       key={i}
                       cx={p.x}
                       cy={p.y}
-                      r={activeDay.day === p.day ? 6.5 : 4}
-                      fill={activeDay.day === p.day ? '#2e7d32' : '#ffffff'}
+                      r={isActive ? 6.5 : 4}
+                      fill={isActive ? '#2e7d32' : '#ffffff'}
                       stroke="#2e7d32"
-                      strokeWidth={activeDay.day === p.day ? 2.5 : 1.8}
+                      strokeWidth={isActive ? 2.5 : 1.8}
                       onPress={() => setActiveDay(p)}
                     />
-                  ))}
+                    );
+                  })}
                 </Svg>
               </View>
             </View>
