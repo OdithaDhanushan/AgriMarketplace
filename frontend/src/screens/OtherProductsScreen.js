@@ -211,7 +211,7 @@ export default function OtherProductsScreen({ navigation }) {
                 key={item._id}
                 style={styles.card}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('SellerProductDetail', { item })}
+                onPress={() => navigation.navigate('ProductDetail', { item })}
               >
                 <Image source={{ uri: item.photoUrl }} style={styles.thumb} />
                 <Text style={styles.cropTitle}>{item.cropName}</Text>
