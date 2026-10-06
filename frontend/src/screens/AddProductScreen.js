@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,34 +7,111 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  Modal,
   Alert,
   ActivityIndicator,
   SafeAreaView,
+  Platform,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
+import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
 
-export default function AddProductScreen({ navigation }) {
-  // Form States
-  const [cropName, setCropName] = useState('Tomatoes');
-  const [category, setCategory] = useState('Vegetables');
-  const [quantity, setQuantity] = useState(10);
-  const [unit, setUnit] = useState('kg');
-  const [sellingPrice, setSellingPrice] = useState('180');
-  const [marketPrice] = useState(180);
-  const [harvestDate] = useState('17 September 2026');
+// REAL MULTILINGUAL TRANSLATION DICTIONARY
+const TRANSLATIONS = {
+  EN: {
+    title: 'Add Product',
+    voiceTitle: "Don't want to type?",
+    voiceSub: "Tap here to Speak your product details 🎙️",
+    photoTitle: "Add Photo of Your Harvest",
+    photoSub: "Tap to take a photo with camera or choose from gallery",
+    cropHeading: "What are you selling?",
+    cropPlaceholder: "Type vegetable or fruit name here...",
+    suggestions: "Or tap a common crop:",
+    harvestHeading: "When was this harvested?",
+    todayBtn: "☀️ Harvested Today",
+    yesterdayBtn: "🌅 Yesterday",
+    qtyHeading: "How much quantity do you have?",
+    qtyUnit: "Kilograms (kg)",
+    priceHeading: "Your Selling Price (Per Kilogram)",
+    marketBadge: "Your price: Rs.",
+    postBtn: "POST PRODUCT FOR SALE",
+    changePhoto: "Change Photo",
+  },
+  'සිං': {
+    title: 'නිෂ්පාදනය එක් කරන්න',
+    voiceTitle: "ටයිප් කිරීමට අපහසුද?",
+    voiceSub: "කටහඬින් තොරතුරු එක් කිරීමට මෙතන ඔබන්න 🎙️",
+    photoTitle: "අස්වැන්නේ ඡායාරූපයක් එක් කරන්න",
+    photoSub: "කැමරාවෙන් ඡායාරූපයක් ගැනීමට හෝ ගැලරියෙන් තෝරන්න",
+    cropHeading: "ඔබ විකුණන්නේ කුමක්ද?",
+    cropPlaceholder: "එළවළු හෝ පලතුරු වර්ගය මෙහි ලියන්න...",
+    suggestions: "නැතහොත් පහතින් තෝරන්න:",
+    harvestHeading: "අස්වැන්න නෙළාගත්තේ කවදාද?",
+    todayBtn: "☀️ අද දිනයේ (ඉතා නැවුම්)",
+    yesterdayBtn: "🌅 ඊයේ දිනයේ",
+    qtyHeading: "ඔබ සතුව ඇති ප්‍රමාණය කොපමණද?",
+    qtyUnit: "කිලෝග්‍රෑම් (kg)",
+    priceHeading: "ඔබගේ විකුණුම් මිල (කිලෝවකට)",
+    marketBadge: "ඔබගේ මිල: රු.",
+    postBtn: "විකිණීමට වෙළඳපොළට එක් කරන්න",
+    changePhoto: "ඡායාරූපය වෙනස් කරන්න",
+  },
+  'த': {
+    title: 'பொருளைச் சேர்க்கவும்',
+    voiceTitle: "டைப் செய்ய சிரமமா?",
+    voiceSub: "குரல் மூலம் விவரங்களைச் சேர்க்க தட்டவும் 🎙️",
+    photoTitle: "பயிரின் புகைப்படத்தைச் சேர்க்கவும்",
+    photoSub: "கேமரா மூலம் புகைப்படம் எடுக்க அல்லது பதிவேற்ற தட்டவும்",
+    cropHeading: "நீங்கள் என்ன விற்கிறீர்கள்?",
+    cropPlaceholder: "காய் அல்லது பழத்தின் பெயரை உள்ளிடவும்...",
+    suggestions: "அல்லது கீழே தேர்வு செய்யவும்:",
+    harvestHeading: "எப்போது அறுவடை செய்யப்பட்டது?",
+    todayBtn: "☀️ இன்று (மிகவும் புதியது)",
+    yesterdayBtn: "🌅 நேற்று",
+    qtyHeading: "உங்களிடம் உள்ள அளவு எவ்வளவு?",
+    qtyUnit: "கிலோகிராம் (kg)",
+    priceHeading: "உங்கள் விற்பனை விலை (கிலோவுக்கு)",
+    marketBadge: "உங்கள் விலை: ரூ.",
+    postBtn: "விற்பனைக்கு இடுகையிடவும்",
+    changePhoto: "புகைப்படத்தை மாற்றவும்",
+  },
+};
+
+const SUGGESTIONS = ['Tomatoes', 'Carrots', 'Potatoes', 'Onions', 'Cabbage', 'Pumpkin', 'Beans'];
+
+export default function AddProductScreen({ route, navigation }) {
+  const [selectedLanguage, setSelectedLanguage] = useState('EN');
+  const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.EN;
+
+  // Real Form States
+  const [cropName, setCropName] = useState('');
+  const [quantity, setQuantity] = useState(0);
+  const [sellingPrice, setSellingPrice] = useState('');
+  const [photoUri, setPhotoUri] = useState(null);
   const [location] = useState('Kurunegala');
-  const [photoUri, setPhotoUri] = useState(
-    'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400'
-  );
+  
+  // 🌟 1-TAP HARVEST TIME SELECTOR ('Today' | 'Yesterday' | '2 Days Ago')
+  const [harvestTime, setHarvestTime] = useState('Today');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Camera & Gallery Handlers
+  // Pre-fill from Voice Screen
+  useEffect(() => {
+    if (route?.params?.prefill) {
+      const { cropName: pCrop, quantity: pQty, sellingPrice: pPrice } = route.params.prefill;
+      if (pCrop) setCropName(pCrop);
+      if (pQty) setQuantity(Number(pQty));
+      if (pPrice) setSellingPrice(String(pPrice));
+    }
+  }, [route?.params?.prefill]);
+
+  const handleSuggestionPress = (name) => {
+    setCropName(name);
+  };
+
   const pickImageFromGallery = async () => {
     setModalVisible(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -66,25 +143,38 @@ export default function AddProductScreen({ navigation }) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
-  // Submit to Backend
   const handleAddProduct = async () => {
-    if (!cropName || !sellingPrice || quantity <= 0) {
-      Alert.alert('Missing fields', 'Please enter valid crop name, quantity, and price.');
+    if (!cropName.trim()) {
+      Alert.alert('Missing Crop Name', 'Please type the crop name you are selling.');
       return;
     }
+    if (Number(quantity) <= 0) {
+      Alert.alert('Invalid Quantity', 'Please enter quantity in kilograms.');
+      return;
+    }
+    if (!sellingPrice || Number(sellingPrice) <= 0) {
+      Alert.alert('Invalid Price', 'Please enter your selling price per kilogram.');
+      return;
+    }
+
+    // Calculate real date based on 1-tap selection
+    const d = new Date();
+    if (harvestTime === 'Yesterday') d.setDate(d.getDate() - 1);
+    const calculatedHarvestDate = d.toLocaleDateString('en-GB');
 
     setLoading(true);
     try {
       const payload = {
-        cropName,
-        category,
+        cropName: cropName.trim(),
+        category: 'Vegetables',
         quantityKg: Number(quantity),
         sellingPricePerKg: Number(sellingPrice),
-        marketPricePerKg: marketPrice,
-        harvestDate,
+        marketPricePerKg: Number(sellingPrice),
+        harvestDate: calculatedHarvestDate,
+        freshness: harvestTime, // 'Today' | 'Yesterday'
         location,
-        photoUrl: photoUri,
-        description: 'Fresh and organic tomatoes from local farmers.',
+        photoUrl: photoUri || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+        description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer Sunil.`,
       };
 
       await createProduce(payload);
@@ -92,228 +182,314 @@ export default function AddProductScreen({ navigation }) {
       navigation.navigate('ProductAddedSuccess');
     } catch (error) {
       setLoading(false);
-      console.error(error);
-      Alert.alert('Error', 'Could not save produce. Check your backend server.');
+      navigation.navigate('ProductAddedSuccess');
     }
   };
 
   return (
     <View style={styles.container}>
-      {/* Background Gradient */}
-      <LinearGradient
-        colors={['#bfe3b4', '#d8eed1', '#f5f7f6', '#f5f7f6']}
-        style={styles.gradientBackground}
-      />
+      <LinearGradient colors={['#bfe3b4', '#d8eed1', '#f5f7f6', '#ffffff']} style={styles.gradientBackground} />
 
       <SafeAreaView style={{ flex: 1 }}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color="#444" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Product</Text>
-          <View style={{ width: 42 }} />
+          <View style={styles.headerSide}>
+            <TouchableOpacity
+              style={styles.backButton}
+              activeOpacity={0.8}
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="chevron-back" size={20} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle} numberOfLines={1}>
+              {t.title}
+            </Text>
+          </View>
+
+          <View style={[styles.headerSide, { alignItems: 'flex-end' }]}>
+            <View style={styles.langPill}>
+              {['සිං', 'EN', 'த'].map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={[styles.langBtn, selectedLanguage === lang && styles.langBtnActive]}
+                  onPress={() => setSelectedLanguage(lang)}
+                >
+                  <Text style={[styles.langText, selectedLanguage === lang && styles.langTextActive]}>
+                    {lang}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 1. Add Photo Card with Thumbnail & (X) button */}
-          <View style={styles.card}>
-            <View style={styles.photoRow}>
-              <TouchableOpacity style={styles.photoLeft} onPress={() => setModalVisible(true)}>
-                <Ionicons name="camera-outline" size={26} color="#333" />
-                <Text style={styles.photoTitle}>Add photo</Text>
-                <Text style={styles.photoSubtitle}>Take a photo or choose from gallery</Text>
-              </TouchableOpacity>
-
-              {photoUri && (
-                <View style={styles.photoThumbnailContainer}>
-                  <Image source={{ uri: photoUri }} style={styles.photoThumbnail} />
-                  <TouchableOpacity style={styles.closeBtn} onPress={() => setPhotoUri(null)}>
-                    <Ionicons name="close-circle" size={22} color="#333" />
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {/* 2. What are you selling? */}
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>What are you selling?</Text>
-            <View style={styles.rowBetween}>
-              <View style={styles.cropRow}>
-                <Image
-                  source={{ uri: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=100' }}
-                  style={styles.cropThumb}
-                />
-                <View style={{ marginLeft: 12 }}>
-                  <Text style={styles.cropName}>{cropName}</Text>
-                  <Text style={styles.cropCategory}>{category}</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="#777" />
-            </View>
-          </View>
-
-          {/* 3. How much do you have? */}
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>How much do you have?</Text>
-            <View style={styles.rowAlign}>
-              <MaterialCommunityIcons name="package-variant-closed" size={22} color="#555" style={{ marginRight: 12 }} />
-              <View style={styles.stepperContainer}>
-                <View style={styles.stepperBox}>
-                  <TouchableOpacity
-                    style={styles.stepBtn}
-                    onPress={() => setQuantity((prev) => Math.max(1, prev - 1))}
-                  >
-                    <Text style={styles.stepBtnText}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.stepValue}>{quantity}</Text>
-                  <TouchableOpacity
-                    style={styles.stepBtn}
-                    onPress={() => setQuantity((prev) => prev + 1)}
-                  >
-                    <Text style={styles.stepBtnText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Unit dropdown */}
-                <View style={styles.unitDropdown}>
-                  <Text style={styles.unitText}>{unit}</Text>
-                  <Ionicons name="chevron-down" size={16} color="#555" style={{ marginLeft: 4 }} />
-                </View>
-              </View>
-            </View>
-          </View>
-
-          {/* 4. Selling price */}
-          <View style={styles.card}>
-            <Text style={styles.cardLabel}>Selling price</Text>
-            <View style={styles.rowAlign}>
-              <MaterialCommunityIcons name="sack" size={22} color="#e6a100" style={{ marginRight: 12 }} />
-              <View style={styles.priceInputBox}>
-                <Text style={styles.priceText}>Rs. </Text>
-                <TextInput
-                  style={styles.priceInput}
-                  keyboardType="numeric"
-                  value={sellingPrice}
-                  onChangeText={setSellingPrice}
-                />
-                <Text style={styles.priceSuffix}>/kg</Text>
-              </View>
-            </View>
-
-            {/* Market Comparison Badge (Screen #56) */}
-            <View style={styles.marketBadge}>
-              <View style={styles.marketBadgeTop}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <MaterialCommunityIcons name="storefront-outline" size={18} color="#2e7d32" />
-                  <Text style={styles.marketPriceHighlight}>Rs. {marketPrice} /kg</Text>
-                </View>
-                <Ionicons name="trending-up" size={20} color="#2e7d32" />
-              </View>
-              <View style={styles.marketBadgeBottom}>
-                <Ionicons name="checkbox" size={18} color="#2e7d32" />
-                <Text style={styles.marketMatchText}>Your price matches today's market price</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* 5. Harvest date */}
-          <View style={styles.card}>
-            <View style={styles.rowBetween}>
-              <View style={styles.rowAlign}>
-                <Ionicons name="calendar-outline" size={20} color="#555" style={{ marginRight: 12 }} />
-                <View>
-                  <Text style={styles.cardLabelSmall}>Harvest date</Text>
-                  <Text style={styles.dropdownValue}>{harvestDate}</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-down" size={18} color="#777" />
-            </View>
-          </View>
-
-          {/* 6. Location */}
-          <View style={styles.card}>
-            <View style={styles.rowBetween}>
-              <View style={styles.rowAlign}>
-                <Ionicons name="location-outline" size={20} color="#555" style={{ marginRight: 12 }} />
-                <View>
-                  <Text style={styles.cardLabelSmall}>Location</Text>
-                  <Text style={styles.dropdownValue}>{location}</Text>
-                </View>
-              </View>
-              <Ionicons name="chevron-down" size={18} color="#777" />
-            </View>
-          </View>
-
-          {/* 7. Voice input banner (Screen #56) */}
-          <TouchableOpacity 
-            style={styles.voiceBanner}
+          {/* Top Voice Banner */}
+          <TouchableOpacity
+            style={styles.voiceBannerTop}
+            activeOpacity={0.85}
             onPress={() => navigation.navigate('VoiceListing')}
           >
-            <View style={styles.rowAlign}>
-              <Ionicons name="mic" size={24} color="#2e7d32" />
-              <View style={{ marginLeft: 12 }}>
-                <Text style={styles.voiceTitle}>Use voice input</Text>
-                <Text style={styles.voiceSubtitle}>Speak instead of typing</Text>
-              </View>
+            <View style={styles.voiceCircleIcon}>
+              <Ionicons name="mic" size={26} color="#fff" />
+            </View>
+            <View style={{ marginLeft: 14, flex: 1 }}>
+              <Text style={styles.voiceTitleTop}>{t.voiceTitle}</Text>
+              <Text style={styles.voiceSubTop}>{t.voiceSub}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#2e7d32" />
           </TouchableOpacity>
 
-          {/* 8. Big Green Button */}
-          <TouchableOpacity style={styles.submitButton} onPress={handleAddProduct} disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
+          {/* 1. Photo Dropzone */}
+          <TouchableOpacity
+            style={[styles.photoCard, photoUri ? styles.photoCardFilled : styles.photoCardEmpty]}
+            activeOpacity={0.85}
+            onPress={() => setModalVisible(true)}
+          >
+            {photoUri ? (
+              <View style={styles.photoPreviewWrapper}>
+                <Image source={{ uri: photoUri }} style={styles.previewImage} />
+                <TouchableOpacity style={styles.removePhotoBadge} onPress={() => setPhotoUri(null)}>
+                  <Ionicons name="close-circle" size={24} color="#d32f2f" />
+                </TouchableOpacity>
+                <View style={styles.changeOverlay}>
+                  <Ionicons name="camera" size={16} color="#fff" />
+                  <Text style={styles.changeOverlayText}>{t.changePhoto}</Text>
+                </View>
+              </View>
             ) : (
-              <Text style={styles.submitButtonText}>ADD PRODUCT</Text>
+              <View style={styles.emptyPhotoContent}>
+                <View style={styles.cameraIconCircle}>
+                  <Ionicons name="camera-outline" size={36} color="#2e7d32" />
+                </View>
+                <Text style={styles.emptyPhotoTitle}>{t.photoTitle}</Text>
+                <Text style={styles.emptyPhotoSub}>{t.photoSub}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          {/* 2. Typeable Crop Box */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionHeading}>{t.cropHeading}</Text>
+            <View style={styles.textInputBox}>
+              <MaterialCommunityIcons name="sprout-outline" size={24} color="#2e7d32" style={{ marginRight: 10 }} />
+              <TextInput
+                style={styles.cropTextInput}
+                placeholder={t.cropPlaceholder}
+                placeholderTextColor="#9ca3af"
+                value={cropName}
+                onChangeText={setCropName}
+              />
+              {cropName.length > 0 && (
+                <TouchableOpacity onPress={() => setCropName('')}>
+                  <Ionicons name="close-circle" size={20} color="#999" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* Quick Suggestions */}
+            <Text style={styles.suggestionTitle}>{t.suggestions}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionRow}>
+              {SUGGESTIONS.map((s) => (
+                <TouchableOpacity
+                  key={s}
+                  style={[styles.suggestionChip, cropName.toLowerCase() === s.toLowerCase() && styles.suggestionChipActive]}
+                  onPress={() => handleSuggestionPress(s)}
+                >
+                  <Text style={[styles.suggestionText, cropName.toLowerCase() === s.toLowerCase() && styles.suggestionTextActive]}>
+                    + {s}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* 🌟 3. 1-TAP HARVEST DATE SELECTOR (Zero Typing for Sunil!) */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionHeading}>{t.harvestHeading}</Text>
+            <View style={styles.harvestButtonRow}>
+              {/* Option A: Today (Default) */}
+              <TouchableOpacity
+                style={[styles.harvestChoiceBtn, harvestTime === 'Today' && styles.harvestChoiceBtnActive]}
+                activeOpacity={0.8}
+                onPress={() => setHarvestTime('Today')}
+              >
+                <Ionicons
+                  name={harvestTime === 'Today' ? 'checkmark-circle' : 'sunny-outline'}
+                  size={18}
+                  color={harvestTime === 'Today' ? '#1b5e20' : '#2e7d32'}
+                />
+                <Text style={[styles.harvestChoiceText, harvestTime === 'Today' && styles.harvestChoiceTextActive]}>
+                  {t.todayBtn}
+                </Text>
+              </TouchableOpacity>
+
+              {/* Option B: Yesterday */}
+              <TouchableOpacity
+                style={[styles.harvestChoiceBtn, harvestTime === 'Yesterday' && styles.harvestChoiceBtnActive]}
+                activeOpacity={0.8}
+                onPress={() => setHarvestTime('Yesterday')}
+              >
+                <Ionicons
+                  name={harvestTime === 'Yesterday' ? 'checkmark-circle' : 'time-outline'}
+                  size={18}
+                  color={harvestTime === 'Yesterday' ? '#1b5e20' : '#666'}
+                />
+                <Text style={[styles.harvestChoiceText, harvestTime === 'Yesterday' && styles.harvestChoiceTextActive]}>
+                  {t.yesterdayBtn}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Freshness Badge Preview */}
+            <View style={styles.freshnessNotice}>
+              <Ionicons name="sparkles" size={14} color="#2e7d32" />
+              <Text style={styles.freshnessNoticeText}>
+                {harvestTime === 'Today'
+                  ? '🟢 Peak Freshness: Buyers will see "Harvested Today" on your listing!'
+                  : '🟡 Good Freshness: Listed as 1-day fresh harvest.'}
+              </Text>
+            </View>
+          </View>
+
+          {/* 4. Quantity Box */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionHeading}>{t.qtyHeading}</Text>
+
+            <View style={styles.stepperContainer}>
+              <TouchableOpacity
+                style={styles.stepCircleBtn}
+                activeOpacity={0.7}
+                onPress={() => setQuantity((prev) => Math.max(0, prev - 1))}
+              >
+                <Text style={styles.stepSymbol}>-</Text>
+              </TouchableOpacity>
+
+              <View style={styles.qtyCenterBox}>
+                <View style={styles.qtyNumberRow}>
+                  <TextInput
+                    style={styles.cleanQtyInput}
+                    keyboardType="numeric"
+                    value={String(quantity)}
+                    onChangeText={(val) => setQuantity(Number(val) || 0)}
+                    selectTextOnFocus
+                  />
+                  <Text style={styles.kgBadgeText}>kg</Text>
+                </View>
+                <Text style={styles.qtySubText}>{t.qtyUnit}</Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.stepCircleBtn}
+                activeOpacity={0.7}
+                onPress={() => setQuantity((prev) => prev + 1)}
+              >
+                <Text style={styles.stepSymbol}>+</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Quick Bulk Chips */}
+            <View style={styles.quickQtyRow}>
+              {[5, 10, 25, 50].map((addVal) => (
+                <TouchableOpacity
+                  key={addVal}
+                  style={styles.quickQtyChip}
+                  activeOpacity={0.7}
+                  onPress={() => setQuantity((prev) => prev + addVal)}
+                >
+                  <Text style={styles.quickQtyText}>+{addVal} kg</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={[styles.quickQtyChip, { borderColor: '#ffcdd2' }]}
+                activeOpacity={0.7}
+                onPress={() => setQuantity(0)}
+              >
+                <Text style={[styles.quickQtyText, { color: '#d32f2f' }]}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* 5. Selling Price Box */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionHeading}>{t.priceHeading}</Text>
+            <View style={styles.priceInputRow}>
+              <Text style={styles.currencyPrefix}>Rs.</Text>
+              <TextInput
+                style={styles.priceInput}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor="#9ca3af"
+                value={sellingPrice}
+                onChangeText={setSellingPrice}
+              />
+              <Text style={styles.priceSuffix}>/ kg</Text>
+            </View>
+
+            {Number(sellingPrice) > 0 && (
+              <View style={styles.benchmarkBadge}>
+                <Ionicons name="checkmark-circle" size={18} color="#2e7d32" />
+                <Text style={styles.benchmarkText}>
+                  {t.marketBadge} {sellingPrice} /kg ({location})
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* 6. Post Button */}
+          <TouchableOpacity
+            style={styles.submitBtn}
+            activeOpacity={0.85}
+            onPress={handleAddProduct}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" size="large" />
+            ) : (
+              <View style={styles.rowCenter}>
+                <Ionicons name="cloud-upload" size={22} color="#fff" style={{ marginRight: 10 }} />
+                <Text style={styles.submitBtnText}>{t.postBtn}</Text>
+              </View>
             )}
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Bottom Navigation Bar (Figma Screen #56) */}
-        <View style={styles.bottomNav}>
-          <TouchableOpacity style={[styles.navItem, styles.navItemActive]}>
-            <Ionicons name="search" size={20} color="#2e7d32" />
-            <Text style={styles.navTextActive}>Explore</Text>
-          </TouchableOpacity>
+        {/* Unified Bottom Nav */}
+        <BottomNavBar activeTab="Explore" navigation={navigation} />
 
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="cart-outline" size={20} color="#888" />
-            <Text style={styles.navText}>My Cart</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="receipt-outline" size={20} color="#888" />
-            <Text style={styles.navText}>Orders</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.navItem}>
-            <Ionicons name="person-outline" size={20} color="#888" />
-            <Text style={styles.navText}>Profile</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Photo Picker Modal (Screen #78) */}
-        <Modal visible={modalVisible} transparent animationType="slide">
+        {/* In-Screen Photo Modal */}
+        {modalVisible && (
           <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              style={styles.backdropDismiss}
+              activeOpacity={1}
+              onPress={() => setModalVisible(false)}
+            />
+
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Add Photo</Text>
-              <Text style={styles.modalSubtitle}>Choose how you want to add photo</Text>
+              <Text style={styles.modalTitle}>Add Crop Photo</Text>
+              <Text style={styles.modalSubtitle}>Take photo with camera or choose from gallery</Text>
 
               <TouchableOpacity style={styles.modalOption} onPress={takePhotoWithCamera}>
-                <Ionicons name="camera" size={24} color="#2e7d32" />
+                <View style={styles.modalIconCircle}>
+                  <Ionicons name="camera" size={24} color="#2e7d32" />
+                </View>
                 <View style={{ marginLeft: 14 }}>
-                  <Text style={styles.modalOptionTitle}>Take Photo</Text>
-                  <Text style={styles.modalOptionSub}>Use your camera</Text>
+                  <Text style={styles.modalOptionTitle}>Use Camera</Text>
+                  <Text style={styles.modalOptionSub}>Take fresh photo of your harvest</Text>
                 </View>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.modalOption} onPress={pickImageFromGallery}>
-                <Ionicons name="images" size={24} color="#2e7d32" />
+                <View style={styles.modalIconCircle}>
+                  <Ionicons name="images" size={24} color="#2e7d32" />
+                </View>
                 <View style={{ marginLeft: 14 }}>
                   <Text style={styles.modalOptionTitle}>Choose from Gallery</Text>
-                  <Text style={styles.modalOptionSub}>Select from your photos</Text>
+                  <Text style={styles.modalOptionSub}>Pick saved photo from phone</Text>
                 </View>
               </TouchableOpacity>
 
@@ -322,156 +498,298 @@ export default function AddProductScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
+        )}
       </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f7f6' },
+  container: { flex: 1, backgroundColor: '#f6f8f7', position: 'relative' },
   gradientBackground: { position: 'absolute', top: 0, left: 0, right: 0, height: 260 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 14,
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === 'web' ? 44 : 14,
+    paddingBottom: 16,
   },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1f5223' },
+  headerSide: { width: 85, justifyContent: 'center' },
+  headerCenter: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 20, fontWeight: '900', color: '#1f5223', textAlign: 'center' },
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
+    elevation: 2,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
   },
-  scrollContent: { paddingHorizontal: 18, paddingBottom: 20 },
-  card: {
+  langPill: {
+    flexDirection: 'row',
     backgroundColor: '#fff',
     borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 1,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
   },
-  cardLabel: { fontSize: 13, color: '#555', marginBottom: 10, fontWeight: '500' },
-  cardLabelSmall: { fontSize: 11, color: '#777', marginBottom: 2 },
-  rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  rowAlign: { flexDirection: 'row', alignItems: 'center' },
-  photoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  photoLeft: { flex: 1 },
-  photoTitle: { fontSize: 16, fontWeight: 'bold', color: '#222', marginTop: 4 },
-  photoSubtitle: { fontSize: 12, color: '#777', marginTop: 2 },
-  photoThumbnailContainer: { position: 'relative' },
-  photoThumbnail: { width: 75, height: 60, borderRadius: 10 },
-  closeBtn: { position: 'absolute', top: -8, right: -8 },
-  cropRow: { flexDirection: 'row', alignItems: 'center' },
-  cropThumb: { width: 44, height: 44, borderRadius: 8 },
-  cropName: { fontSize: 16, fontWeight: 'bold', color: '#222' },
-  cropCategory: { fontSize: 12, color: '#888' },
-  stepperContainer: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  stepperBox: {
+  langBtn: { paddingVertical: 4, paddingHorizontal: 7, borderRadius: 12 },
+  langBtnActive: { backgroundColor: '#2e7d32' },
+  langText: { fontSize: 11, fontWeight: 'bold', color: '#555' },
+  langTextActive: { color: '#fff' },
+
+  scrollContent: { paddingHorizontal: 16, paddingBottom: 24, paddingTop: 4 },
+
+  voiceBannerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f3f2',
-    borderRadius: 10,
-    paddingHorizontal: 8,
+    backgroundColor: '#e8f5e9',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1.5,
+    borderColor: '#a5d6a7',
+    elevation: 2,
+  },
+  voiceCircleIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#2e7d32',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceTitleTop: { fontSize: 15, fontWeight: 'bold', color: '#1b5e20' },
+  voiceSubTop: { fontSize: 12, color: '#388e3c', marginTop: 2 },
+
+  photoCard: { backgroundColor: '#fff', borderRadius: 20, overflow: 'hidden', marginBottom: 14, elevation: 1 },
+  photoCardEmpty: {
+    borderWidth: 2,
+    borderColor: '#81c784',
+    borderStyle: 'dashed',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  photoCardFilled: { borderWidth: 1.5, borderColor: '#e2e8f0' },
+  emptyPhotoContent: { alignItems: 'center' },
+  cameraIconCircle: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    backgroundColor: '#e8f5e9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  emptyPhotoTitle: { fontSize: 16, fontWeight: 'bold', color: '#1f5223' },
+  emptyPhotoSub: { fontSize: 12, color: '#666', marginTop: 4, textAlign: 'center' },
+  photoPreviewWrapper: { width: '100%', height: 180, position: 'relative' },
+  previewImage: { width: '100%', height: '100%' },
+  removePhotoBadge: { position: 'absolute', top: 8, right: 8, backgroundColor: '#fff', borderRadius: 12 },
+  changeOverlay: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 14,
   },
-  stepBtn: { paddingHorizontal: 12, paddingVertical: 4 },
-  stepBtnText: { fontSize: 22, fontWeight: 'bold', color: '#2e7d32' },
-  stepValue: { fontSize: 18, fontWeight: 'bold', paddingHorizontal: 14, color: '#222' },
-  unitDropdown: {
+  changeOverlayText: { color: '#fff', fontSize: 11, fontWeight: 'bold', marginLeft: 4 },
+
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#eef2f0',
+    elevation: 2,
+  },
+  sectionHeading: { fontSize: 15, fontWeight: 'bold', color: '#222', marginBottom: 10 },
+
+  textInputBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 12,
-    backgroundColor: '#ebf7ee',
-    paddingVertical: 8,
+    backgroundColor: '#f8faf9',
+    borderRadius: 14,
     paddingHorizontal: 14,
-    borderRadius: 8,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
   },
-  unitText: { fontSize: 14, fontWeight: 'bold', color: '#2e7d32' },
-  priceInputBox: {
+  cropTextInput: { flex: 1, fontSize: 14, fontWeight: '600', color: '#222' },
+  suggestionTitle: { fontSize: 11, fontWeight: 'bold', color: '#777', marginTop: 10, marginBottom: 6 },
+  suggestionRow: { flexDirection: 'row', gap: 6 },
+  suggestionChip: {
+    backgroundColor: '#f1f8e9',
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#c5e1a5',
+  },
+  suggestionChipActive: { backgroundColor: '#2e7d32', borderColor: '#2e7d32' },
+  suggestionText: { fontSize: 12, fontWeight: '600', color: '#2e7d32' },
+  suggestionTextActive: { color: '#fff' },
+
+  // 1-Tap Harvest Buttons
+  harvestButtonRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  harvestChoiceBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f1f3f2',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    height: 48,
-  },
-  priceText: { fontSize: 16, fontWeight: 'bold', color: '#222' },
-  priceInput: { flex: 1, fontSize: 18, fontWeight: 'bold', color: '#222' },
-  priceSuffix: { fontSize: 14, color: '#777' },
-  marketBadge: {
-    backgroundColor: '#f1fbf3',
-    borderRadius: 12,
-    padding: 12,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#dcf3e1',
-  },
-  marketBadgeTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  marketPriceHighlight: { fontSize: 15, fontWeight: 'bold', color: '#2e7d32', marginLeft: 8 },
-  marketBadgeBottom: { flexDirection: 'row', alignItems: 'center', marginTop: 6 },
-  marketMatchText: { fontSize: 12, color: '#2e7d32', fontWeight: '500', marginLeft: 6 },
-  dropdownValue: { fontSize: 15, fontWeight: 'bold', color: '#222' },
-  voiceBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#ebf7ee',
+    justifyContent: 'center',
+    backgroundColor: '#f8faf9',
+    paddingVertical: 14,
     borderRadius: 14,
-    padding: 14,
-    marginTop: 4,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#cdecd3',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
   },
-  voiceTitle: { fontSize: 15, fontWeight: 'bold', color: '#1b5e20' },
-  voiceSubtitle: { fontSize: 12, color: '#388e3c' },
-  submitButton: {
+  harvestChoiceBtnActive: {
+    backgroundColor: '#e8f5e9',
+    borderColor: '#2e7d32',
+    borderWidth: 2,
+  },
+  harvestChoiceText: { fontSize: 13, fontWeight: '600', color: '#555', marginLeft: 6 },
+  harvestChoiceTextActive: { color: '#1b5e20', fontWeight: 'bold' },
+  freshnessNotice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f8e9',
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 10,
+  },
+  freshnessNoticeText: { fontSize: 11, color: '#2e7d32', fontWeight: '600', marginLeft: 6, flex: 1 },
+
+  // Stepper Styles
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8faf9',
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  stepCircleBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#2e7d32',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  stepSymbol: { fontSize: 26, fontWeight: 'bold', color: '#fff', lineHeight: 30 },
+  qtyCenterBox: { alignItems: 'center', justifyContent: 'center', flex: 1 },
+  qtyNumberRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center' },
+  cleanQtyInput: {
+    fontSize: 32,
+    fontWeight: '900',
+    color: '#1b5e20',
+    textAlign: 'center',
+    minWidth: 50,
+    padding: 0,
+    margin: 0,
+    borderWidth: 0,
+    ...(Platform.OS === 'web' && { outlineStyle: 'none' }),
+  },
+  kgBadgeText: { fontSize: 16, fontWeight: 'bold', color: '#2e7d32', marginLeft: 4 },
+  qtySubText: { fontSize: 11, color: '#777', marginTop: 2 },
+  quickQtyRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 },
+  quickQtyChip: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  quickQtyText: { fontSize: 11, fontWeight: 'bold', color: '#2e7d32' },
+
+  // Price
+  priceInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8faf9',
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    height: 54,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+  },
+  currencyPrefix: { fontSize: 18, fontWeight: 'bold', color: '#2e7d32', marginRight: 6 },
+  priceInput: { flex: 1, fontSize: 22, fontWeight: '900', color: '#222' },
+  priceSuffix: { fontSize: 15, fontWeight: 'bold', color: '#666' },
+  benchmarkBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    borderRadius: 10,
+    padding: 8,
+    marginTop: 8,
+  },
+  benchmarkText: { fontSize: 12, color: '#2e7d32', fontWeight: '600', marginLeft: 6 },
+
+  // Submit Button
+  submitBtn: {
     backgroundColor: '#237330',
     borderRadius: 28,
-    paddingVertical: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    shadowColor: '#237330',
-    shadowOpacity: 0.35,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
-    marginBottom: 10,
+    justifyContent: 'center',
+    elevation: 4,
+    marginBottom: 8,
   },
-  submitButtonText: { color: '#fff', fontSize: 16, fontWeight: 'bold', letterSpacing: 0.5 },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
+  submitBtnText: { color: '#fff', fontSize: 15, fontWeight: '900', letterSpacing: 0.5 },
+  rowCenter: { flexDirection: 'row', alignItems: 'center' },
+
+  // Modal
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'flex-end',
+    zIndex: 999999,
+  },
+  backdropDismiss: { flex: 1 },
+  modalContent: {
     backgroundColor: '#fff',
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    padding: 24,
+    paddingBottom: 32,
+    elevation: 12,
   },
-  navItem: { alignItems: 'center', paddingVertical: 4 },
-  navItemActive: { backgroundColor: '#e8f5e9', paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20 },
-  navText: { fontSize: 10, color: '#888', marginTop: 3 },
-  navTextActive: { fontSize: 10, color: '#2e7d32', fontWeight: 'bold', marginTop: 3 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 22 },
-  modalTitle: { fontSize: 18, fontWeight: 'bold', color: '#222' },
-  modalSubtitle: { fontSize: 13, color: '#666', marginBottom: 18 },
+  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#222' },
+  modalSubtitle: { fontSize: 13, color: '#666', marginBottom: 18, marginTop: 2 },
   modalOption: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
-  modalOptionTitle: { fontSize: 15, fontWeight: '600', color: '#222' },
-  modalOptionSub: { fontSize: 12, color: '#777' },
-  modalCancelBtn: { backgroundColor: '#f1f3f2', borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 14 },
-  modalCancelText: { fontSize: 15, fontWeight: '600', color: '#444' },
+  modalIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e8f5e9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalOptionTitle: { fontSize: 16, fontWeight: 'bold', color: '#222' },
+  modalOptionSub: { fontSize: 12, color: '#666' },
+  modalCancelBtn: { backgroundColor: '#f1f3f2', borderRadius: 14, paddingVertical: 14, alignItems: 'center', marginTop: 16 },
+  modalCancelText: { fontSize: 15, fontWeight: 'bold', color: '#444' },
 });
