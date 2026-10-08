@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -12,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { registerUser } from '../../services/api';
 
 const COPY = {
   en: {
@@ -23,14 +25,21 @@ const COPY = {
     fullName: 'Full Name',
     email: 'Email Address',
     phone: 'Phone Number',
+    location: 'Location',
     password: 'Password',
     confirmPassword: 'Confirm Password',
     createAccount: 'Create Account',
     haveAccount: 'Already have an account?',
     login: 'Log In',
     required: 'Please fill in all fields.',
+    invalidEmail: 'Enter a valid email address.',
+    shortPassword: 'Password must be at least 8 characters.',
     mismatch: 'Passwords do not match.',
-    notConnected: 'Account creation is not connected yet.',
+    duplicateEmail: 'An account with this email already exists.',
+    backendUnavailable: 'Cannot reach the server. Check your connection and try again.',
+    registrationFailed: 'Unable to create your account right now. Please try again.',
+    success: 'Your account has been created.',
+    continue: 'Continue',
   },
   si: {
     title: 'ඔබගේ ගිණුම සාදන්න',
@@ -41,14 +50,21 @@ const COPY = {
     fullName: 'සම්පූර්ණ නම',
     email: 'ඊමේල් ලිපිනය',
     phone: 'දුරකථන අංකය',
+    location: 'ස්ථානය',
     password: 'මුරපදය',
     confirmPassword: 'මුරපදය තහවුරු කරන්න',
     createAccount: 'ගිණුම සාදන්න',
     haveAccount: 'දැනටමත් ගිණුමක් තිබේද?',
     login: 'පිවිසෙන්න',
     required: 'කරුණාකර සියලුම ක්ෂේත්‍ර පුරවන්න.',
+    invalidEmail: 'වලංගු ඊමේල් ලිපිනයක් ඇතුළත් කරන්න.',
+    shortPassword: 'මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුය.',
     mismatch: 'මුරපද ගැළපෙන්නේ නැත.',
-    notConnected: 'ගිණුම් නිර්මාණය තවම සම්බන්ධ කර නැත.',
+    duplicateEmail: 'මෙම ඊමේල් ලිපිනයෙන් දැනටමත් ගිණුමක් ඇත.',
+    backendUnavailable: 'සේවාදායකයට සම්බන්ධ විය නොහැක. නැවත උත්සාහ කරන්න.',
+    registrationFailed: 'ගිණුම සෑදිය නොහැක. නැවත උත්සාහ කරන්න.',
+    success: 'ඔබගේ ගිණුම සාදා ඇත.',
+    continue: 'ඉදිරියට',
   },
   ta: {
     title: 'உங்கள் கணக்கை உருவாக்கவும்',
@@ -59,14 +75,21 @@ const COPY = {
     fullName: 'முழுப் பெயர்',
     email: 'மின்னஞ்சல் முகவரி',
     phone: 'தொலைபேசி எண்',
+    location: 'இடம்',
     password: 'கடவுச்சொல்',
     confirmPassword: 'கடவுச்சொல்லை உறுதிப்படுத்தவும்',
     createAccount: 'கணக்கை உருவாக்கு',
     haveAccount: 'ஏற்கனவே கணக்கு உள்ளதா?',
     login: 'உள்நுழைக',
     required: 'அனைத்து புலங்களையும் நிரப்பவும்.',
+    invalidEmail: 'சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்.',
+    shortPassword: 'கடவுச்சொல் குறைந்தது 8 எழுத்துகள் இருக்க வேண்டும்.',
     mismatch: 'கடவுச்சொற்கள் பொருந்தவில்லை.',
-    notConnected: 'கணக்கு உருவாக்கம் இன்னும் இணைக்கப்படவில்லை.',
+    duplicateEmail: 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது.',
+    backendUnavailable: 'சேவையகத்தை அணுக முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+    registrationFailed: 'கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+    success: 'உங்கள் கணக்கு உருவாக்கப்பட்டது.',
+    continue: 'தொடரவும்',
   },
 };
 
@@ -76,6 +99,7 @@ const INITIAL_FORM = {
   phone: '',
   password: '',
   confirmPassword: '',
+  location: '',
 };
 
 export default function RegistrationScreen({ navigation, route }) {
@@ -84,24 +108,85 @@ export default function RegistrationScreen({ navigation, route }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const copy = COPY[selectedLanguage] ?? COPY.en;
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
-  const submitForm = () => {
+  const showMessage = (title, message, onContinue) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+      onContinue?.();
+      return;
+    }
+    Alert.alert(title, message, onContinue ? [{ text: copy.continue, onPress: onContinue }] : undefined);
+  };
+
+  const submitForm = async () => {
+    if (isSubmitting) return;
+
     if (Object.values(form).some((value) => !value.trim())) {
-      Alert.alert(copy.createAccount, copy.required);
+      showMessage(copy.createAccount, copy.required);
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      showMessage(copy.createAccount, copy.invalidEmail);
+      return;
+    }
+
+    if (form.password.length < 8) {
+      showMessage(copy.createAccount, copy.shortPassword);
       return;
     }
 
     if (form.password !== form.confirmPassword) {
-      Alert.alert(copy.confirmPassword, copy.mismatch);
+      showMessage(copy.confirmPassword, copy.mismatch);
       return;
     }
 
-    Alert.alert(copy.createAccount, copy.notConnected);
+    setIsSubmitting(true);
+    try {
+      const result = await registerUser({
+        name: form.fullName.trim(),
+        email: form.email.trim().toLowerCase(),
+        phone: form.phone.trim(),
+        password: form.password,
+        role: selectedRole,
+        language: selectedLanguage,
+        location: form.location.trim(),
+      });
+      const responseUser = result.user ?? result;
+      const safeUser = {
+        id: responseUser.id ?? responseUser._id,
+        name: responseUser.name,
+        email: responseUser.email,
+        phone: responseUser.phone,
+        role: responseUser.role,
+        language: responseUser.language,
+        location: responseUser.location,
+      };
+      showMessage(copy.createAccount, copy.success, () =>
+        navigation.replace('ProfileScreen', { user: safeUser })
+      );
+    } catch (error) {
+      const status = error.response?.status;
+      let message = copy.registrationFailed;
+      if (status === 409 || error.response?.data?.code === 'EMAIL_EXISTS') {
+        message = copy.duplicateEmail;
+      } else if (status === 400) {
+        message = error.response.data.message || copy.required;
+      } else if (!error.response) {
+        message = copy.backendUnavailable;
+      } else if (error.response.data?.message) {
+        message = error.response.data.message;
+      }
+      showMessage(copy.createAccount, message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const renderField = ({
@@ -239,6 +324,13 @@ export default function RegistrationScreen({ navigation, route }) {
                 textContentType: 'telephoneNumber',
               })}
               {renderField({
+                field: 'location',
+                icon: 'map-marker-outline',
+                label: copy.location,
+                autoComplete: 'street-address',
+                textContentType: 'fullStreetAddress',
+              })}
+              {renderField({
                 field: 'password',
                 icon: 'lock-outline',
                 label: copy.password,
@@ -262,10 +354,16 @@ export default function RegistrationScreen({ navigation, route }) {
 
             <Pressable
               accessibilityRole="button"
+              accessibilityState={{ disabled: isSubmitting }}
+              disabled={isSubmitting}
               onPress={submitForm}
-              style={styles.createButton}
+              style={[styles.createButton, isSubmitting && styles.createButtonDisabled]}
             >
-              <Text style={styles.createButtonText}>{copy.createAccount}</Text>
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.createButtonText}>{copy.createAccount}</Text>
+              )}
             </Pressable>
 
             <View style={styles.loginPrompt}>
@@ -414,6 +512,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '700',
+  },
+  createButtonDisabled: {
+    opacity: 0.75,
   },
   loginPrompt: {
     alignItems: 'center',

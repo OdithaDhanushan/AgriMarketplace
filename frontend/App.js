@@ -29,6 +29,7 @@ import LanguageSelectionScreen from './src/screens/user-management/LanguageSelec
 import LoginScreen from './src/screens/user-management/LoginScreen';
 import RoleSelectionScreen from './src/screens/user-management/RoleSelectionScreen';
 import RegistrationScreen from './src/screens/user-management/RegistrationScreen';
+import ProfileScreen from './src/screens/user-management/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -69,6 +70,7 @@ export default function App() {
             <Stack.Screen name="LoginScreen" component={LoginScreen} />
             <Stack.Screen name="RoleSelectionScreen" component={RoleSelectionScreen} />
             <Stack.Screen name="RegistrationScreen" component={RegistrationScreen} />
+            <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </View>

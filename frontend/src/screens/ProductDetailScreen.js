@@ -94,10 +94,6 @@ export default function ProductDetailScreen({ route, navigation }) {
       return;
     }
 
-    setSellingPrice(newPriceNum);
-    setQuantity(newQtyNum);
-    setEditModalVisible(false);
-
     try {
       if (item._id && item._id.length === 24) {
         await api.put(`/produce/${item._id}`, {
@@ -105,10 +101,14 @@ export default function ProductDetailScreen({ route, navigation }) {
           quantityKg: newQtyNum,
         });
       }
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      Alert.alert('Unable to update listing', error.response?.data?.message || error.message);
+      return;
     }
 
+    setSellingPrice(newPriceNum);
+    setQuantity(newQtyNum);
+    setEditModalVisible(false);
     Alert.alert(
       '✅ Listing Updated!',
       `Your selling price is now Rs. ${newPriceNum} /kg\nAvailable Quantity: ${newQtyNum} kg`,
@@ -121,8 +121,9 @@ export default function ProductDetailScreen({ route, navigation }) {
       if (item._id && item._id.length === 24) {
         await api.delete(`/produce/${item._id}`);
       }
-    } catch (e) {
-      console.log(e);
+    } catch (error) {
+      Alert.alert('Unable to delete listing', error.response?.data?.message || error.message);
+      return;
     }
 
     if (Platform.OS === 'web') {
