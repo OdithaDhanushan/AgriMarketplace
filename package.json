@@ -1,0 +1,19 @@
+{
+  "name": "agrimarketplace",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "start": "npm --prefix frontend run start -- --host lan",
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run start -- --host lan\"",
+    "backend": "npm --prefix backend run dev",
+    "frontend": "npm --prefix frontend run start -- --host lan",
+    "install:all": "npm install --workspaces"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
