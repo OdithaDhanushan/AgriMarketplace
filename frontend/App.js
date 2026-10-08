@@ -23,6 +23,12 @@ import BuyerProductDetailScreen from './src/screens/buyer/ProductDetailScreen';
 import CheckoutScreen from './src/screens/buyer/CheckoutScreen';
 import OtpVerificationScreen from './src/screens/buyer/OtpVerificationScreen';
 import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
+import OnboardingScreen1 from './src/screens/user-management/OnboardingScreen1';
+import OnboardingScreen2 from './src/screens/user-management/OnboardingScreen2';
+import LanguageSelectionScreen from './src/screens/user-management/LanguageSelectionScreen';
+import LoginScreen from './src/screens/user-management/LoginScreen';
+import RoleSelectionScreen from './src/screens/user-management/RoleSelectionScreen';
+import RegistrationScreen from './src/screens/user-management/RegistrationScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -36,7 +42,7 @@ export default function App() {
         
         {/* SINGLE ENCLOSING ROOT TAG FOR NAVIGATION */}
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="MarketPrices">
+          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingScreen1">
             {/* Member 1 Farmer Screens */}
             <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
             <Stack.Screen name="AddProduct" component={AddProductScreen} />
@@ -55,6 +61,14 @@ export default function App() {
             <Stack.Screen name="Checkout" component={CheckoutScreen} />
             <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
             <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
+
+            {/* User Management Onboarding Screens */}
+            <Stack.Screen name="OnboardingScreen1" component={OnboardingScreen1} />
+            <Stack.Screen name="OnboardingScreen2" component={OnboardingScreen2} />
+            <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} />
+            <Stack.Screen name="LoginScreen" component={LoginScreen} />
+            <Stack.Screen name="RoleSelectionScreen" component={RoleSelectionScreen} />
+            <Stack.Screen name="RegistrationScreen" component={RegistrationScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </View>
