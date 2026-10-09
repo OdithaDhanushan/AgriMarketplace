@@ -11,35 +11,17 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-const MOCK_CART_ITEMS = [
-  { id: 'cart-tomatoes', name: 'Vine Tomatoes', category: 'Vegetables', unit: 'kg', unitPrice: 280, quantity: 2, farmer: 'Nimali Perera', image: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=500' },
-  { id: 'cart-papaya', name: 'Sweet Papaya', category: 'Fruits', unit: 'kg', unitPrice: 190, quantity: 1, farmer: 'Saman Jayawardena', image: 'https://images.unsplash.com/photo-1517282009859-f000ec3b26fe?w=500' },
-];
+import { useCart } from '../../context/CartContext';
 
 const DELIVERY_FEE = 250;
 
-export default function CartCheckoutScreen({ route, navigation }) {
-  const initialItems = route?.params?.cartItems?.length ? route.params.cartItems : MOCK_CART_ITEMS;
-  const [items, setItems] = useState(initialItems.map((item, index) => ({
-    ...item,
-    id: item.id || item._id || `route-item-${index}`,
-    unitPrice: Number(item.unitPrice ?? item.price ?? item.sellingPricePerKg ?? 0),
-    quantity: Math.max(1, Number(item.quantity || 1)),
-    image: item.image || item.photoUrl || 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=500',
-    unit: item.unit || 'kg',
-  })));
+export default function CartCheckoutScreen({ navigation }) {
+  const { items, updateQuantity, removeItem } = useCart();
   const [address, setAddress] = useState('24 Flower Road, Colombo 07');
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0), [items]);
   const deliveryFee = items.length ? DELIVERY_FEE : 0;
   const total = subtotal + deliveryFee;
-
-  const updateQuantity = (id, amount) => {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, quantity: Math.max(1, item.quantity + amount) } : item));
-  };
-
-  const removeItem = (id) => setItems((current) => current.filter((item) => item.id !== id));
 
   const confirmOrder = () => {
     if (items.length === 0) {
@@ -50,9 +32,31 @@ export default function CartCheckoutScreen({ route, navigation }) {
       Alert.alert('Delivery address needed', 'Enter a delivery address to continue.');
       return;
     }
-    Alert.alert('Order placed', `Your order for Rs. ${total.toLocaleString()} is confirmed. Payment is due on delivery.`, [
-      { text: 'Continue shopping', onPress: () => navigation.navigate('BuyerHome') },
-    ]);
+
+    const orderData = {
+      id: `SK${Math.floor(1000 + Math.random() * 9000)}`,
+      items: items.map((item) => ({
+        id: item.id,
+        name: item.name || item.cropName || 'Fresh Produce',
+        quantity: item.quantity,
+        unit: item.unit || 'kg',
+        unitPrice: item.unitPrice,
+        image: item.image,
+        farmer: item.farmer,
+      })),
+      itemName: items.length === 1 ? (items[0].name || items[0].cropName) : `${items[0].name || items[0].cropName} + ${items.length - 1} more`,
+      quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+      unit: items[0]?.unit || 'kg',
+      subtotal,
+      deliveryFee,
+      total,
+      deliveryAddress: address,
+      paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : 'Card Payment',
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      status: 'Confirmed',
+    };
+
+    navigation.navigate('OtpVerification', { order: orderData });
   };
 
   const renderCartItem = ({ item }) => (
@@ -88,7 +92,7 @@ export default function CartCheckoutScreen({ route, navigation }) {
         renderItem={renderCartItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<View style={styles.emptyCart}><Ionicons name="basket-outline" size={40} color={COLORS.green} /><Text style={styles.emptyTitle}>Your basket is empty</Text><Text style={styles.emptySubtitle}>Find something fresh from a local farm.</Text><TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('BuyerHome')} style={styles.shopButton}><Text style={styles.shopButtonText}>Browse produce</Text></TouchableOpacity></View>}
+        ListEmptyComponent={<View style={styles.emptyCart}><Ionicons name="basket-outline" size={40} color={COLORS.green} /><Text style={styles.emptyTitle}>Your basket is empty</Text><Text style={styles.emptySubtitle}>Find something fresh from a local farm.</Text><TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('Explore')} style={styles.shopButton}><Text style={styles.shopButtonText}>Browse produce</Text></TouchableOpacity></View>}
         ListFooterComponent={(
           <View>
             <Text style={styles.sectionTitle}>Delivery address</Text>
@@ -99,11 +103,56 @@ export default function CartCheckoutScreen({ route, navigation }) {
             </View>
 
             <Text style={styles.sectionTitle}>Payment method</Text>
-            <TouchableOpacity accessibilityRole="radio" accessibilityState={{ checked: paymentMethod === 'cod' }} onPress={() => setPaymentMethod('cod')} style={styles.paymentOption}>
+
+            {/* Cash on Delivery */}
+            <TouchableOpacity
+              accessibilityRole="radio"
+              accessibilityState={{ checked: paymentMethod === 'cod' }}
+              onPress={() => setPaymentMethod('cod')}
+              style={[styles.paymentOption, paymentMethod === 'cod' ? styles.paymentOptionActive : styles.paymentOptionInactive]}
+            >
               <View style={styles.cashIcon}><Ionicons name="cash-outline" size={22} color={COLORS.green} /></View>
-              <View style={styles.paymentCopy}><Text style={styles.paymentTitle}>Cash on Delivery</Text><Text style={styles.paymentSubtitle}>Pay when your order arrives</Text></View>
-              <View style={[styles.radioOuter, paymentMethod === 'cod' && styles.radioActive]}>{paymentMethod === 'cod' && <Ionicons name="checkmark" size={14} color={COLORS.white} />}</View>
+              <View style={styles.paymentCopy}>
+                <Text style={styles.paymentTitle}>Cash on Delivery (COD)</Text>
+                <Text style={styles.paymentSubtitle}>Pay in cash when your order arrives</Text>
+              </View>
+              <View style={[styles.radioOuter, paymentMethod === 'cod' && styles.radioActive]}>
+                {paymentMethod === 'cod' && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+              </View>
             </TouchableOpacity>
+
+            {/* Card Payment */}
+            <TouchableOpacity
+              accessibilityRole="radio"
+              accessibilityState={{ checked: paymentMethod === 'card' }}
+              onPress={() => setPaymentMethod('card')}
+              style={[styles.paymentOption, { marginTop: 10 }, paymentMethod === 'card' ? styles.paymentOptionActive : styles.paymentOptionInactive]}
+            >
+              <View style={[styles.cashIcon, { backgroundColor: '#E3F2FD' }]}>
+                <Ionicons name="card-outline" size={22} color="#1976D2" />
+              </View>
+              <View style={styles.paymentCopy}>
+                <Text style={styles.paymentTitle}>Card Payment</Text>
+                <Text style={styles.paymentSubtitle}>Visa, Mastercard, AMEX</Text>
+              </View>
+              <View style={[styles.radioOuter, paymentMethod === 'card' && styles.radioActive]}>
+                {paymentMethod === 'card' && <Ionicons name="checkmark" size={14} color={COLORS.white} />}
+              </View>
+            </TouchableOpacity>
+
+            {paymentMethod === 'card' && (
+              <View style={styles.cardDetailsBox}>
+                <View style={styles.cardRow}>
+                  <Ionicons name="shield-checkmark" size={16} color={COLORS.green} />
+                  <Text style={styles.cardSecureText}>Secure 256-bit Encrypted Card Payment</Text>
+                </View>
+                <View style={styles.cardMockInput}>
+                  <Ionicons name="card" size={18} color="#1976D2" />
+                  <Text style={styles.cardMockNumber}>•••• •••• •••• 4242</Text>
+                  <Text style={styles.cardBrandBadge}>VISA</Text>
+                </View>
+              </View>
+            )}
 
             <Text style={styles.sectionTitle}>Price summary</Text>
             <View style={styles.summaryBox}>
@@ -111,7 +160,10 @@ export default function CartCheckoutScreen({ route, navigation }) {
               <View style={styles.summaryRow}><Text style={styles.summaryLabel}>Delivery fee</Text><Text style={styles.summaryValue}>{items.length ? `Rs. ${deliveryFee.toLocaleString()}` : 'Rs. 0'}</Text></View>
               <View style={styles.summaryDivider} />
               <View style={styles.summaryRow}><Text style={styles.totalLabel}>Total amount</Text><Text style={styles.totalValue}>Rs. {total.toLocaleString()}</Text></View>
-              <Text style={styles.codNote}><Ionicons name="shield-checkmark-outline" size={14} color={COLORS.green} />  No payment needed until delivery</Text>
+              <Text style={styles.codNote}>
+                <Ionicons name={paymentMethod === 'cod' ? 'shield-checkmark-outline' : 'card-outline'} size={14} color={COLORS.green} />
+                {paymentMethod === 'cod' ? '  No payment needed until delivery' : '  Safe & encrypted card checkout'}
+              </Text>
             </View>
           </View>
         )}
@@ -155,7 +207,15 @@ const styles = StyleSheet.create({
   addressIcon: { width: 40, height: 46, alignItems: 'center', justifyContent: 'center' },
   addressInput: { flex: 1, minHeight: 56, paddingVertical: 9, color: COLORS.dark, fontSize: 13 },
   editAddressButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  paymentOption: { minHeight: 72, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.green, backgroundColor: COLORS.white },
+  paymentOption: { minHeight: 72, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 10, borderRadius: 10, borderWidth: 1.5, borderColor: COLORS.line, backgroundColor: COLORS.white },
+  paymentOptionActive: { borderColor: COLORS.green },
+  paymentOptionInactive: { borderColor: COLORS.line },
+  cardDetailsBox: { marginTop: 8, padding: 12, borderRadius: 10, borderWidth: 1, borderColor: '#BBDEFB', backgroundColor: '#F0F7FF', gap: 8 },
+  cardRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  cardSecureText: { color: COLORS.green, fontSize: 11, fontWeight: '700' },
+  cardMockInput: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: '#CFD8DC', backgroundColor: COLORS.white },
+  cardMockNumber: { color: COLORS.dark, fontSize: 14, fontWeight: '700', letterSpacing: 1 },
+  cardBrandBadge: { color: '#1976D2', fontSize: 12, fontWeight: '800' },
   cashIcon: { width: 43, height: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 9, backgroundColor: '#EAF5EB' },
   paymentCopy: { flex: 1 },
   paymentTitle: { color: COLORS.dark, fontSize: 14, fontWeight: '750' },

@@ -1,7 +1,8 @@
 import axios from 'axios';
+import Constants from 'expo-constants';
 
-// ✅ YOUR REAL LAPTOP IP:
-const BASE_URL = 'http://192.168.1.20:5000/api';
+const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0] || '10.100.108.143';
+const BASE_URL = `http://${debuggerHost}:5000/api`;
 
 const api = axios.create({
   baseURL: BASE_URL,

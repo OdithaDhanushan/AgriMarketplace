@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useCart } from '../../context/CartContext';
 
 const DEFAULT_ORDER = {
   id: 'SK1024',
@@ -19,8 +20,9 @@ const DEFAULT_ORDER = {
 };
 
 function OtpVerificationScreen({ route, navigation }) {
+  const { addOrder, clearCart } = useCart();
   const order = { ...DEFAULT_ORDER, ...(route?.params?.order || {}) };
-  const [code, setCode] = useState(['', '', '', '']);
+  const [code, setCode] = useState(['4', '8', '2', '7']);
   const inputs = useRef([]);
 
   const updateDigit = (value, index) => {
@@ -36,7 +38,17 @@ function OtpVerificationScreen({ route, navigation }) {
       inputs.current[code.findIndex((digit) => !digit)]?.focus();
       return;
     }
-    navigation.navigate('OrderConfirmed', { order });
+
+    const confirmedOrder = {
+      ...order,
+      otpCode: code.join(''),
+      status: 'Confirmed',
+    };
+
+    addOrder(confirmedOrder);
+    clearCart();
+
+    navigation.navigate('OrderConfirmed', { order: confirmedOrder });
   };
 
   return (
@@ -122,21 +134,6 @@ function OtpVerificationScreen({ route, navigation }) {
         >
           <Text style={styles.confirmText}>Confirm</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Bottom Tab Bar */}
-      <View style={styles.tabBar}>
-        {[
-          { name: 'Explore', icon: 'search', active: true },
-          { name: 'My Cart', icon: 'bag-outline', active: false },
-          { name: 'Orders', icon: 'receipt-outline', active: false },
-          { name: 'Profile', icon: 'person-outline', active: false },
-        ].map((tab) => (
-          <TouchableOpacity key={tab.name} style={styles.tabItem}>
-            <Ionicons name={tab.icon} size={22} color={tab.active ? COLORS.green : COLORS.muted} />
-            <Text style={[styles.tabLabel, tab.active && styles.tabLabelActive]}>{tab.name}</Text>
-          </TouchableOpacity>
-        ))}
       </View>
     </SafeAreaView>
   );
@@ -253,7 +250,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     backgroundColor: COLORS.background,
-    marginBottom: 64,
+    marginBottom: 16,
   },
   confirmButton: {
     minHeight: 52,
@@ -263,22 +260,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   confirmText: { color: COLORS.white, fontSize: 15, fontWeight: '700' },
-
-  // Tab Bar
-  tabBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 64,
-    flexDirection: 'row',
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
-  },
-  tabItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  tabLabel: { fontSize: 10, color: COLORS.muted, fontWeight: '600' },
-  tabLabelActive: { color: COLORS.green },
 });
 
 export default OtpVerificationScreen;

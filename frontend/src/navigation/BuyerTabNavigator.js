@@ -3,10 +3,11 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 
-import BuyerSearchScreen from '../screens/buyer/BuyerSearchScreen';
+import BuyerHomeScreen from '../screens/buyer/BuyerHomeScreen';
 import CartCheckoutScreen from '../screens/buyer/CartCheckoutScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
 import ProfileScreen from '../screens/buyer/ProfileScreen';
+import { useCart } from '../context/CartContext';
 
 const Tab = createBottomTabNavigator();
 const CartStack = createNativeStackNavigator();
@@ -28,12 +29,15 @@ const COLORS = {
 };
 
 export default function BuyerTabNavigator() {
+  const { totalCount } = useCart();
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: COLORS.green,
         tabBarInactiveTintColor: COLORS.muted,
+        tabBarBadge: route.name === 'My Cart' && totalCount > 0 ? totalCount : undefined,
         tabBarStyle: {
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.line,
@@ -57,7 +61,7 @@ export default function BuyerTabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Explore" component={BuyerSearchScreen} />
+      <Tab.Screen name="Explore" component={BuyerHomeScreen} />
       <Tab.Screen name="My Cart" component={CartStackNavigator} />
       <Tab.Screen name="Orders" component={OrdersScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />

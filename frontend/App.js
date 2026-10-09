@@ -16,12 +16,14 @@ import CheckoutScreen from './src/screens/buyer/CheckoutScreen';
 import OtpVerificationScreen from './src/screens/buyer/OtpVerificationScreen';
 import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
 import BuyerTabNavigator from './src/navigation/BuyerTabNavigator';
+import { CartProvider } from './src/context/CartContext';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   return (
-    <NavigationContainer>
+    <CartProvider>
+      <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="BuyerTabs">
         {/* Root tab navigator — hosts Explore, My Cart, Orders, Profile */}
         <Stack.Screen name="BuyerTabs" component={BuyerTabNavigator} />
@@ -42,5 +44,6 @@ export default function App() {
         <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
       </Stack.Navigator>
     </NavigationContainer>
+  </CartProvider>
   );
 }
