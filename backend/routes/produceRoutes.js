@@ -3,6 +3,7 @@ const router = express.Router();
 const produceController = require('../controllers/produceController');
 
 router.post('/', produceController.createProduce);
+router.post('/seed', produceController.seedProduce);
 router.get('/', produceController.getAllProduce);
 router.get('/:id', produceController.getProduceById);
 router.put('/:id', produceController.updateProduce);

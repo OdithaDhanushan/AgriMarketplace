@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -204,21 +204,21 @@ export default function MarketPricesScreen({ navigation }) {
   const [marketModalVisible, setMarketModalVisible] = useState(false);
   const [liveProduce, setLiveProduce] = useState([]);
 
+  const fetchProduce = React.useCallback(async () => {
+    try {
+      const res = await api.get('/produce');
+      setLiveProduce(res.data || []);
+    } catch (err) {
+      console.log('Notice: MongoDB produce fetch:', err.message);
+    }
+  }, []);
+
   // 🌟 Automatically re-fetches from MongoDB EVERY TIME screen opens!
   useFocusEffect(
     React.useCallback(() => {
       fetchProduce();
-    }, [])
+    }, [fetchProduce])
   );
-
-  const fetchProduce = async () => {
-    try {
-      const res = await api.get('/produce');
-      setLiveProduce(res.data || []); // 👈 Always updates the live list!
-    } catch (err) {
-      console.log('Notice: MongoDB produce fetch:', err.message);
-    }
-  };
 
   const currentData = REGIONAL_MARKET_DATA[selectedMarket] || REGIONAL_MARKET_DATA['Kurunegala Market'];
   const [activeDay, setActiveDay] = useState(currentData.weeklyTrend[6]);
@@ -298,7 +298,7 @@ export default function MarketPricesScreen({ navigation }) {
           <View style={styles.todayHeader}>
             <Ionicons name="calendar-outline" size={22} color="#333" />
             <View style={{ marginLeft: 10 }}>
-              <Text style={styles.todayTitle}>Today's market ({currentData.location})</Text>
+              <Text style={styles.todayTitle}>Today&apos;s market ({currentData.location})</Text>
               <Text style={styles.todayDate}>{getTodayFormattedDate()}</Text>
             </View>
           </View>
@@ -369,7 +369,7 @@ export default function MarketPricesScreen({ navigation }) {
             <View style={styles.tooltipBanner}>
               <View style={styles.rowAlign}>
                 <Ionicons name="information-circle-outline" size={16} color="#2e7d32" />
-                <Text style={styles.tooltipDayText}>{activeDay.day}'s Market Benchmark:</Text>
+                <Text style={styles.tooltipDayText}>{activeDay.day}&apos;s Market Benchmark:</Text>
               </View>
               <Text style={styles.tooltipPriceText}>
                 Rs. {activeDay.price} /kg <Text style={styles.tooltipChange}>({activeDay.change})</Text>

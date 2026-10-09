@@ -2,6 +2,7 @@ import React from 'react';
 import {
   FlatList,
   Image,
+  RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -22,7 +23,7 @@ const COLORS = {
 };
 
 export default function OrdersScreen({ navigation }) {
-  const { orders } = useCart();
+  const { orders, loadingOrders, fetchOrders } = useCart();
 
   const renderOrderItem = ({ item }) => {
     const hasItemsArray = Array.isArray(item.items) && item.items.length > 0;
@@ -139,6 +140,14 @@ export default function OrdersScreen({ navigation }) {
         renderItem={renderOrderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={Boolean(loadingOrders)}
+            onRefresh={fetchOrders}
+            colors={[COLORS.green]}
+            tintColor={COLORS.green}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <View style={styles.emptyIconWrap}>

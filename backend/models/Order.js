@@ -1,9 +1,14 @@
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
-  productName: { type: String, required: true, trim: true },
+  productName: { type: String, default: 'Fresh Produce', trim: true },
+  name: { type: String, trim: true },
   quantity: { type: Number, required: true, min: 0.01 },
-  pricePerKg: { type: Number, required: true, min: 0 }
+  pricePerKg: { type: Number, default: 0, min: 0 },
+  unitPrice: { type: Number, default: 0, min: 0 },
+  unit: { type: String, default: 'kg' },
+  image: { type: String, default: '' },
+  farmer: { type: String, default: '' }
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
@@ -25,6 +30,7 @@ const orderSchema = new mongoose.Schema({
   deliveryFee: { type: Number, default: 0, min: 0 },
   deliveryAddress: { type: String, required: true, trim: true },
   paymentMethod: { type: String, default: 'Cash on Delivery', trim: true },
+  userEmail: { type: String, trim: true, lowercase: true, default: '' },
   otpCode: {
     type: String,
     default: '4827',

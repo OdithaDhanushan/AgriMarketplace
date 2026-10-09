@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '../../context/AuthContext';
 
 const DEFAULT_PRODUCT = {
   id: 'carrot-01',
@@ -23,6 +24,7 @@ const DEFAULT_QUANTITY = 20;
 const DELIVERY_FEE = 1500;
 
 function CheckoutScreen({ route, navigation }) {
+  const { user } = useAuth();
   const product = route?.params?.product || DEFAULT_PRODUCT;
   const quantity = Number(route?.params?.quantity || DEFAULT_QUANTITY);
   const unitPrice = Number(product.price || DEFAULT_PRODUCT.price);
@@ -37,13 +39,14 @@ function CheckoutScreen({ route, navigation }) {
   const proceedToVerification = () =>
     navigation.navigate('OtpVerification', {
       order: {
-        id: 'SK1024',
+        id: `SK${Math.floor(1000 + Math.random() * 9000)}`,
         itemName: product.name || DEFAULT_PRODUCT.name,
         quantity,
         unit: product.unit || DEFAULT_PRODUCT.unit,
         total,
         paymentMethod: paymentMethod === 'cod' ? 'Cash on delivery' : 'Online card payment',
         address,
+        userEmail: user?.email || 'sahan@gmail.com',
         productImage: product.image || DEFAULT_PRODUCT.image,
       },
     });

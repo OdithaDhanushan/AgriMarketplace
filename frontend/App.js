@@ -25,6 +25,7 @@ import OtpVerificationScreen from './src/screens/buyer/OtpVerificationScreen';
 import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
 import BuyerTabNavigator from './src/navigation/BuyerTabNavigator';
 import { CartProvider } from './src/context/CartContext';
+import { AuthProvider } from './src/context/AuthContext';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,8 +33,9 @@ export default function App() {
   const isWeb = Platform.OS === 'web';
 
   return (
-    <CartProvider>
-      <View style={styles.webContainer}>
+    <AuthProvider>
+      <CartProvider>
+        <View style={styles.webContainer}>
         <View style={styles.phoneChassis}>
           {isWeb && <View style={styles.dynamicIsland} />}
           <NavigationContainer>
@@ -61,7 +63,8 @@ export default function App() {
         </View>
       </View>
     </CartProvider>
-  );
+  </AuthProvider>
+);
 }
 
 const styles = StyleSheet.create({

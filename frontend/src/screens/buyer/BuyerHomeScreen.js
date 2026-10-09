@@ -1,8 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   Modal,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -13,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
+import api from '../../services/api';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -29,92 +32,30 @@ const PRICE_OPTIONS = ['Any Price', 'Under Rs.200', 'Rs.200–500', 'Rs.500–10
 const RATING_OPTIONS = ['Any Rating', '3★+', '4★+', '4.5★+', '5★ only'];
 const SORT_OPTIONS = ['Nearest', 'Price: Low–High', 'Price: High–Low', 'Rating', 'Newest'];
 
-const MOCK_PRODUCE = [
-  {
-    id: 'produce-1',
-    name: 'Fresh Carrots',
-    category: 'Vegetables',
-    price: 280,
-    unit: 'kg',
-    farmer: "Sunil's Farm",
-    rating: 4.8,
-    distance: 5.0,
-    stock: 8,
-    image: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=400',
-  },
-  {
-    id: 'produce-2',
-    name: 'Organic Leeks',
-    category: 'Vegetables',
-    price: 340,
-    unit: 'kg',
-    farmer: 'Hill Country Organic',
-    rating: 4.9,
-    distance: 4.2,
-    stock: 5,
-    image: 'https://images.unsplash.com/photo-1518977676405-d12e10cce364?w=400',
-  },
-  {
-    id: 'produce-3',
-    name: 'Nuwara Eliya Potatoes',
-    category: 'Vegetables',
-    price: 210,
-    unit: 'kg',
-    farmer: 'Saman Farm Greens',
-    rating: 4.7,
-    distance: 6.5,
-    stock: 6,
-    image: 'https://images.unsplash.com/photo-1518977676405-d12e10cce364?w=400',
-  },
-  {
-    id: 'produce-4',
-    name: 'Fresh Nuwara Eliya Carrots',
-    category: 'Organic',
-    price: 320,
-    unit: 'kg',
-    farmer: 'Sunil Perera',
-    rating: 4.9,
-    distance: 6.1,
-    stock: 4,
-    image: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=400',
-  },
-  {
-    id: 'produce-5',
-    name: 'Organic Leeks',
-    category: 'Organic',
-    price: 355,
-    unit: 'kg',
-    farmer: 'Nimal Bandara',
-    rating: 4.8,
-    distance: 3.2,
-    stock: 7,
-    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400',
-  },
-  {
-    id: 'produce-6',
-    name: 'Red Nadu Rice',
-    category: 'Bulk',
-    price: 240,
-    unit: 'kg',
-    farmer: 'Kumara Bandara',
-    rating: 4.7,
-    distance: 8.3,
-    stock: 20,
-    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400',
-  },
-  {
-    id: 'produce-7',
-    name: 'Sweet Papaya',
-    category: 'Fruits',
-    price: 190,
-    unit: 'kg',
-    farmer: 'Saman Jayawardena',
-    rating: 4.8,
-    distance: 7.1,
-    stock: 10,
-    image: 'https://images.unsplash.com/photo-1517282009859-f000ec3b26fe?w=400',
-  },
-];
+const normalizeProduce = (p) => ({
+  id: p._id || `produce-${Math.random()}`,
+  _id: p._id,
+  name: p.cropName || 'Fresh Produce',
+  cropName: p.cropName || 'Fresh Produce',
+  category: p.category || 'Vegetables',
+  price: Number(p.sellingPricePerKg ?? p.price ?? 0),
+  marketPrice: Number(p.marketPricePerKg ?? p.sellingPricePerKg ?? p.price ?? 0),
+  unit: 'kg',
+  farmer: p.farmer || 'Local Farm',
+  farmerPhone: p.farmerPhone || '+94 77 123 4567',
+  rating: Number(p.rating || 4.8),
+  distance: Number(p.distanceKm || p.distance || 5.0),
+  stock: Number(p.quantityKg ?? p.stock ?? 10),
+  availableStock: Number(p.quantityKg ?? p.availableStock ?? 10),
+  minOrderQty: Number(p.minOrderQty || 1),
+  harvest: p.harvestDate ? `Harvested: ${p.harvestDate}` : 'Harvested recently',
+  locationBadge: `${p.location || 'Sri Lanka'} (${p.distanceKm || p.distance || 5}km away)`,
+  image: p.photoUrl || p.image || 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400',
+  photoUrl: p.photoUrl || p.image || 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=400',
+  description: p.description || '',
+  isSoldOut: Boolean(p.isSoldOut),
+  createdAt: p.createdAt,
+});
 
 // ─── Dropdown Component ───────────────────────────────────────────────────────
 
@@ -145,6 +86,10 @@ function DropdownModal({ visible, title, options, selected, onSelect, onClose })
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function BuyerHomeScreen({ navigation }) {
+  const [produceList, setProduceList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Produce');
   const [selectedCity, setSelectedCity] = useState('Colombo 07');
@@ -159,9 +104,35 @@ export default function BuyerHomeScreen({ navigation }) {
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
+  const fetchProduce = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      const res = await api.get('/produce');
+      let data = res.data;
+      if (Array.isArray(data) && data.length === 0) {
+        const seedRes = await api.post('/produce/seed');
+        data = seedRes.data?.list || [];
+      }
+      if (Array.isArray(data)) {
+        setProduceList(data.map(normalizeProduce));
+      }
+    } catch (err) {
+      console.log('Error fetching produce:', err?.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchProduce();
+  }, [fetchProduce]);
+
   const visibleProduce = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = MOCK_PRODUCE.filter((item) => {
+    let list = produceList.filter((item) => {
       const matchCat = selectedCategory === 'All Produce' || item.category === selectedCategory;
       const matchQ = !q || `${item.name} ${item.category} ${item.farmer}`.toLowerCase().includes(q);
 
@@ -193,7 +164,7 @@ export default function BuyerHomeScreen({ navigation }) {
     else if (selectedSort === 'Rating') list = [...list].sort((a, b) => b.rating - a.rating);
 
     return list;
-  }, [query, selectedCategory, selectedRadius, selectedPrice, selectedRating, selectedSort]);
+  }, [produceList, query, selectedCategory, selectedRadius, selectedPrice, selectedRating, selectedSort]);
 
   const { addToCart } = useCart();
 
@@ -208,15 +179,21 @@ export default function BuyerHomeScreen({ navigation }) {
       style={styles.productCard}
       onPress={() => navigation.navigate('ProduceDetail', { item })}
     >
-      <Image source={{ uri: item.image }} style={styles.productImage} />
+      {item.image ? (
+        <Image source={{ uri: item.image }} style={styles.productImage} />
+      ) : (
+        <View style={[styles.productImage, styles.placeholderImg]}>
+          <Ionicons name="leaf" size={28} color={COLORS.green} />
+        </View>
+      )}
       <View style={styles.productContent}>
         <View style={styles.productMeta}>
           <View style={styles.distanceBadge}>
             <Text style={styles.distanceText}>{item.distance}km away</Text>
           </View>
-          <Text style={styles.farmerName}>{item.farmer}</Text>
+          <Text numberOfLines={1} style={styles.farmerName}>{item.farmer}</Text>
         </View>
-        <Text style={styles.productName}>{item.name}</Text>
+        <Text numberOfLines={1} style={styles.productName}>{item.name}</Text>
         <View style={styles.productPriceRow}>
           <Text style={styles.price}>Rs. {item.price.toLocaleString()} <Text style={styles.priceUnit}>/{item.unit}</Text></Text>
           <View style={styles.ratingBadge}>
@@ -326,15 +303,30 @@ export default function BuyerHomeScreen({ navigation }) {
       {/* ── Product List ── */}
       <FlatList
         data={visibleProduce}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => String(item.id || item._id)}
         renderItem={renderProduce}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchProduce(true)}
+            colors={[COLORS.green]}
+            tintColor={COLORS.green}
+          />
+        }
         ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Ionicons name="leaf-outline" size={36} color={COLORS.muted} />
-            <Text style={styles.emptyText}>No produce found matching your filters.</Text>
-          </View>
+          loading ? (
+            <View style={styles.emptyWrap}>
+              <ActivityIndicator size="large" color={COLORS.green} />
+              <Text style={styles.emptyText}>Loading fresh produce from farmers...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyWrap}>
+              <Ionicons name="leaf-outline" size={36} color={COLORS.muted} />
+              <Text style={styles.emptyText}>No produce found matching your filters.</Text>
+            </View>
+          )
         }
       />
 
@@ -511,6 +503,7 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   productImage: { width: 90, height: 90, backgroundColor: '#E5ECE6' },
+  placeholderImg: { justifyContent: 'center', alignItems: 'center' },
   productContent: { flex: 1, paddingVertical: 10, paddingHorizontal: 10 },
   productMeta: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
   distanceBadge: {

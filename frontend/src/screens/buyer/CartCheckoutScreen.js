@@ -12,11 +12,13 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 
 const DELIVERY_FEE = 250;
 
 export default function CartCheckoutScreen({ navigation }) {
   const { items, updateQuantity, removeItem } = useCart();
+  const { user } = useAuth();
   const [address, setAddress] = useState('24 Flower Road, Colombo 07');
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const subtotal = useMemo(() => items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0), [items]);
@@ -52,6 +54,7 @@ export default function CartCheckoutScreen({ navigation }) {
       total,
       deliveryAddress: address,
       paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : 'Card Payment',
+      userEmail: user?.email || 'sahan@gmail.com',
       date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: 'Confirmed',
     };
