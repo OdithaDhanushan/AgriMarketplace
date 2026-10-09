@@ -182,7 +182,8 @@ export default function AddProductScreen({ route, navigation }) {
       navigation.navigate('ProductAddedSuccess');
     } catch (error) {
       setLoading(false);
-      navigation.navigate('ProductAddedSuccess');
+      const message = error.response?.data?.message || error.message || 'Please try again.';
+      Alert.alert('Unable to post product', message);
     }
   };
 

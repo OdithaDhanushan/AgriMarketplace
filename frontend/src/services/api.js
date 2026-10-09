@@ -1,8 +1,10 @@
 import axios from 'axios';
 import Constants from 'expo-constants';
 
-const debuggerHost = Constants.expoConfig?.hostUri?.split(':')[0] || '10.100.108.143';
-const BASE_URL = `http://${debuggerHost}:5000/api`;
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
+  (Platform.OS === 'web'
+    ? 'http://localhost:5000/api'
+    : 'http://192.168.1.29:5000/api');
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -16,6 +18,11 @@ export const createProduce = async (produceData) => {
 
 export const getProduceList = async () => {
   const response = await api.get('/produce');
+  return response.data;
+};
+
+export const registerUser = async (userData) => {
+  const response = await api.post('/users/register', userData);
   return response.data;
 };
 

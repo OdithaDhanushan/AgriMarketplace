@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,18 +17,20 @@ import api from '../services/api';
 export default function FarmerDashboardScreen({ navigation }) {
   const [myProduce, setMyProduce] = useState([]);
 
-  useEffect(() => {
-    fetchMyProduce();
-  }, []);
-
-  const fetchMyProduce = async () => {
+  const fetchMyProduce = useCallback(async () => {
     try {
-      const res = await api.get('/produce');
-      if (res.data) setMyProduce(res.data);
+      return await api.get('/produce');
     } catch (e) {
       console.log('Dashboard fetch error:', e.message);
+      return null;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchMyProduce().then((res) => {
+      if (res?.data) setMyProduce(res.data);
+    });
+  }, [fetchMyProduce]);
 
   return (
     <View style={styles.container}>

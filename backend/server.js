@@ -12,6 +12,14 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'AgriMarketplace Backend Running Successfully!' });
 });
 
+app.get('/health', (req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({
+    status: connected ? 'ok' : 'unavailable',
+    database: connected ? 'connected' : 'disconnected',
+  });
+});
+
 const produceRoutes = require('./routes/produceRoutes');
 app.use('/api/produce', produceRoutes);
 app.use('/api/products', require('./routes/productRoutes'));
@@ -46,20 +54,24 @@ app.use((error, req, res, next) => {
   return res.status(500).json({ message: 'Internal server error.' });
 });
 
+const userRoutes = require('./routes/userRoutes');
+app.use('/api/users', userRoutes);
+const User = require('./models/User');
+
 const PORT = process.env.PORT || 5000;
 
-async function startServer() {
-  await connectDB();
-  return app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-}
+const startServer = async () => {
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI is required. Set it in backend/.env.');
+  }
 
-if (require.main === module) {
-  startServer().catch((error) => {
-    console.error('Unable to start server:', error.message);
-    process.exitCode = 1;
-  });
-}
+  await mongoose.connect(process.env.MONGO_URI);
+  await User.init();
+  console.log('MongoDB connected.');
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+};
 
-module.exports = { app, startServer };
+startServer().catch((error) => {
+  console.error('Unable to start backend:', error.message);
+  process.exit(1);
+});
