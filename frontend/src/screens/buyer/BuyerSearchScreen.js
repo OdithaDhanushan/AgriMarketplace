@@ -112,7 +112,7 @@ function BuyerSearchScreen({ navigation }) {
         <TouchableOpacity accessibilityRole="button" accessibilityLabel="Saved farmers" onPress={() => navigation.navigate('MyFarmers')} style={styles.iconButton}>
           <Ionicons name="heart-outline" size={22} color={COLORS.dark} />
         </TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open cart" onPress={() => navigation.navigate('CartCheckout')} style={styles.iconButton}>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Open cart" onPress={() => navigation.navigate('My Cart')} style={styles.iconButton}>
           <Ionicons name="bag-outline" size={22} color={COLORS.dark} />
         </TouchableOpacity>
       </View>
@@ -148,11 +148,6 @@ function BuyerSearchScreen({ navigation }) {
       {viewMode === 'List' ? (
         <FlatList data={products} keyExtractor={(item) => item.id} renderItem={renderProduct} contentContainerStyle={styles.productList} showsVerticalScrollIndicator={false} ListEmptyComponent={<Text style={styles.emptyText}>No products match these filters.</Text>} />
       ) : renderMap()}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity accessibilityRole="button" accessibilityState={{ selected: true }} style={styles.navItem}><Ionicons name="search" size={20} color={COLORS.green} /><Text style={styles.navTextActive}>Explore</Text></TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('MyFarmers')} style={styles.navItem}><Ionicons name="heart-outline" size={20} color={COLORS.muted} /><Text style={styles.navText}>Farmers</Text></TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" onPress={() => navigation.navigate('CartCheckout')} style={styles.navItem}><Ionicons name="bag-outline" size={20} color={COLORS.muted} /><Text style={styles.navText}>Cart</Text></TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }

@@ -104,7 +104,7 @@ export default function FarmerDashboardScreen({ navigation }) {
                 key={item._id}
                 style={styles.inventoryItem}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('ProductDetail', { item })}
+                onPress={() => navigation.navigate('SellerProductDetail', { item })}
               >
                 <Image source={{ uri: item.photoUrl }} style={styles.invThumb} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
