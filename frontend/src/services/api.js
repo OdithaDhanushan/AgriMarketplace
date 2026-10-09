@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'web'
@@ -8,7 +8,7 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
 
 const api = axios.create({
   baseURL: BASE_URL,
-  timeout: 8000,
+  timeout: 10000,
 });
 
 export const createProduce = async (produceData) => {

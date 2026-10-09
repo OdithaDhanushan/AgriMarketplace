@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import {
   FlatList,
   Image,
+  Modal,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -11,246 +12,570 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useCart } from '../../context/CartContext';
 
-const CATEGORIES = ['All', 'Vegetables', 'Fruits', 'Rice', 'Spices'];
+// ─── Constants ───────────────────────────────────────────────────────────────
+
+const CITIES = [
+  'Colombo 01', 'Colombo 03', 'Colombo 05', 'Colombo 07',
+  'Colombo 10', 'Kandy', 'Galle', 'Negombo', 'Kurunegala',
+  'Jaffna', 'Matara', 'Anuradhapura',
+];
+
+const CATEGORIES = ['All Produce', 'Vegetables', 'Fruits', 'Organic', 'Bulk'];
+
+const RADIUS_OPTIONS = ['5km', '10km', '20km', '50km', '100km'];
+const PRICE_OPTIONS = ['Any Price', 'Under Rs.200', 'Rs.200–500', 'Rs.500–1000', 'Above Rs.1000'];
+const RATING_OPTIONS = ['Any Rating', '3★+', '4★+', '4.5★+', '5★ only'];
+const SORT_OPTIONS = ['Nearest', 'Price: Low–High', 'Price: High–Low', 'Rating', 'Newest'];
 
 const MOCK_PRODUCE = [
   {
     id: 'produce-1',
-    name: 'Vine Tomatoes',
+    name: 'Fresh Carrots',
     category: 'Vegetables',
     price: 280,
-    marketPrice: 330,
     unit: 'kg',
-    harvested: '5 hours ago',
-    farmer: 'Nimali Perera',
-    rating: 4.9,
-    location: 'Dambulla',
-    image: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=900',
+    farmer: "Sunil's Farm",
+    rating: 4.8,
+    distance: 5.0,
+    stock: 8,
+    image: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=400',
   },
   {
     id: 'produce-2',
-    name: 'Sweet Papaya',
-    category: 'Fruits',
-    price: 190,
-    marketPrice: 220,
+    name: 'Organic Leeks',
+    category: 'Vegetables',
+    price: 340,
     unit: 'kg',
-    harvested: '3 hours ago',
-    farmer: 'Saman Jayawardena',
-    rating: 4.8,
-    location: 'Kurunegala',
-    image: 'https://images.unsplash.com/photo-1517282009859-f000ec3b26fe?w=900',
+    farmer: 'Hill Country Organic',
+    rating: 4.9,
+    distance: 4.2,
+    stock: 5,
+    image: 'https://images.unsplash.com/photo-1518977676405-d12e10cce364?w=400',
   },
   {
     id: 'produce-3',
-    name: 'Red Nadu Rice',
-    category: 'Rice',
-    price: 240,
-    marketPrice: 260,
+    name: 'Nuwara Eliya Potatoes',
+    category: 'Vegetables',
+    price: 210,
     unit: 'kg',
-    harvested: '2 days ago',
-    farmer: 'Kumara Bandara',
+    farmer: 'Saman Farm Greens',
     rating: 4.7,
-    location: 'Polonnaruwa',
-    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=900',
+    distance: 6.5,
+    stock: 6,
+    image: 'https://images.unsplash.com/photo-1518977676405-d12e10cce364?w=400',
   },
   {
     id: 'produce-4',
-    name: 'Ceylon Cinnamon',
-    category: 'Spices',
-    price: 720,
-    marketPrice: 850,
-    unit: '250 g',
-    harvested: '1 day ago',
-    farmer: 'Anula Fernando',
-    rating: 5.0,
-    location: 'Matale',
-    image: 'https://images.unsplash.com/photo-1603905179139-d6e3a4b4e7a9?w=900',
+    name: 'Fresh Nuwara Eliya Carrots',
+    category: 'Organic',
+    price: 320,
+    unit: 'kg',
+    farmer: 'Sunil Perera',
+    rating: 4.9,
+    distance: 6.1,
+    stock: 4,
+    image: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=400',
+  },
+  {
+    id: 'produce-5',
+    name: 'Organic Leeks',
+    category: 'Organic',
+    price: 355,
+    unit: 'kg',
+    farmer: 'Nimal Bandara',
+    rating: 4.8,
+    distance: 3.2,
+    stock: 7,
+    image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400',
+  },
+  {
+    id: 'produce-6',
+    name: 'Red Nadu Rice',
+    category: 'Bulk',
+    price: 240,
+    unit: 'kg',
+    farmer: 'Kumara Bandara',
+    rating: 4.7,
+    distance: 8.3,
+    stock: 20,
+    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400',
+  },
+  {
+    id: 'produce-7',
+    name: 'Sweet Papaya',
+    category: 'Fruits',
+    price: 190,
+    unit: 'kg',
+    farmer: 'Saman Jayawardena',
+    rating: 4.8,
+    distance: 7.1,
+    stock: 10,
+    image: 'https://images.unsplash.com/photo-1517282009859-f000ec3b26fe?w=400',
   },
 ];
 
-const formatPrice = (amount) => `Rs. ${amount.toLocaleString()}`;
+// ─── Dropdown Component ───────────────────────────────────────────────────────
+
+function DropdownModal({ visible, title, options, selected, onSelect, onClose }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={onClose}>
+        <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>{title}</Text>
+          {options.map((option) => (
+            <TouchableOpacity
+              key={option}
+              onPress={() => { onSelect(option); onClose(); }}
+              style={[styles.modalOption, selected === option && styles.modalOptionSelected]}
+            >
+              <Text style={[styles.modalOptionText, selected === option && styles.modalOptionTextSelected]}>
+                {option}
+              </Text>
+              {selected === option && <Ionicons name="checkmark" size={16} color={COLORS.green} />}
+            </TouchableOpacity>
+          ))}
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function BuyerHomeScreen({ navigation }) {
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedCategory, setSelectedCategory] = useState('All Produce');
+  const [selectedCity, setSelectedCity] = useState('Colombo 07');
+  const [selectedRadius, setSelectedRadius] = useState('20km');
+  const [selectedPrice, setSelectedPrice] = useState('Any Price');
+  const [selectedRating, setSelectedRating] = useState('4★+');
+  const [selectedSort, setSelectedSort] = useState('Nearest');
+
+  const [cityModalVisible, setCityModalVisible] = useState(false);
+  const [radiusModalVisible, setRadiusModalVisible] = useState(false);
+  const [priceModalVisible, setPriceModalVisible] = useState(false);
+  const [ratingModalVisible, setRatingModalVisible] = useState(false);
+  const [sortModalVisible, setSortModalVisible] = useState(false);
 
   const visibleProduce = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-    return MOCK_PRODUCE.filter((item) => {
-      const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-      const matchesQuery = !normalizedQuery || `${item.name} ${item.category} ${item.farmer}`.toLowerCase().includes(normalizedQuery);
-      return matchesCategory && matchesQuery;
-    });
-  }, [query, selectedCategory]);
+    const q = query.trim().toLowerCase();
+    let list = MOCK_PRODUCE.filter((item) => {
+      const matchCat = selectedCategory === 'All Produce' || item.category === selectedCategory;
+      const matchQ = !q || `${item.name} ${item.category} ${item.farmer}`.toLowerCase().includes(q);
 
-  const renderProduce = ({ item }) => {
-    const savingsPercent = Math.round(((item.marketPrice - item.price) / item.marketPrice) * 100);
-    return (
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityLabel={`View ${item.name} from ${item.farmer}`}
-        activeOpacity={0.88}
-        style={styles.productCard}
-        onPress={() => navigation.navigate('ProduceDetail', { item })}
-      >
-        <Image source={{ uri: item.image }} style={styles.productImage} />
-        <View style={styles.productContent}>
-          <View style={styles.productHeading}>
-            <View style={styles.titleGroup}>
-              <Text numberOfLines={1} style={styles.productName}>{item.name}</Text>
-              <Text style={styles.categoryLabel}>{item.category}</Text>
-            </View>
-            <View style={styles.priceGroup}>
-              <Text style={styles.price}>{formatPrice(item.price)}</Text>
-              <Text style={styles.priceUnit}>/ {item.unit}</Text>
-            </View>
+      // Price filter
+      let matchPrice = true;
+      if (selectedPrice === 'Under Rs.200') matchPrice = item.price < 200;
+      else if (selectedPrice === 'Rs.200–500') matchPrice = item.price >= 200 && item.price <= 500;
+      else if (selectedPrice === 'Rs.500–1000') matchPrice = item.price > 500 && item.price <= 1000;
+      else if (selectedPrice === 'Above Rs.1000') matchPrice = item.price > 1000;
+
+      // Rating filter
+      let matchRating = true;
+      if (selectedRating === '3★+') matchRating = item.rating >= 3;
+      else if (selectedRating === '4★+') matchRating = item.rating >= 4;
+      else if (selectedRating === '4.5★+') matchRating = item.rating >= 4.5;
+      else if (selectedRating === '5★ only') matchRating = item.rating === 5;
+
+      // Radius filter (distance in km)
+      const radiusVal = parseFloat(selectedRadius);
+      const matchRadius = item.distance <= radiusVal;
+
+      return matchCat && matchQ && matchPrice && matchRating && matchRadius;
+    });
+
+    // Sort
+    if (selectedSort === 'Nearest') list = [...list].sort((a, b) => a.distance - b.distance);
+    else if (selectedSort === 'Price: Low–High') list = [...list].sort((a, b) => a.price - b.price);
+    else if (selectedSort === 'Price: High–Low') list = [...list].sort((a, b) => b.price - a.price);
+    else if (selectedSort === 'Rating') list = [...list].sort((a, b) => b.rating - a.rating);
+
+    return list;
+  }, [query, selectedCategory, selectedRadius, selectedPrice, selectedRating, selectedSort]);
+
+  const { addToCart } = useCart();
+
+  const handleAddToCart = (item) => {
+    addToCart(item, 1);
+    navigation.navigate('My Cart');
+  };
+
+  const renderProduce = ({ item }) => (
+    <TouchableOpacity
+      activeOpacity={0.88}
+      style={styles.productCard}
+      onPress={() => navigation.navigate('ProduceDetail', { item })}
+    >
+      <Image source={{ uri: item.image }} style={styles.productImage} />
+      <View style={styles.productContent}>
+        <View style={styles.productMeta}>
+          <View style={styles.distanceBadge}>
+            <Text style={styles.distanceText}>{item.distance}km away</Text>
           </View>
-          <View style={styles.savingsBadge}>
-            <Ionicons name="trending-down" size={15} color={COLORS.green} />
-            <Text style={styles.savingsText}>{savingsPercent}% lower than market</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.mutedMeta}><Ionicons name="time-outline" size={14} color={COLORS.muted} />  Harvested {item.harvested}</Text>
-            <Text style={styles.rating}><Ionicons name="star" size={14} color="#E5A500" /> {item.rating.toFixed(1)}</Text>
-          </View>
-          <View style={styles.farmerRow}>
-            <View style={styles.farmerAvatar}><Ionicons name="person" size={15} color={COLORS.green} /></View>
-            <Text style={styles.farmerName}>{item.farmer}</Text>
-            <Text style={styles.farmerLocation}>{item.location}</Text>
-            <Ionicons name="chevron-forward" size={17} color={COLORS.muted} />
+          <Text style={styles.farmerName}>{item.farmer}</Text>
+        </View>
+        <Text style={styles.productName}>{item.name}</Text>
+        <View style={styles.productPriceRow}>
+          <Text style={styles.price}>Rs. {item.price.toLocaleString()} <Text style={styles.priceUnit}>/{item.unit}</Text></Text>
+          <View style={styles.ratingBadge}>
+            <Ionicons name="star" size={12} color="#E5A500" />
+            <Text style={styles.ratingText}>{item.rating}</Text>
           </View>
         </View>
+      </View>
+      <TouchableOpacity
+        style={styles.addButton}
+        accessibilityRole="button"
+        accessibilityLabel={`Add ${item.name} to cart`}
+        onPress={() => handleAddToCart(item)}
+      >
+        <Ionicons name="add" size={20} color={COLORS.white} />
       </TouchableOpacity>
-    );
-  };
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.screen}>
+
+      {/* ── Header ── */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.appTitle}>Field & Fork</Text>
-          <View style={styles.locationRow}>
-            <Ionicons name="location" size={15} color={COLORS.green} />
-            <Text style={styles.locationText}>Delivering to Colombo 07</Text>
-            <Ionicons name="chevron-down" size={15} color={COLORS.dark} />
-          </View>
+          <Text style={styles.appTitle}>AgriDirect</Text>
+          <Text style={styles.appSubtitle}>RESTAURANT B2B PORTAL</Text>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="My farmers"
-            style={styles.headerButton}
-            onPress={() => navigation.navigate('MyFarmers')}
-          >
-            <Ionicons name="heart-outline" size={22} color={COLORS.dark} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            accessibilityRole="button"
-            accessibilityLabel="Open cart"
-            style={styles.headerButton}
-            onPress={() => navigation.navigate('CartCheckout')}
-          >
-            <Ionicons name="bag-outline" size={23} color={COLORS.dark} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.locationPill} onPress={() => setCityModalVisible(true)}>
+          <Ionicons name="location" size={13} color={COLORS.green} />
+          <Text style={styles.locationPillText}>{selectedCity}</Text>
+          <Ionicons name="chevron-down" size={13} color={COLORS.dark} />
+        </TouchableOpacity>
       </View>
 
+      {/* ── Search Bar ── */}
       <View style={styles.searchBox}>
-        <Ionicons name="search" size={20} color={COLORS.muted} />
+        <Ionicons name="search" size={18} color={COLORS.muted} />
         <TextInput
-          accessibilityLabel="Search produce"
-          placeholder="Search fresh produce or farmers"
-          placeholderTextColor="#8A938C"
-          returnKeyType="search"
+          placeholder="Search carrots, leeks, tomatoes..."
+          placeholderTextColor="#9AA09C"
           style={styles.searchInput}
           value={query}
           onChangeText={setQuery}
+          returnKeyType="search"
         />
-        {query.length > 0 && (
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setQuery('')} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={19} color={COLORS.muted} />
+        {query.length > 0 ? (
+          <TouchableOpacity onPress={() => setQuery('')}>
+            <Ionicons name="close-circle" size={18} color={COLORS.muted} />
           </TouchableOpacity>
+        ) : (
+          <Ionicons name="mic" size={18} color={COLORS.green} />
         )}
       </View>
 
+      {/* ── Category Chips ── */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
-        {CATEGORIES.map((category) => {
-          const selected = category === selectedCategory;
+        {CATEGORIES.map((cat) => {
+          const selected = cat === selectedCategory;
           return (
             <TouchableOpacity
-              key={category}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => setSelectedCategory(category)}
+              key={cat}
+              onPress={() => setSelectedCategory(cat)}
               style={[styles.categoryChip, selected && styles.categoryChipSelected]}
             >
-              <Text style={[styles.categoryChipText, selected && styles.categoryChipTextSelected]}>{category}</Text>
+              <Text style={[styles.categoryChipText, selected && styles.categoryChipTextSelected]}>{cat}</Text>
             </TouchableOpacity>
           );
         })}
       </ScrollView>
 
-      <View style={styles.sectionHeading}>
-        <View>
-          <Text style={styles.sectionTitle}>Fresh from the farm</Text>
-          <Text style={styles.sectionSubtitle}>{visibleProduce.length} local picks for you</Text>
-        </View>
-        <Ionicons name="leaf-outline" size={22} color={COLORS.green} />
+      {/* ── Filter Row ── */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+        <TouchableOpacity style={styles.filterChip} onPress={() => setRadiusModalVisible(true)}>
+          <Text style={styles.filterChipText}>Radius: {selectedRadius}</Text>
+          <Ionicons name="chevron-down" size={12} color={COLORS.dark} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterChip} onPress={() => setPriceModalVisible(true)}>
+          <Text style={styles.filterChipText}>{selectedPrice === 'Any Price' ? 'Price Range' : selectedPrice}</Text>
+          <Ionicons name="chevron-down" size={12} color={COLORS.dark} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.filterChip} onPress={() => setRatingModalVisible(true)}>
+          <Text style={styles.filterChipText}>Rating {selectedRating}</Text>
+          <Ionicons name="chevron-down" size={12} color={COLORS.dark} />
+        </TouchableOpacity>
+      </ScrollView>
+
+      {/* ── Results Info Row ── */}
+      <View style={styles.resultsRow}>
+        <Text style={styles.resultsText}>Showing {visibleProduce.length} products near you</Text>
+        <TouchableOpacity onPress={() => setSortModalVisible(true)}>
+          <Text style={styles.sortText}>Sort: {selectedSort}</Text>
+        </TouchableOpacity>
       </View>
 
+      {/* ── Section Header ── */}
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>Nearby Fresh Produce</Text>
+          <Text style={styles.sectionSubtitle}>{visibleProduce.length} suppliers found near {selectedCity}</Text>
+        </View>
+        <TouchableOpacity style={styles.sortDistanceBtn} onPress={() => setSortModalVisible(true)}>
+          <Text style={styles.sortDistanceBtnText}>Sort: Distance</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Product List ── */}
       <FlatList
         data={visibleProduce}
         keyExtractor={(item) => item.id}
         renderItem={renderProduce}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<Text style={styles.emptyText}>No produce matches that search.</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyWrap}>
+            <Ionicons name="leaf-outline" size={36} color={COLORS.muted} />
+            <Text style={styles.emptyText}>No produce found matching your filters.</Text>
+          </View>
+        }
+      />
+
+      {/* ── Dropdowns ── */}
+      <DropdownModal
+        visible={cityModalVisible}
+        title="Select City"
+        options={CITIES}
+        selected={selectedCity}
+        onSelect={setSelectedCity}
+        onClose={() => setCityModalVisible(false)}
+      />
+      <DropdownModal
+        visible={radiusModalVisible}
+        title="Search Radius"
+        options={RADIUS_OPTIONS}
+        selected={selectedRadius}
+        onSelect={setSelectedRadius}
+        onClose={() => setRadiusModalVisible(false)}
+      />
+      <DropdownModal
+        visible={priceModalVisible}
+        title="Price Range"
+        options={PRICE_OPTIONS}
+        selected={selectedPrice}
+        onSelect={setSelectedPrice}
+        onClose={() => setPriceModalVisible(false)}
+      />
+      <DropdownModal
+        visible={ratingModalVisible}
+        title="Minimum Rating"
+        options={RATING_OPTIONS}
+        selected={selectedRating}
+        onSelect={setSelectedRating}
+        onClose={() => setRatingModalVisible(false)}
+      />
+      <DropdownModal
+        visible={sortModalVisible}
+        title="Sort By"
+        options={SORT_OPTIONS}
+        selected={selectedSort}
+        onSelect={setSelectedSort}
+        onClose={() => setSortModalVisible(false)}
       />
     </SafeAreaView>
   );
 }
 
-const COLORS = { green: '#2E7D32', accent: '#4CAF50', background: '#F8F9FA', dark: '#212121', muted: '#68736B', line: '#E5EAE6', white: '#FFFFFF' };
+// ─── Colors & Styles ──────────────────────────────────────────────────────────
+
+const COLORS = {
+  green: '#2E7D32',
+  background: '#F5F7F5',
+  dark: '#1A1A1A',
+  muted: '#68736B',
+  line: '#E5EAE6',
+  white: '#FFFFFF',
+  headerBg: '#F0F7F0',
+};
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
-  header: { minHeight: 76, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  appTitle: { color: COLORS.dark, fontSize: 24, fontWeight: '800' },
-  locationRow: { marginTop: 5, flexDirection: 'row', alignItems: 'center', gap: 5 },
-  locationText: { color: COLORS.muted, fontSize: 13 },
-  headerActions: { flexDirection: 'row', gap: 7 },
-  headerButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: COLORS.white },
-  searchBox: { height: 52, marginHorizontal: 20, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: COLORS.line, borderRadius: 12, backgroundColor: COLORS.white },
-  searchInput: { flex: 1, height: 48, marginLeft: 10, color: COLORS.dark, fontSize: 15 },
-  clearButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  categoryList: { paddingHorizontal: 20, paddingVertical: 14, gap: 9 },
-  categoryChip: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 17, borderRadius: 24, borderWidth: 1, borderColor: COLORS.line, backgroundColor: COLORS.white },
-  categoryChipSelected: { borderColor: COLORS.green, backgroundColor: COLORS.green },
-  categoryChipText: { color: COLORS.dark, fontSize: 14, fontWeight: '600' },
+
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 10,
+    backgroundColor: COLORS.headerBg,
+  },
+  appTitle: { color: COLORS.green, fontSize: 22, fontWeight: '800' },
+  appSubtitle: { color: COLORS.muted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5, marginTop: 1 },
+  locationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    backgroundColor: COLORS.white,
+  },
+  locationPillText: { color: COLORS.dark, fontSize: 13, fontWeight: '700' },
+
+  // Search
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginVertical: 10,
+    paddingHorizontal: 14,
+    height: 46,
+    backgroundColor: COLORS.white,
+    borderRadius: 23,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.dark },
+
+  // Categories
+  categoryList: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.white,
+  },
+  categoryChipSelected: { backgroundColor: COLORS.green, borderColor: COLORS.green },
+  categoryChipText: { color: COLORS.dark, fontSize: 13, fontWeight: '600' },
   categoryChipTextSelected: { color: COLORS.white },
-  sectionHeading: { paddingHorizontal: 20, paddingBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle: { color: COLORS.dark, fontSize: 20, fontWeight: '800' },
-  sectionSubtitle: { marginTop: 3, color: COLORS.muted, fontSize: 13 },
-  listContent: { paddingHorizontal: 20, paddingBottom: 24, gap: 13 },
-  productCard: { overflow: 'hidden', borderRadius: 14, backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.line },
-  productImage: { width: '100%', height: 170, backgroundColor: '#E5ECE6' },
-  productContent: { padding: 14 },
-  productHeading: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  titleGroup: { flex: 1 },
-  productName: { color: COLORS.dark, fontSize: 18, fontWeight: '750' },
-  categoryLabel: { marginTop: 3, color: COLORS.muted, fontSize: 13 },
-  priceGroup: { alignItems: 'flex-end' },
-  price: { color: COLORS.green, fontSize: 17, fontWeight: '800' },
-  priceUnit: { color: COLORS.muted, fontSize: 12 },
-  savingsBadge: { alignSelf: 'flex-start', marginTop: 11, paddingVertical: 6, paddingHorizontal: 9, flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 6, backgroundColor: '#EAF5EB' },
-  savingsText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
-  metaRow: { marginTop: 10, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  mutedMeta: { color: COLORS.muted, fontSize: 12 },
-  rating: { color: COLORS.dark, fontSize: 13, fontWeight: '700' },
-  farmerRow: { minHeight: 48, marginTop: 9, paddingTop: 8, flexDirection: 'row', alignItems: 'center', gap: 7, borderTopWidth: 1, borderTopColor: COLORS.line },
-  farmerAvatar: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#EAF5EB' },
-  farmerName: { flex: 1, color: COLORS.dark, fontSize: 13, fontWeight: '650' },
-  farmerLocation: { color: COLORS.muted, fontSize: 12 },
-  emptyText: { padding: 28, color: COLORS.muted, textAlign: 'center', fontSize: 15 },
+
+  // Filters
+  filterRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 6 },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.white,
+  },
+  filterChipText: { color: COLORS.dark, fontSize: 12, fontWeight: '600' },
+
+  // Results row
+  resultsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+  },
+  resultsText: { color: COLORS.muted, fontSize: 12 },
+  sortText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
+
+  // Section header
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 10,
+  },
+  sectionTitle: { color: COLORS.dark, fontSize: 17, fontWeight: '800' },
+  sectionSubtitle: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
+  sortDistanceBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    backgroundColor: '#EAF5EB',
+  },
+  sortDistanceBtnText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
+
+  // Product list
+  listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 10 },
+  productCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    overflow: 'hidden',
+    paddingRight: 10,
+  },
+  productImage: { width: 90, height: 90, backgroundColor: '#E5ECE6' },
+  productContent: { flex: 1, paddingVertical: 10, paddingHorizontal: 10 },
+  productMeta: { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 4 },
+  distanceBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    backgroundColor: '#EAF5EB',
+  },
+  distanceText: { color: COLORS.green, fontSize: 10, fontWeight: '700' },
+  farmerName: { color: COLORS.muted, fontSize: 11, fontWeight: '500', flexShrink: 1 },
+  productName: { color: COLORS.dark, fontSize: 15, fontWeight: '700', marginBottom: 5 },
+  productPriceRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  price: { color: COLORS.green, fontSize: 14, fontWeight: '800' },
+  priceUnit: { color: COLORS.muted, fontSize: 11, fontWeight: '500' },
+  ratingBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  ratingText: { color: COLORS.dark, fontSize: 12, fontWeight: '700' },
+  addButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 6,
+  },
+
+  // Empty state
+  emptyWrap: { alignItems: 'center', paddingTop: 50, gap: 10 },
+  emptyText: { color: COLORS.muted, fontSize: 14, textAlign: 'center' },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  modalBox: {
+    width: '100%',
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    maxHeight: 420,
+  },
+  modalTitle: {
+    color: COLORS.dark,
+    fontSize: 16,
+    fontWeight: '800',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+  },
+  modalOptionSelected: { backgroundColor: '#EAF5EB' },
+  modalOptionText: { color: COLORS.dark, fontSize: 14 },
+  modalOptionTextSelected: { color: COLORS.green, fontWeight: '700' },
 });

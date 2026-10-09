@@ -13,7 +13,7 @@ import VoiceListingScreen from './src/screens/VoiceListingScreen';
 import FarmerProfileScreen from './src/screens/FarmerProfileScreen';
 import FarmerDashboardScreen from './src/screens/FarmerDashboardScreen';
 
-// Import Member 2 (Buyer) Screens (Merged from main)
+// Buyer screens
 import BuyerHomeScreen from './src/screens/buyer/BuyerHomeScreen';
 import ProduceDetailScreen from './src/screens/buyer/ProduceDetailScreen';
 import MyFarmersScreen from './src/screens/buyer/MyFarmersScreen';
@@ -74,7 +74,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </View>
-    </View>
+    </CartProvider>
   );
 }
 

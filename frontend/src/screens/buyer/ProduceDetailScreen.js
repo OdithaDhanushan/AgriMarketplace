@@ -2,212 +2,521 @@ import React, { useState } from 'react';
 import {
   Alert,
   Image,
+  Linking,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
+// ─── Default data ─────────────────────────────────────────────────────────────
 const MOCK_PRODUCE = {
   id: 'produce-1',
-  name: 'Vine Tomatoes',
+  name: 'Fresh Nuwara Eliya Carrots',
   category: 'Vegetables',
   price: 280,
-  marketPrice: 330,
   unit: 'kg',
-  harvested: 'Today, 6:30 AM',
-  farmer: 'Nimali Perera',
-  rating: 4.9,
-  reviews: 128,
-  location: 'Dambulla, Central Province',
-  description: 'Sun-ripened tomatoes picked this morning from our family plot. Grown with natural compost and handled with care from field to market.',
-  image: 'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=1200',
-  photos: [
-    'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=500',
-    'https://images.unsplash.com/photo-1546094096-0df4bcaaa337?w=500',
-    'https://images.unsplash.com/photo-1561136594-7f68413baa99?w=500',
-  ],
-  farmerPhoto: 'https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=250',
+  rating: 4.8,
+  reviews: 42,
+  harvest: 'Harvested: Yesterday Morning',
+  locationBadge: 'Nuwara Eliya (160km away)',
+  farmer: 'Sunil Perera',
+  farmerRating: 4.8,
+  farmerReviews: 42,
+  farmerPhoto: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400',
+  phone: '+94 77 234 5678',
+  image: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=1200',
+  availableStock: 500,
+  minOrderQty: 10,
 };
 
 const MOCK_REVIEWS = [
-  { id: 'review-1', name: 'Dilani S.', date: '2 days ago', text: 'Beautifully fresh and full of flavour. Arrived carefully packed.' },
-  { id: 'review-2', name: 'Ruwan P.', date: '1 week ago', text: 'Exactly as described. I will be ordering again.' },
+  {
+    id: 'r1',
+    name: 'Priya G.',
+    rating: 5,
+    date: '2 days ago',
+    text: 'Very fresh carrots! Delivered on time and quality was excellent.',
+  },
+  {
+    id: 'r2',
+    name: 'Kasun D.',
+    rating: 4,
+    date: '1 week ago',
+    text: 'Good quality. Slightly smaller than expected but taste was great.',
+  },
+  {
+    id: 'r3',
+    name: 'Malini K.',
+    rating: 5,
+    date: '2 weeks ago',
+    text: 'Best carrots I have ordered! Will definitely buy again.',
+  },
 ];
 
-const formatPrice = (amount) => `Rs. ${amount.toLocaleString()}`;
+// ─── Star Row ─────────────────────────────────────────────────────────────────
+function StarRow({ rating, size = 13 }) {
+  return (
+    <View style={{ flexDirection: 'row', gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <Ionicons
+          key={s}
+          name={s <= Math.round(rating) ? 'star' : 'star-outline'}
+          size={size}
+          color="#E5A500"
+        />
+      ))}
+    </View>
+  );
+}
 
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProduceDetailScreen({ route, navigation }) {
   const item = { ...MOCK_PRODUCE, ...(route?.params?.item || {}) };
-  const [quantity, setQuantity] = useState(1);
-  const savings = Math.max(0, item.marketPrice - item.price);
-  const savingsPercent = item.marketPrice ? Math.round((savings / item.marketPrice) * 100) : 0;
 
-  const openCheckout = () => {
-    navigation.navigate('CartCheckout', {
-      cartItems: [{ ...item, quantity, unitPrice: item.price }],
+  const [orderQty, setOrderQty] = useState(String(item.minOrderQty * 2)); // default 20 kg
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const parsedQty = parseInt(orderQty, 10) || 0;
+  const isValidQty = parsedQty >= item.minOrderQty && parsedQty <= item.availableStock;
+
+  const handleOrderNow = () => {
+    if (!isValidQty) {
+      Alert.alert(
+        'Invalid Quantity',
+        `Please enter a quantity between ${item.minOrderQty}kg and ${item.availableStock}kg.`
+      );
+      return;
+    }
+    navigation.navigate('Checkout', {
+      product: item,
+      quantity: parsedQty,
     });
   };
 
-  const addToCart = () => {
-    Alert.alert('Added to cart', `${quantity} ${item.unit} of ${item.name} is ready for checkout.`, [
-      { text: 'Keep browsing', style: 'cancel' },
-      { text: 'Go to cart', onPress: openCheckout },
-    ]);
+  const handleCall = () => {
+    Linking.openURL(`tel:${item.phone}`).catch(() =>
+      Alert.alert('Call unavailable', 'This device cannot start a phone call.')
+    );
+  };
+
+  const handleChat = () => {
+    Alert.alert('Chat with Farmer', `A chat with ${item.farmer} will be available soon.`);
   };
 
   return (
     <SafeAreaView style={styles.screen}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+        {/* ── Hero Image ── */}
         <View style={styles.hero}>
           <Image source={{ uri: item.image }} style={styles.heroImage} />
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={23} color={COLORS.dark} />
+
+          {/* Back button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons name="chevron-back" size={22} color={COLORS.dark} />
           </TouchableOpacity>
-          <View style={styles.trustBadges}>
-            <View style={styles.trustBadge}><Ionicons name="leaf" size={14} color={COLORS.green} /><Text style={styles.trustText}>100% Organic</Text></View>
-            <View style={styles.trustBadge}><Ionicons name="sunny" size={14} color={COLORS.green} /><Text style={styles.trustText}>Fresh Harvest</Text></View>
-          </View>
-        </View>
 
-        <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <View style={styles.titleGroup}>
-              <Text style={styles.category}>{item.category}</Text>
-              <Text style={styles.title}>{item.name}</Text>
-            </View>
-            <View style={styles.ratingPill}><Ionicons name="star" size={15} color="#E5A500" /><Text style={styles.ratingText}>{item.rating} ({item.reviews})</Text></View>
-          </View>
-          <Text style={styles.description}>{item.description}</Text>
-
-          <View style={styles.priceRow}>
-            <Text style={styles.price}>{formatPrice(item.price)}<Text style={styles.unit}> / {item.unit}</Text></Text>
-            <Text style={styles.marketPrice}>Market {formatPrice(item.marketPrice)}</Text>
-          </View>
-          <View style={styles.savingsBanner}>
-            <View style={styles.savingsIcon}><Ionicons name="trending-down" size={19} color={COLORS.green} /></View>
-            <View style={styles.savingsCopy}>
-              <Text style={styles.savingsTitle}>Save {formatPrice(savings)} ({savingsPercent}%)</Text>
-              <Text style={styles.savingsSub}>Compared with the traditional market price</Text>
-            </View>
-            <Ionicons name="checkmark-circle" size={21} color={COLORS.green} />
-          </View>
-
-          <View style={styles.harvestLine}>
-            <Ionicons name="time-outline" size={19} color={COLORS.green} />
-            <View style={styles.harvestCopy}><Text style={styles.rowTitle}>Harvested {item.harvested}</Text><Text style={styles.rowSubtitle}>Picked fresh in {item.location}</Text></View>
-          </View>
-
-          <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>From the farm</Text><Text style={styles.photoCount}>{item.photos.length} photos</Text></View>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.gallery}>
-            {item.photos.map((photo, index) => <Image key={`${photo}-${index}`} source={{ uri: photo }} style={styles.galleryImage} />)}
-          </ScrollView>
-
-          <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Meet your farmer</Text></View>
-          <View style={styles.farmerCard}>
-            <Image source={{ uri: item.farmerPhoto || MOCK_PRODUCE.farmerPhoto }} style={styles.farmerPhoto} />
-            <View style={styles.farmerDetails}>
-              <Text style={styles.farmerName}>{item.farmer}</Text>
-              <View style={styles.farmerLocation}><Ionicons name="location-outline" size={14} color={COLORS.muted} /><Text style={styles.rowSubtitle}>{item.location}</Text></View>
-              <View style={styles.farmerRating}><Ionicons name="star" size={14} color="#E5A500" /><Text style={styles.farmerRatingText}>{item.rating} farmer rating</Text></View>
-            </View>
-            <TouchableOpacity accessibilityRole="button" accessibilityLabel="View farmer" style={styles.profileButton} onPress={() => Alert.alert(item.farmer, 'Farmer profile details are shown here.') }>
-              <Ionicons name="chevron-forward" size={19} color={COLORS.green} />
+          {/* Share & Wishlist */}
+          <View style={styles.heroActions}>
+            <TouchableOpacity style={styles.heroActionBtn}>
+              <Ionicons name="share-social-outline" size={20} color={COLORS.dark} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.heroActionBtn}
+              onPress={() => setIsWishlisted((v) => !v)}
+            >
+              <Ionicons
+                name={isWishlisted ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isWishlisted ? '#E53935' : COLORS.dark}
+              />
             </TouchableOpacity>
           </View>
 
-          <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>Recent buyer reviews</Text><Text style={styles.reviewCount}>{item.reviews} reviews</Text></View>
+          {/* Image dots */}
+          <View style={styles.heroDots}>
+            <View style={[styles.heroDot, styles.heroDotActive]} />
+            <View style={styles.heroDot} />
+            <View style={styles.heroDot} />
+          </View>
+        </View>
+
+        {/* ── Content ── */}
+        <View style={styles.content}>
+
+          {/* Harvest & Location tags */}
+          <View style={styles.tagRow}>
+            <View style={styles.tagGreen}>
+              <Text style={styles.tagGreenText}>{item.harvest}</Text>
+            </View>
+            <View style={styles.tagYellow}>
+              <Text style={styles.tagYellowText}>{item.locationBadge}</Text>
+            </View>
+          </View>
+
+          {/* Product Name */}
+          <Text style={styles.productName}>{item.name}</Text>
+
+          {/* Price & Rating */}
+          <View style={styles.priceRatingRow}>
+            <Text style={styles.price}>
+              Rs. {Number(item.price).toLocaleString()}{' '}
+              <Text style={styles.priceUnit}>/ {item.unit}</Text>
+            </Text>
+            <View style={styles.ratingWrap}>
+              <Ionicons name="star" size={15} color="#E5A500" />
+              <Text style={styles.ratingVal}>{item.rating}</Text>
+              <Text style={styles.ratingCount}>({item.reviews} reviews)</Text>
+            </View>
+          </View>
+
+          {/* ── Farmer Card ── */}
+          <View style={styles.farmerCard}>
+            <Image source={{ uri: item.farmerPhoto }} style={styles.farmerPhoto} />
+            <View style={styles.farmerInfo}>
+              <View style={styles.farmerNameRow}>
+                <Text style={styles.farmerName}>{item.farmer}</Text>
+                <Ionicons name="checkmark-circle" size={16} color={COLORS.green} />
+              </View>
+              <View style={styles.farmerRatingRow}>
+                <Ionicons name="star" size={12} color="#E5A500" />
+                <Text style={styles.farmerRatingText}>
+                  {item.farmerRating} ({item.farmerReviews} reviews)
+                </Text>
+              </View>
+            </View>
+            <View style={styles.verifiedBadge}>
+              <Text style={styles.verifiedText}>VERIFIED</Text>
+            </View>
+          </View>
+
+          {/* Contact Buttons */}
+          <View style={styles.contactRow}>
+            <TouchableOpacity style={styles.callButton} onPress={handleCall}>
+              <Ionicons name="call-outline" size={16} color={COLORS.green} />
+              <Text style={styles.callButtonText}>Call Farmer</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
+              <Ionicons name="chatbubble-ellipses-outline" size={16} color={COLORS.white} />
+              <Text style={styles.chatButtonText}>Chat</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* ── Specifications ── */}
+          <Text style={styles.sectionLabel}>SPECIFICATIONS</Text>
+          <View style={styles.specCard}>
+
+            {/* Available Stock */}
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Available Stock</Text>
+              <Text style={styles.specVal}>{item.availableStock} kg available</Text>
+            </View>
+            <View style={styles.specDivider} />
+
+            {/* Min Order Qty */}
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Min. Order Qty</Text>
+              <Text style={styles.specVal}>Min {item.minOrderQty} kg</Text>
+            </View>
+            <View style={styles.specDivider} />
+
+            {/* Unit Price */}
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Unit Price</Text>
+              <Text style={[styles.specVal, styles.specValGreen]}>
+                Rs. {Number(item.price).toLocaleString()} / {item.unit}
+              </Text>
+            </View>
+            <View style={styles.specDivider} />
+
+            {/* Add Order Qty — editable with stepper */}
+            <View style={styles.specRow}>
+              <Text style={styles.specKey}>Add Order Qty</Text>
+              <View style={styles.qtyInputWrap}>
+                <TouchableOpacity
+                  style={styles.qtyBtn}
+                  onPress={() => setOrderQty(String(Math.max(item.minOrderQty, parsedQty - 5)))}
+                >
+                  <Ionicons name="remove" size={16} color={COLORS.green} />
+                </TouchableOpacity>
+                <TextInput
+                  style={styles.qtyInput}
+                  value={orderQty}
+                  onChangeText={(v) => setOrderQty(v.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  maxLength={5}
+                  selectTextOnFocus
+                />
+                <Text style={styles.qtyUnit}>kg</Text>
+                <TouchableOpacity
+                  style={styles.qtyBtn}
+                  onPress={() => setOrderQty(String(Math.min(item.availableStock, parsedQty + 5)))}
+                >
+                  <Ionicons name="add" size={16} color={COLORS.green} />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* Order total preview */}
+          {isValidQty && (
+            <View style={styles.orderPreview}>
+              <Text style={styles.orderPreviewLabel}>
+                Order Total ({parsedQty} {item.unit})
+              </Text>
+              <Text style={styles.orderPreviewVal}>
+                Rs. {(item.price * parsedQty).toLocaleString()}
+              </Text>
+            </View>
+          )}
+
+          {/* Qty warning */}
+          {!isValidQty && parsedQty > 0 && (
+            <Text style={styles.qtyWarning}>
+              {parsedQty < item.minOrderQty
+                ? `Minimum order is ${item.minOrderQty} kg`
+                : `Only ${item.availableStock} kg available`}
+            </Text>
+          )}
+
+          {/* ── Order Now Button ── */}
+          <TouchableOpacity
+            style={[styles.orderBtn, !isValidQty && styles.orderBtnDisabled]}
+            onPress={handleOrderNow}
+            activeOpacity={0.85}
+          >
+            <Ionicons name="bag-check-outline" size={20} color={COLORS.white} />
+            <Text style={styles.orderBtnText}>Order Now</Text>
+          </TouchableOpacity>
+
+          {/* ── Buyer Reviews ── */}
+          <View style={styles.reviewsTitleRow}>
+            <Text style={styles.sectionLabel}>BUYER REVIEWS</Text>
+            <TouchableOpacity>
+              <Text style={styles.seeAllText}>See All</Text>
+            </TouchableOpacity>
+          </View>
+
           {MOCK_REVIEWS.map((review) => (
-            <View key={review.id} style={styles.review}>
-              <View style={styles.reviewTop}><Text style={styles.reviewerName}>{review.name}</Text><Text style={styles.reviewDate}>{review.date}</Text></View>
-              <View style={styles.reviewStars}>{[1, 2, 3, 4, 5].map((star) => <Ionicons key={star} name="star" size={13} color="#E5A500" />)}</View>
+            <View key={review.id} style={styles.reviewCard}>
+              <View style={styles.reviewHeader}>
+                <View style={styles.reviewAvatar}>
+                  <Text style={styles.reviewAvatarText}>{review.name[0]}</Text>
+                </View>
+                <View style={styles.reviewerInfo}>
+                  <Text style={styles.reviewerName}>{review.name}</Text>
+                  <Text style={styles.reviewDate}>{review.date}</Text>
+                </View>
+                <StarRow rating={review.rating} />
+              </View>
               <Text style={styles.reviewText}>{review.text}</Text>
             </View>
           ))}
 
-          <View style={styles.quantityRow}>
-            <View><Text style={styles.quantityTitle}>Quantity</Text><Text style={styles.quantityNote}>Sold per {item.unit}</Text></View>
-            <View style={styles.stepper}>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Decrease quantity" disabled={quantity <= 1} onPress={() => setQuantity((current) => Math.max(1, current - 1))} style={[styles.stepButton, quantity <= 1 && styles.stepButtonDisabled]}><Ionicons name="remove" size={20} color={quantity <= 1 ? '#AAB2AC' : COLORS.green} /></TouchableOpacity>
-              <Text style={styles.quantityValue}>{quantity}</Text>
-              <TouchableOpacity accessibilityRole="button" accessibilityLabel="Increase quantity" onPress={() => setQuantity((current) => current + 1)} style={styles.stepButton}><Ionicons name="add" size={20} color={COLORS.green} /></TouchableOpacity>
-            </View>
-          </View>
         </View>
       </ScrollView>
-      <View style={styles.bottomBar}>
-        <TouchableOpacity accessibilityRole="button" onPress={addToCart} style={styles.addButton}><Ionicons name="bag-add-outline" size={20} color={COLORS.green} /><Text style={styles.addButtonText}>Add to cart</Text></TouchableOpacity>
-        <TouchableOpacity accessibilityRole="button" onPress={openCheckout} style={styles.buyButton}><Text style={styles.buyButtonText}>Buy now</Text><Ionicons name="arrow-forward" size={18} color={COLORS.white} /></TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 }
 
-const COLORS = { green: '#2E7D32', accent: '#4CAF50', background: '#F8F9FA', dark: '#212121', muted: '#68736B', line: '#E5EAE6', white: '#FFFFFF' };
+// ─── Colors ───────────────────────────────────────────────────────────────────
+const COLORS = {
+  green: '#2E7D32',
+  background: '#F5F7F5',
+  dark: '#1A1A1A',
+  muted: '#68736B',
+  line: '#E5EAE6',
+  white: '#FFFFFF',
+};
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
-  scrollContent: { paddingBottom: 20 },
-  hero: { height: 290, position: 'relative', backgroundColor: '#E5ECE6' },
-  heroImage: { width: '100%', height: '100%' },
-  backButton: { position: 'absolute', top: 14, left: 18, width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.white },
-  trustBadges: { position: 'absolute', bottom: 15, left: 16, flexDirection: 'row', gap: 8 },
-  trustBadge: { minHeight: 34, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 6, borderRadius: 17, backgroundColor: COLORS.white },
-  trustText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
-  content: { paddingHorizontal: 20 },
-  titleRow: { marginTop: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
-  titleGroup: { flex: 1 },
-  category: { color: COLORS.green, fontSize: 13, fontWeight: '700' },
-  title: { marginTop: 3, color: COLORS.dark, fontSize: 25, fontWeight: '800' },
-  ratingPill: { minHeight: 38, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 8, backgroundColor: COLORS.white },
-  ratingText: { color: COLORS.dark, fontSize: 12, fontWeight: '700' },
-  description: { marginTop: 12, color: COLORS.muted, fontSize: 14, lineHeight: 21 },
-  priceRow: { marginTop: 17, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  price: { color: COLORS.green, fontSize: 23, fontWeight: '800' },
-  unit: { color: COLORS.muted, fontSize: 14, fontWeight: '500' },
-  marketPrice: { color: COLORS.muted, fontSize: 13, textDecorationLine: 'line-through' },
-  savingsBanner: { minHeight: 68, marginTop: 14, padding: 11, flexDirection: 'row', alignItems: 'center', borderRadius: 10, backgroundColor: '#EAF5EB' },
-  savingsIcon: { width: 39, height: 39, alignItems: 'center', justifyContent: 'center', borderRadius: 20, backgroundColor: COLORS.white },
-  savingsCopy: { flex: 1, marginLeft: 10 },
-  savingsTitle: { color: COLORS.green, fontSize: 14, fontWeight: '800' },
-  savingsSub: { marginTop: 3, color: COLORS.muted, fontSize: 11 },
-  harvestLine: { minHeight: 67, marginTop: 7, flexDirection: 'row', alignItems: 'center', gap: 11, borderBottomWidth: 1, borderBottomColor: COLORS.line },
-  harvestCopy: { gap: 4 },
-  rowTitle: { color: COLORS.dark, fontSize: 14, fontWeight: '700' },
-  rowSubtitle: { color: COLORS.muted, fontSize: 12 },
-  sectionHeader: { marginTop: 21, marginBottom: 11, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { color: COLORS.dark, fontSize: 17, fontWeight: '800' },
-  photoCount: { color: COLORS.muted, fontSize: 12 },
-  gallery: { gap: 10 },
-  galleryImage: { width: 112, height: 86, borderRadius: 9, backgroundColor: '#E5ECE6' },
-  farmerCard: { minHeight: 86, padding: 11, flexDirection: 'row', alignItems: 'center', gap: 11, borderRadius: 11, borderWidth: 1, borderColor: COLORS.line, backgroundColor: COLORS.white },
-  farmerPhoto: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#E5ECE6' },
-  farmerDetails: { flex: 1, gap: 5 },
-  farmerName: { color: COLORS.dark, fontSize: 15, fontWeight: '750' },
-  farmerLocation: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  farmerRating: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  farmerRatingText: { color: COLORS.dark, fontSize: 12, fontWeight: '650' },
-  profileButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
-  reviewCount: { color: COLORS.muted, fontSize: 12 },
-  review: { paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: COLORS.line },
-  reviewTop: { flexDirection: 'row', justifyContent: 'space-between' },
+  scrollContent: { paddingBottom: 24 },
+
+  // Hero
+  hero: { height: 270, backgroundColor: '#D5E8D6', position: 'relative' },
+  heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
+  backButton: {
+    position: 'absolute', top: 14, left: 14,
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: COLORS.white,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroActions: {
+    position: 'absolute', top: 14, left: 60,
+    flexDirection: 'row', gap: 8,
+  },
+  heroActionBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: COLORS.white,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  heroDots: {
+    position: 'absolute', bottom: 12,
+    width: '100%', flexDirection: 'row',
+    justifyContent: 'center', gap: 5,
+  },
+  heroDot: {
+    width: 7, height: 7, borderRadius: 4,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  heroDotActive: { backgroundColor: COLORS.green, width: 18 },
+
+  // Content
+  content: { paddingHorizontal: 16, paddingTop: 14 },
+
+  // Tags
+  tagRow: { flexDirection: 'row', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
+  tagGreen: {
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20, backgroundColor: '#EAF5EB',
+    borderWidth: 1, borderColor: '#B9D9BC',
+  },
+  tagGreenText: { color: COLORS.green, fontSize: 11, fontWeight: '700' },
+  tagYellow: {
+    paddingHorizontal: 10, paddingVertical: 5,
+    borderRadius: 20, backgroundColor: '#FFF8E1',
+    borderWidth: 1, borderColor: '#FFE082',
+  },
+  tagYellowText: { color: '#795548', fontSize: 11, fontWeight: '700' },
+
+  // Product name & price
+  productName: { color: COLORS.dark, fontSize: 22, fontWeight: '800', marginBottom: 8, lineHeight: 28 },
+  priceRatingRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginBottom: 14,
+  },
+  price: { color: COLORS.green, fontSize: 22, fontWeight: '800' },
+  priceUnit: { color: COLORS.muted, fontSize: 14, fontWeight: '500' },
+  ratingWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  ratingVal: { color: COLORS.dark, fontSize: 13, fontWeight: '800' },
+  ratingCount: { color: COLORS.muted, fontSize: 11 },
+
+  // Farmer Card
+  farmerCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    padding: 12, borderRadius: 12,
+    borderWidth: 1, borderColor: COLORS.line,
+    backgroundColor: COLORS.white, marginBottom: 10,
+  },
+  farmerPhoto: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E5ECE6' },
+  farmerInfo: { flex: 1, gap: 4 },
+  farmerNameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  farmerName: { color: COLORS.dark, fontSize: 15, fontWeight: '800' },
+  farmerRatingRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  farmerRatingText: { color: COLORS.muted, fontSize: 12 },
+  verifiedBadge: {
+    paddingHorizontal: 8, paddingVertical: 4,
+    borderRadius: 6, backgroundColor: '#EAF5EB',
+  },
+  verifiedText: { color: COLORS.green, fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
+
+  // Contact Buttons
+  contactRow: { flexDirection: 'row', gap: 10, marginBottom: 18 },
+  callButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', gap: 7, minHeight: 46,
+    borderWidth: 1.5, borderColor: COLORS.green,
+    borderRadius: 10, backgroundColor: COLORS.white,
+  },
+  callButtonText: { color: COLORS.green, fontSize: 14, fontWeight: '700' },
+  chatButton: {
+    flex: 1, flexDirection: 'row', alignItems: 'center',
+    justifyContent: 'center', gap: 7, minHeight: 46,
+    borderRadius: 10, backgroundColor: COLORS.green,
+  },
+  chatButtonText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
+
+  // Specifications
+  sectionLabel: {
+    color: COLORS.muted, fontSize: 12, fontWeight: '800',
+    letterSpacing: 0.5, marginBottom: 10,
+  },
+  specCard: {
+    borderWidth: 1, borderColor: COLORS.line,
+    borderRadius: 12, backgroundColor: COLORS.white,
+    paddingHorizontal: 14, marginBottom: 12, overflow: 'hidden',
+  },
+  specRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', minHeight: 50,
+  },
+  specDivider: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  specKey: { color: COLORS.muted, fontSize: 13 },
+  specVal: { color: COLORS.dark, fontSize: 13, fontWeight: '700' },
+  specValGreen: { color: COLORS.green },
+
+  // Qty stepper
+  qtyInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  qtyBtn: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#EAF5EB',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  qtyInput: {
+    width: 44, height: 32,
+    borderWidth: 1, borderColor: COLORS.line,
+    borderRadius: 8, textAlign: 'center',
+    color: COLORS.green, fontSize: 14, fontWeight: '800',
+    backgroundColor: COLORS.white,
+  },
+  qtyUnit: { color: COLORS.muted, fontSize: 13, fontWeight: '600' },
+
+  // Order preview
+  orderPreview: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12,
+    backgroundColor: '#EAF5EB', borderRadius: 10, marginBottom: 12,
+  },
+  orderPreviewLabel: { color: COLORS.dark, fontSize: 13, fontWeight: '600' },
+  orderPreviewVal: { color: COLORS.green, fontSize: 16, fontWeight: '800' },
+
+  // Qty warning
+  qtyWarning: { color: '#C62828', fontSize: 12, textAlign: 'center', marginBottom: 10 },
+
+  // Order Now
+  orderBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 8, minHeight: 54,
+    borderRadius: 12, backgroundColor: COLORS.green, marginBottom: 6,
+  },
+  orderBtnDisabled: { backgroundColor: '#A5C8A7' },
+  orderBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
+
+  // Buyer Reviews
+  reviewsTitleRow: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', marginTop: 18, marginBottom: 10,
+  },
+  seeAllText: { color: COLORS.green, fontSize: 13, fontWeight: '700' },
+  reviewCard: {
+    backgroundColor: COLORS.white,
+    borderWidth: 1, borderColor: COLORS.line,
+    borderRadius: 12, padding: 12, marginBottom: 10,
+  },
+  reviewHeader: {
+    flexDirection: 'row', alignItems: 'center',
+    gap: 10, marginBottom: 8,
+  },
+  reviewAvatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: COLORS.green,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  reviewAvatarText: { color: COLORS.white, fontSize: 14, fontWeight: '800' },
+  reviewerInfo: { flex: 1 },
   reviewerName: { color: COLORS.dark, fontSize: 13, fontWeight: '700' },
-  reviewDate: { color: COLORS.muted, fontSize: 12 },
-  reviewStars: { marginTop: 5, flexDirection: 'row', gap: 2 },
-  reviewText: { marginTop: 6, color: COLORS.muted, fontSize: 13, lineHeight: 19 },
-  quantityRow: { minHeight: 75, marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  quantityTitle: { color: COLORS.dark, fontSize: 15, fontWeight: '750' },
-  quantityNote: { marginTop: 3, color: COLORS.muted, fontSize: 12 },
-  stepper: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  stepButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, borderWidth: 1, borderColor: COLORS.line, backgroundColor: COLORS.white },
-  stepButtonDisabled: { backgroundColor: '#F0F2F1' },
-  quantityValue: { minWidth: 28, color: COLORS.dark, textAlign: 'center', fontSize: 17, fontWeight: '800' },
-  bottomBar: { minHeight: 76, paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, flexDirection: 'row', gap: 10, borderTopWidth: 1, borderTopColor: COLORS.line, backgroundColor: COLORS.white },
-  addButton: { flex: 1, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 9, borderWidth: 1, borderColor: COLORS.green },
-  addButtonText: { color: COLORS.green, fontSize: 14, fontWeight: '750' },
-  buyButton: { flex: 1, minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 9, backgroundColor: COLORS.green },
-  buyButtonText: { color: COLORS.white, fontSize: 14, fontWeight: '750' },
+  reviewDate: { color: COLORS.muted, fontSize: 11, marginTop: 1 },
+  reviewText: { color: COLORS.muted, fontSize: 13, lineHeight: 19 },
 });
