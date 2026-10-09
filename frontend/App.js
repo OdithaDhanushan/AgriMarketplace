@@ -23,8 +23,13 @@ import BuyerProductDetailScreen from './src/screens/buyer/ProductDetailScreen';
 import CheckoutScreen from './src/screens/buyer/CheckoutScreen';
 import OtpVerificationScreen from './src/screens/buyer/OtpVerificationScreen';
 import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
-import BuyerTabNavigator from './src/navigation/BuyerTabNavigator';
-import { CartProvider } from './src/context/CartContext';
+import OnboardingScreen1 from './src/screens/user-management/OnboardingScreen1';
+import OnboardingScreen2 from './src/screens/user-management/OnboardingScreen2';
+import LanguageSelectionScreen from './src/screens/user-management/LanguageSelectionScreen';
+import LoginScreen from './src/screens/user-management/LoginScreen';
+import RoleSelectionScreen from './src/screens/user-management/RoleSelectionScreen';
+import RegistrationScreen from './src/screens/user-management/RegistrationScreen';
+import ProfileScreen from './src/screens/user-management/ProfileScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -32,33 +37,42 @@ export default function App() {
   const isWeb = Platform.OS === 'web';
 
   return (
-    <CartProvider>
-      <View style={styles.webContainer}>
-        <View style={styles.phoneChassis}>
-          {isWeb && <View style={styles.dynamicIsland} />}
-          <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="BuyerTabs">
-              <Stack.Screen name="BuyerTabs" component={BuyerTabNavigator} />
-              <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
-              <Stack.Screen name="AddProduct" component={AddProductScreen} />
-              <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
-              <Stack.Screen name="SellerProductDetail" component={ProductDetailScreen} />
-              <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
-              <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
-              <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />
-              <Stack.Screen name="FarmerDashboard" component={FarmerDashboardScreen} />
-              <Stack.Screen name="BuyerSearch" component={BuyerSearchScreen} />
-              <Stack.Screen name="BuyerHome" component={BuyerHomeScreen} />
-              <Stack.Screen name="ProduceDetail" component={ProduceDetailScreen} />
-              <Stack.Screen name="MyFarmers" component={MyFarmersScreen} />
-              <Stack.Screen name="CartCheckout" component={CartCheckoutScreen} />
-              <Stack.Screen name="ProductDetail" component={BuyerProductDetailScreen} />
-              <Stack.Screen name="Checkout" component={CheckoutScreen} />
-              <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
-              <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
-            </Stack.Navigator>
-          </NavigationContainer>
-        </View>
+    <View style={styles.webContainer}>
+      <View style={styles.phoneChassis}>
+        {isWeb && <View style={styles.dynamicIsland} />}
+        
+        {/* SINGLE ENCLOSING ROOT TAG FOR NAVIGATION */}
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingScreen1">
+            {/* Member 1 Farmer Screens */}
+            <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
+            <Stack.Screen name="AddProduct" component={AddProductScreen} />
+            <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
+            <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
+            <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
+            <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />
+            <Stack.Screen name="FarmerDashboard" component={FarmerDashboardScreen} />
+
+            {/* Member 2 Buyer Screens */}
+            <Stack.Screen name="BuyerSearch" component={BuyerSearchScreen} />
+            <Stack.Screen name="BuyerHome" component={BuyerHomeScreen} />
+            <Stack.Screen name="MyFarmers" component={MyFarmersScreen} />
+            <Stack.Screen name="CartCheckout" component={CartCheckoutScreen} />
+            <Stack.Screen name="Checkout" component={CheckoutScreen} />
+            <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+            <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
+
+            {/* User Management Onboarding Screens */}
+            <Stack.Screen name="OnboardingScreen1" component={OnboardingScreen1} />
+            <Stack.Screen name="OnboardingScreen2" component={OnboardingScreen2} />
+            <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} />
+            <Stack.Screen name="LoginScreen" component={LoginScreen} />
+            <Stack.Screen name="RoleSelectionScreen" component={RoleSelectionScreen} />
+            <Stack.Screen name="RegistrationScreen" component={RegistrationScreen} />
+            <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
+          </Stack.Navigator>
+        </NavigationContainer>
       </View>
     </CartProvider>
   );
