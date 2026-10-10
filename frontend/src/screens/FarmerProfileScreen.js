@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
-  Modal,
   TextInput,
   Alert,
   Platform,

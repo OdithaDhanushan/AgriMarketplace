@@ -330,7 +330,7 @@ export default function MarketPricesScreen({ navigation }) {
               style={styles.featuredTop}
               activeOpacity={0.8}
               onPress={() =>
-                navigation.navigate('ProductDetail', {
+                navigation.navigate('SellerProductDetail', {
                   item: latestCrop || {
                     _id: `crop_${currentData.location.toLowerCase()}`,
                     cropName: featuredCropName,
@@ -487,7 +487,7 @@ export default function MarketPricesScreen({ navigation }) {
                   style={styles.gridCard}
                   activeOpacity={0.8}
                   onPress={() =>
-                    navigation.navigate('ProductDetail', {
+                    navigation.navigate('SellerProductDetail', {
                       item: prod.isRealItem
                         ? prod.rawItem
                         : {
