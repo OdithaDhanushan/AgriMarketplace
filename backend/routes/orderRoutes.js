@@ -2,19 +2,20 @@ const crypto = require('node:crypto');
 const express = require('express');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
-router.get('/', async (req, res, next) => {
+router.get('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find({ buyerId: req.user._id }).sort({ createdAt: -1 });
     return res.status(200).json(orders);
   } catch (error) {
     return next(error);
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ message: 'Request body must be a JSON object.' });
   }
@@ -25,6 +26,7 @@ router.post('/', async (req, res, next) => {
 
     const order = await Order.create({
       items,
+      buyerId: req.user._id,
       totalAmount,
       deliveryFee,
       deliveryAddress,
@@ -41,7 +43,7 @@ router.post('/', async (req, res, next) => {
   }
 });
 
-router.post('/verify-otp', async (req, res, next) => {
+router.post('/verify-otp', requireAuth, requireRole('Buyer'), async (req, res, next) => {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ message: 'Request body must be a JSON object.' });
   }
@@ -57,7 +59,7 @@ router.post('/verify-otp', async (req, res, next) => {
   }
 
   try {
-    const order = await Order.findById(orderId);
+    const order = await Order.findOne({ _id: orderId, buyerId: req.user._id });
     if (!order) {
       return res.status(404).json({ message: 'Order not found.' });
     }

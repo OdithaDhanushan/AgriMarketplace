@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
+const connectDB = require('./config/db');
 
 const app = express();
 
@@ -22,20 +23,12 @@ app.get('/health', (req, res) => {
 
 // Routes
 const produceRoutes = require('./routes/produceRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 app.use('/api/produce', produceRoutes);
-
-try {
-  app.use('/api/products', require('./routes/productRoutes'));
-} catch (e) {}
-
-try {
-  app.use('/api/orders', require('./routes/orderRoutes'));
-} catch (e) {}
-
-try {
-  const userRoutes = require('./routes/userRoutes');
-  app.use('/api/users', userRoutes);
-} catch (e) {}
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/users', userRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });
@@ -66,16 +59,29 @@ app.use((error, req, res, next) => {
   return res.status(500).json({ message: 'Internal server error.' });
 });
 
+const User = require('./models/User');
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must be set to a random value at least 32 characters long in backend/.env.');
+  }
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is required in production. Set a random value at least 32 characters long in the environment.');
+  }
+  if (!process.env.JWT_SECRET) {
+    console.warn('JWT_SECRET is not set; using a temporary development key. Sessions expire when the backend restarts.');
+  }
+
   if (!process.env.MONGO_URI) {
     throw new Error('MONGO_URI is required. Set it in backend/.env.');
   }
 
-  await mongoose.connect(process.env.MONGO_URI);
-  console.log('✅ MongoDB connected successfully.');
-  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+  await connectDB();
+  await User.init();
+  console.log('MongoDB connected.');
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 };
 
 startServer().catch((error) => {

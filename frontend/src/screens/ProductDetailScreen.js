@@ -312,7 +312,7 @@ export default function ProductDetailScreen({ route, navigation }) {
               <View style={styles.rowAlign}>
                 <Ionicons name="checkmark-circle" size={18} color="#2e7d32" />
                 <Text style={[styles.marketCompText, { color: '#2e7d32' }]}>
-                  Matches today's {currentLocation} market price (Rs. {officialTodayMarketPrice}/kg)
+                  Matches today’s {currentLocation} market price (Rs. {officialTodayMarketPrice}/kg)
                 </Text>
               </View>
             ) : marketDifference < 0 ? (
@@ -340,7 +340,7 @@ export default function ProductDetailScreen({ route, navigation }) {
           <View style={styles.tooltipBanner}>
             <View style={styles.rowAlign}>
               <Ionicons name="stats-chart" size={16} color="#2e7d32" />
-              <Text style={styles.tooltipDayText}>{activeDay.day}'s Market Benchmark:</Text>
+              <Text style={styles.tooltipDayText}>{activeDay.day} market benchmark:</Text>
             </View>
             <Text style={styles.tooltipPriceText}>
               Rs. {activeDay.price} /kg <Text style={styles.tooltipChange}>({activeDay.change})</Text>
