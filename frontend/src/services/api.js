@@ -36,6 +36,9 @@ export const getMyProduceList = async () => {
 
 export const registerUser = async (userData) => {
   const response = await api.post('/users/register', userData);
+  if (response.data?.token) {
+    setAuthToken(response.data.token);
+  }
   return response.data;
 };
 

@@ -22,6 +22,9 @@ const verifyToken = (token) => {
     if (parts.length !== 3) return null;
 
     const [header, payload, signature] = parts;
+    const decodedHeader = JSON.parse(base64UrlDecode(header));
+    if (decodedHeader.alg !== 'HS256' || decodedHeader.typ !== 'JWT') return null;
+
     const expectedSignature = crypto.createHmac('sha256', TOKEN_SECRET).update(`${header}.${payload}`).digest('base64url');
 
     if (!crypto.timingSafeEqual(Buffer.from(expectedSignature), Buffer.from(signature))) {
@@ -29,7 +32,11 @@ const verifyToken = (token) => {
     }
 
     const decoded = JSON.parse(base64UrlDecode(payload));
-    if (!decoded.userId || decoded.exp < Math.floor(Date.now() / 1000)) {
+    if (
+      typeof decoded.userId !== 'string'
+      || !Number.isSafeInteger(decoded.exp)
+      || decoded.exp <= Math.floor(Date.now() / 1000)
+    ) {
       return null;
     }
 

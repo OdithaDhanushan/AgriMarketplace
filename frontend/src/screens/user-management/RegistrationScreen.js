@@ -163,7 +163,11 @@ export default function RegistrationScreen({ navigation, route }) {
         language: selectedLanguage,
         location: form.location.trim(),
       });
-      const responseUser = result.user ?? result;
+      if (!result?.token || !result?.user) {
+        throw new Error('The server returned an incomplete registration response.');
+      }
+
+      const responseUser = result.user;
       const safeUser = {
         id: responseUser.id ?? responseUser._id,
         name: responseUser.name,
@@ -172,11 +176,11 @@ export default function RegistrationScreen({ navigation, route }) {
         role: responseUser.role,
         language: responseUser.language,
         location: responseUser.location,
+        farmName: responseUser.farmName || '',
+        paymentMode: responseUser.paymentMode || '',
       };
 
-      if (result.token) {
-        login({ user: safeUser, token: result.token });
-      }
+      login({ user: safeUser, token: result.token });
 
       const nextScreen = safeUser.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs';
       showMessage(copy.createAccount, copy.success, () => {

@@ -3,6 +3,7 @@ const { promisify } = require('node:util');
 const { randomBytes, scrypt: scryptCallback } = require('node:crypto');
 const User = require('../models/User');
 const Produce = require('../models/Produce');
+const Order = require('../models/Order');
 const { signToken } = require('../middleware/auth');
 
 const scrypt = promisify(scryptCallback);
@@ -225,6 +226,9 @@ exports.updateProfile = async (req, res) => {
     if (error.code === 11000 && error.keyPattern?.email) {
       return res.status(409).json({ message: 'An account with this email already exists.' });
     }
+    if (error.name === 'ValidationError' || error.name === 'CastError') {
+      return res.status(400).json({ message: 'Please check the profile details and try again.' });
+    }
     console.error('Profile update failed:', error.message);
     return res.status(500).json({ message: 'Unable to update your profile right now.' });
   }
@@ -233,6 +237,7 @@ exports.updateProfile = async (req, res) => {
 exports.deleteAccount = async (req, res) => {
   try {
     await Produce.deleteMany({ farmerId: req.user._id });
+    await Order.deleteMany({ buyerId: req.user._id });
     const deletedUser = await User.findByIdAndDelete(req.user._id);
     if (!deletedUser) {
       return res.status(404).json({ message: 'User profile not found.' });
