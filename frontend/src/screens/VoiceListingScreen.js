@@ -91,6 +91,42 @@ export default function VoiceListingScreen({ navigation }) {
 
   const recognitionRef = useRef(null);
 
+  const parseSpokenWords = React.useCallback((text) => {
+    if (!text || !text.trim()) return;
+    const lower = text.toLowerCase();
+
+    // 1. Detect Crop Name
+    let crop = '';
+    if (lower.includes('tomato')) crop = 'Tomatoes';
+    else if (lower.includes('carrot')) crop = 'Carrots';
+    else if (lower.includes('potato')) crop = 'Potatoes';
+    else if (lower.includes('pumpkin')) crop = 'Pumpkin';
+    else if (lower.includes('guava')) crop = 'Guava';
+    else if (lower.includes('banana')) crop = 'Banana';
+    else if (lower.includes('onion')) crop = 'Onions';
+    else if (lower.includes('cabbage')) crop = 'Cabbage';
+    else if (lower.includes('leek')) crop = 'Leeks';
+    else if (lower.includes('bean')) crop = 'Beans';
+    else if (lower.includes('ginger')) crop = 'Ginger';
+
+    // 2. Detect Quantity (e.g. "20 kilos", "15 kg", "25")
+    const qtyMatch = lower.match(/(\d+)\s*(?:kilos?|kg|kilo)?/);
+    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 10;
+
+    // 3. Detect Price (e.g. "at 150", "180 rupees", "rs 220")
+    const priceMatch = lower.match(/(?:at|rs\.?|rupees|price)\s*(\d+)/) || lower.match(/(\d+)\s*(?:rupees|rs)/);
+    const price = priceMatch ? parseInt(priceMatch[1], 10) : 150;
+
+    if (crop || qtyMatch || priceMatch) {
+      setHasRecognized(true);
+      setRecognizedData((prev) => ({
+        cropName: crop || prev.cropName || 'Tomatoes',
+        quantityKg: qty,
+        sellingPricePerKg: price,
+      }));
+    }
+  }, []);
+
   // Initialize Real Web Speech Recognition API
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -126,44 +162,7 @@ export default function VoiceListingScreen({ navigation }) {
         recognitionRef.current = recognizer;
       }
     }
-  }, [selectedLanguage]);
-
-  // Real-Time NLP Parser: Extracts crop, quantity, and price from your voice!
-  const parseSpokenWords = (text) => {
-    if (!text || !text.trim()) return;
-    const lower = text.toLowerCase();
-
-    // 1. Detect Crop Name
-    let crop = '';
-    if (lower.includes('tomato')) crop = 'Tomatoes';
-    else if (lower.includes('carrot')) crop = 'Carrots';
-    else if (lower.includes('potato')) crop = 'Potatoes';
-    else if (lower.includes('pumpkin')) crop = 'Pumpkin';
-    else if (lower.includes('guava')) crop = 'Guava';
-    else if (lower.includes('banana')) crop = 'Banana';
-    else if (lower.includes('onion')) crop = 'Onions';
-    else if (lower.includes('cabbage')) crop = 'Cabbage';
-    else if (lower.includes('leek')) crop = 'Leeks';
-    else if (lower.includes('bean')) crop = 'Beans';
-    else if (lower.includes('ginger')) crop = 'Ginger';
-
-    // 2. Detect Quantity (e.g. "20 kilos", "15 kg", "25")
-    const qtyMatch = lower.match(/(\d+)\s*(?:kilos?|kg|kilo)?/);
-    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 10;
-
-    // 3. Detect Price (e.g. "at 150", "180 rupees", "rs 220")
-    const priceMatch = lower.match(/(?:at|rs\.?|rupees|price)\s*(\d+)/) || lower.match(/(\d+)\s*(?:rupees|rs)/);
-    const price = priceMatch ? parseInt(priceMatch[1], 10) : 150;
-
-    if (crop || qtyMatch || priceMatch) {
-      setHasRecognized(true);
-      setRecognizedData((prev) => ({
-        cropName: crop || prev.cropName || 'Tomatoes',
-        quantityKg: qty,
-        sellingPricePerKg: price,
-      }));
-    }
-  };
+  }, [selectedLanguage, parseSpokenWords]);
 
   // 🎙️ START / STOP REAL MICROPHONE RECORDING
   const toggleRealMicrophone = () => {
@@ -176,8 +175,8 @@ export default function VoiceListingScreen({ navigation }) {
           setLiveTranscript('');
           recognitionRef.current.start();
         }
-      } catch (err) {
-        console.log('Mic trigger:', err.message);
+      } catch (error) {
+        console.log('Mic trigger:', error.message);
       }
     } else {
       // Fallback timer simulation for environments without Web Speech
@@ -226,8 +225,9 @@ export default function VoiceListingScreen({ navigation }) {
       });
       setLoading(false);
       navigation.navigate('ProductAddedSuccess');
-    } catch (err) {
+    } catch (error) {
       setLoading(false);
+      console.log('Voice listing save error:', error.message);
       navigation.navigate('ProductAddedSuccess');
     }
   };
@@ -325,7 +325,7 @@ export default function VoiceListingScreen({ navigation }) {
             {liveTranscript.length > 0 && (
               <View style={styles.liveSpeechBox}>
                 <Text style={styles.liveSpeechLabel}>🗣️ You said:</Text>
-                <Text style={styles.liveSpeechText}>"{liveTranscript}"</Text>
+                <Text style={styles.liveSpeechText}>{liveTranscript}</Text>
               </View>
             )}
           </View>

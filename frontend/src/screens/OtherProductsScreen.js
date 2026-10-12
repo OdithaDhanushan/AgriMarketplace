@@ -198,7 +198,7 @@ export default function OtherProductsScreen({ navigation }) {
         <View style={styles.dateRow}>
           <Ionicons name="calendar-outline" size={18} color="#444" />
           <View style={{ marginLeft: 8 }}>
-            <Text style={styles.dateLabel}>Today's market</Text>
+            <Text style={styles.dateLabel}>Market overview</Text>
             <Text style={styles.dateValue}>{getTodayFormattedDate()}</Text>
           </View>
         </View>

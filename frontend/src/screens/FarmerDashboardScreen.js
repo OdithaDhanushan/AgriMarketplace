@@ -12,14 +12,14 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
-import api from '../services/api';
+import { getMyProduceList } from '../services/api';
 
 export default function FarmerDashboardScreen({ navigation }) {
   const [myProduce, setMyProduce] = useState([]);
 
   const fetchMyProduce = useCallback(async () => {
     try {
-      return await api.get('/produce');
+      return await getMyProduceList();
     } catch (e) {
       console.log('Dashboard fetch error:', e.message);
       return null;
@@ -27,8 +27,8 @@ export default function FarmerDashboardScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    fetchMyProduce().then((res) => {
-      if (res?.data) setMyProduce(res.data);
+    fetchMyProduce().then((produce) => {
+      if (produce) setMyProduce(produce);
     });
   }, [fetchMyProduce]);
 

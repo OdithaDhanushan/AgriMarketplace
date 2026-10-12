@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../../context/AuthContext';
 import { registerUser } from '../../services/api';
 
 const COPY = {
@@ -36,6 +37,7 @@ const COPY = {
     shortPassword: 'Password must be at least 8 characters.',
     mismatch: 'Passwords do not match.',
     duplicateEmail: 'An account with this email already exists.',
+    duplicatePhone: 'An account with this phone number already exists.',
     backendUnavailable: 'Cannot reach the server. Check your connection and try again.',
     registrationFailed: 'Unable to create your account right now. Please try again.',
     success: 'Your account has been created.',
@@ -61,6 +63,7 @@ const COPY = {
     shortPassword: 'මුරපදය අවම වශයෙන් අක්ෂර 8ක් විය යුතුය.',
     mismatch: 'මුරපද ගැළපෙන්නේ නැත.',
     duplicateEmail: 'මෙම ඊමේල් ලිපිනයෙන් දැනටමත් ගිණුමක් ඇත.',
+    duplicatePhone: 'මෙම දුරකථන අංකයෙන් දැනටමත් ගිණුමක් ඇත.',
     backendUnavailable: 'සේවාදායකයට සම්බන්ධ විය නොහැක. නැවත උත්සාහ කරන්න.',
     registrationFailed: 'ගිණුම සෑදිය නොහැක. නැවත උත්සාහ කරන්න.',
     success: 'ඔබගේ ගිණුම සාදා ඇත.',
@@ -86,6 +89,7 @@ const COPY = {
     shortPassword: 'கடவுச்சொல் குறைந்தது 8 எழுத்துகள் இருக்க வேண்டும்.',
     mismatch: 'கடவுச்சொற்கள் பொருந்தவில்லை.',
     duplicateEmail: 'இந்த மின்னஞ்சலில் ஏற்கனவே கணக்கு உள்ளது.',
+    duplicatePhone: 'இந்த தொலைபேசி எண்ணில் ஏற்கனவே கணக்கு உள்ளது.',
     backendUnavailable: 'சேவையகத்தை அணுக முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
     registrationFailed: 'கணக்கை உருவாக்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
     success: 'உங்கள் கணக்கு உருவாக்கப்பட்டது.',
@@ -109,6 +113,7 @@ export default function RegistrationScreen({ navigation, route }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
   const copy = COPY[selectedLanguage] ?? COPY.en;
 
   const updateField = (field, value) => {
@@ -168,13 +173,24 @@ export default function RegistrationScreen({ navigation, route }) {
         language: responseUser.language,
         location: responseUser.location,
       };
-      showMessage(copy.createAccount, copy.success, () =>
-        navigation.replace('ProfileScreen', { user: safeUser })
-      );
+
+      if (result.token) {
+        login({ user: safeUser, token: result.token });
+      }
+
+      const nextScreen = safeUser.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs';
+      showMessage(copy.createAccount, copy.success, () => {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: nextScreen, params: { user: safeUser } }],
+        });
+      });
     } catch (error) {
       const status = error.response?.status;
       let message = copy.registrationFailed;
-      if (status === 409 || error.response?.data?.code === 'EMAIL_EXISTS') {
+      if (error.response?.data?.code === 'PHONE_EXISTS') {
+        message = copy.duplicatePhone;
+      } else if (status === 409 || error.response?.data?.code === 'EMAIL_EXISTS') {
         message = copy.duplicateEmail;
       } else if (status === 400) {
         message = error.response.data.message || copy.required;

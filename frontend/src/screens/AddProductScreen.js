@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -85,28 +85,20 @@ export default function AddProductScreen({ route, navigation }) {
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.EN;
 
+  const initialPrefill = route?.params?.prefill || {};
+
   // Real Form States
-  const [cropName, setCropName] = useState('');
-  const [quantity, setQuantity] = useState(0);
-  const [sellingPrice, setSellingPrice] = useState('');
+  const [cropName, setCropName] = useState(initialPrefill.cropName || '');
+  const [quantity, setQuantity] = useState(initialPrefill.quantity ? Number(initialPrefill.quantity) : 0);
+  const [sellingPrice, setSellingPrice] = useState(initialPrefill.sellingPrice ? String(initialPrefill.sellingPrice) : '');
   const [photoUri, setPhotoUri] = useState(null);
   const [location] = useState('Kurunegala');
-  
+
   // 🌟 1-TAP HARVEST TIME SELECTOR ('Today' | 'Yesterday' | '2 Days Ago')
   const [harvestTime, setHarvestTime] = useState('Today');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Pre-fill from Voice Screen
-  useEffect(() => {
-    if (route?.params?.prefill) {
-      const { cropName: pCrop, quantity: pQty, sellingPrice: pPrice } = route.params.prefill;
-      if (pCrop) setCropName(pCrop);
-      if (pQty) setQuantity(Number(pQty));
-      if (pPrice) setSellingPrice(String(pPrice));
-    }
-  }, [route?.params?.prefill]);
 
   const handleSuggestionPress = (name) => {
     setCropName(name);
