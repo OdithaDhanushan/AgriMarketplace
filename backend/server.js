@@ -1,7 +1,7 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
-const connectDB = require('./config/db');
 
 const app = express();
 
@@ -20,10 +20,22 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Routes
 const produceRoutes = require('./routes/produceRoutes');
 app.use('/api/produce', produceRoutes);
-app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/orders', require('./routes/orderRoutes'));
+
+try {
+  app.use('/api/products', require('./routes/productRoutes'));
+} catch (e) {}
+
+try {
+  app.use('/api/orders', require('./routes/orderRoutes'));
+} catch (e) {}
+
+try {
+  const userRoutes = require('./routes/userRoutes');
+  app.use('/api/users', userRoutes);
+} catch (e) {}
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });
@@ -54,10 +66,6 @@ app.use((error, req, res, next) => {
   return res.status(500).json({ message: 'Internal server error.' });
 });
 
-const userRoutes = require('./routes/userRoutes');
-app.use('/api/users', userRoutes);
-const User = require('./models/User');
-
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
@@ -66,12 +74,11 @@ const startServer = async () => {
   }
 
   await mongoose.connect(process.env.MONGO_URI);
-  await User.init();
-  console.log('MongoDB connected.');
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  console.log('✅ MongoDB connected successfully.');
+  app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 };
 
 startServer().catch((error) => {
-  console.error('Unable to start backend:', error.message);
+  console.error('❌ Unable to start backend:', error.message);
   process.exit(1);
 });

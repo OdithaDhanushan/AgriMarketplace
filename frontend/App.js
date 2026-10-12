@@ -23,6 +23,8 @@ import BuyerProductDetailScreen from './src/screens/buyer/ProductDetailScreen';
 import CheckoutScreen from './src/screens/buyer/CheckoutScreen';
 import OtpVerificationScreen from './src/screens/buyer/OtpVerificationScreen';
 import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
+
+// User Management Onboarding Screens
 import OnboardingScreen1 from './src/screens/user-management/OnboardingScreen1';
 import OnboardingScreen2 from './src/screens/user-management/OnboardingScreen2';
 import LanguageSelectionScreen from './src/screens/user-management/LanguageSelectionScreen';
@@ -41,7 +43,6 @@ export default function App() {
       <View style={styles.phoneChassis}>
         {isWeb && <View style={styles.dynamicIsland} />}
         
-        {/* SINGLE ENCLOSING ROOT TAG FOR NAVIGATION */}
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingScreen1">
             {/* Member 1 Farmer Screens */}
@@ -74,7 +75,7 @@ export default function App() {
           </Stack.Navigator>
         </NavigationContainer>
       </View>
-    </CartProvider>
+    </View>
   );
 }
 

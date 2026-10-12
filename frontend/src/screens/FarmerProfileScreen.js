@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   SafeAreaView,
+  Modal,
   TextInput,
   Alert,
   Platform,
@@ -63,6 +64,27 @@ export default function FarmerProfileScreen({ navigation }) {
     );
   };
 
+  // Handle Logout (Takes user back to LoginScreen)
+  const handleLogout = () => {
+    Alert.alert(
+      'Log Out',
+      'Are you sure you want to log out of your farmer account?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Log Out', 
+          style: 'destructive', 
+          onPress: () => {
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'LoginScreen' }],
+            });
+          } 
+        }
+      ]
+    );
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient colors={['#bfe3b4', '#d8eed1', '#f5f7f6', '#ffffff']} style={styles.gradientBackground} />
@@ -93,7 +115,7 @@ export default function FarmerProfileScreen({ navigation }) {
           {/* Farmer Avatar & Info Card */}
           <View style={styles.profileCard}>
             <Image
-              source={require('../../assets/sunil.jpg')} // 👈 LOCAL ASSET
+              source={require('../../assets/sunil.jpg')}
               style={styles.avatar}
             />
             <Text style={styles.farmerName}>Sunil Wickramasinghe</Text>
@@ -164,8 +186,12 @@ export default function FarmerProfileScreen({ navigation }) {
             </View>
           </View>
 
-          {/* Logout Button */}
-          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.8}>
+          {/* Logout Button (Now Fully Functional!) */}
+          <TouchableOpacity 
+            style={styles.logoutBtn} 
+            activeOpacity={0.8}
+            onPress={handleLogout}
+          >
             <Ionicons name="log-out-outline" size={18} color="#c62828" style={{ marginRight: 6 }} />
             <Text style={styles.logoutText}>Log out of account</Text>
           </TouchableOpacity>
@@ -174,7 +200,7 @@ export default function FarmerProfileScreen({ navigation }) {
         {/* Unified Bottom Nav */}
         <BottomNavBar activeTab="Profile" navigation={navigation} />
 
-        {/* Edit Profile Modal (Interactive Payment Selectors) */}
+        {/* Edit Profile Modal */}
         {editModalVisible && (
           <View style={styles.modalOverlay}>
             <TouchableOpacity
@@ -221,7 +247,7 @@ export default function FarmerProfileScreen({ navigation }) {
           </View>
         )}
 
-        {/* Settings Modal (⚙️ Interactive Toggles & Call) */}
+        {/* Settings Modal (⚙️) */}
         {settingsModalVisible && (
           <View style={styles.modalOverlay}>
             <TouchableOpacity
