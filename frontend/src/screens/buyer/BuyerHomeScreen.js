@@ -13,6 +13,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
 import api from '../../services/api';
@@ -104,6 +105,8 @@ export default function BuyerHomeScreen({ navigation }) {
   const [ratingModalVisible, setRatingModalVisible] = useState(false);
   const [sortModalVisible, setSortModalVisible] = useState(false);
 
+  const { addToCart, customProduce } = useCart();
+
   const fetchProduce = useCallback(async (isRefresh = false) => {
     try {
       if (isRefresh) setRefreshing(true);
@@ -130,9 +133,29 @@ export default function BuyerHomeScreen({ navigation }) {
     fetchProduce();
   }, [fetchProduce]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchProduce(true);
+    }, [fetchProduce])
+  );
+
   const visibleProduce = useMemo(() => {
     const q = query.trim().toLowerCase();
-    let list = produceList.filter((item) => {
+
+    // Combine custom user-created produce with backend produce list
+    const normalizedCustom = (customProduce || []).map(normalizeProduce);
+    const combined = [...normalizedCustom];
+
+    produceList.forEach((backendItem) => {
+      const alreadyInList = combined.some(
+        (c) => (c._id && c._id === backendItem._id) || (c.name && c.name.toLowerCase() === backendItem.name?.toLowerCase())
+      );
+      if (!alreadyInList) {
+        combined.push(backendItem);
+      }
+    });
+
+    let list = combined.filter((item) => {
       const matchCat = selectedCategory === 'All Produce' || item.category === selectedCategory;
       const matchQ = !q || `${item.name} ${item.category} ${item.farmer}`.toLowerCase().includes(q);
 
@@ -164,7 +187,7 @@ export default function BuyerHomeScreen({ navigation }) {
     else if (selectedSort === 'Rating') list = [...list].sort((a, b) => b.rating - a.rating);
 
     return list;
-  }, [produceList, query, selectedCategory, selectedRadius, selectedPrice, selectedRating, selectedSort]);
+  }, [produceList, customProduce, query, selectedCategory, selectedRadius, selectedPrice, selectedRating, selectedSort]);
 
   const { addToCart } = useCart();
 

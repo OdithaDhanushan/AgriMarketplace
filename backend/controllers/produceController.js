@@ -12,6 +12,11 @@ const editableFields = [
   'location',
   'photoUrl',
   'description',
+  'farmer',
+  'farmerPhone',
+  'rating',
+  'distanceKm',
+  'minOrderQty',
   'isSoldOut',
 ];
 

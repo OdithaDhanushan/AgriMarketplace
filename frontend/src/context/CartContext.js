@@ -7,6 +7,33 @@ export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
+  const [customProduce, setCustomProduce] = useState([]);
+
+  const addCustomProduce = (produceItem) => {
+    const formatted = {
+      _id: produceItem._id || `local-${Date.now()}`,
+      id: produceItem.id || produceItem._id || `local-${Date.now()}`,
+      cropName: produceItem.cropName || 'Fresh Produce',
+      category: produceItem.category || 'Vegetables',
+      quantityKg: Number(produceItem.quantityKg || 10),
+      sellingPricePerKg: Number(produceItem.sellingPricePerKg || 0),
+      marketPricePerKg: Number(produceItem.marketPricePerKg || produceItem.sellingPricePerKg || 0),
+      harvestDate: produceItem.harvestDate || 'Today',
+      freshness: produceItem.freshness || 'Today',
+      location: produceItem.location || 'Kurunegala',
+      photoUrl: produceItem.photoUrl || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+      description: produceItem.description || '',
+      farmer: produceItem.farmer || "Sunil's Farm",
+      farmerPhone: produceItem.farmerPhone || '+94 77 123 4567',
+      rating: 4.9,
+      distanceKm: 5.0,
+      minOrderQty: produceItem.minOrderQty || 1,
+      isSoldOut: false,
+      createdAt: new Date().toISOString(),
+    };
+    setCustomProduce((prev) => [formatted, ...prev]);
+    return formatted;
+  };
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -165,6 +192,8 @@ export function CartProvider({ children }) {
         loadingOrders,
         fetchOrders,
         addOrder,
+        customProduce,
+        addCustomProduce,
       }}
     >
       {children}

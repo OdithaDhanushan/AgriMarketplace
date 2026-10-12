@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
+import { useCart } from '../context/CartContext';
 
 // REAL MULTILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
@@ -143,6 +144,8 @@ export default function AddProductScreen({ route, navigation }) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
+  const { addCustomProduce } = useCart();
+
   const handleAddProduct = async () => {
     if (!cropName.trim()) {
       Alert.alert('Missing Crop Name', 'Please type the crop name you are selling.');
@@ -175,9 +178,25 @@ export default function AddProductScreen({ route, navigation }) {
         location,
         photoUrl: photoUri || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
         description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer Sunil.`,
+        farmer: "Sunil's Farm",
+        farmerPhone: '+94 77 123 4567',
+        rating: 4.9,
+        distanceKm: 5.0,
+        minOrderQty: 1,
       };
 
-      await createProduce(payload);
+      // Add to local state instantly so Explore tab has it immediately
+      if (addCustomProduce) {
+        addCustomProduce(payload);
+      }
+
+      // Persist to MongoDB backend
+      try {
+        await createProduce(payload);
+      } catch (backendErr) {
+        console.log('Backend createProduce failed, saved locally:', backendErr?.message);
+      }
+
       setLoading(false);
       navigation.navigate('ProductAddedSuccess');
     } catch (error) {

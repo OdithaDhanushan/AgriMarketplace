@@ -99,7 +99,8 @@ export default function ProduceDetailScreen({ route, navigation }) {
   };
 
   const handleCall = () => {
-    Linking.openURL(`tel:${item.phone}`).catch(() =>
+    const phoneNumber = item.farmerPhone || item.phone || '+94 77 123 4567';
+    Linking.openURL(`tel:${phoneNumber}`).catch(() =>
       Alert.alert('Call unavailable', 'This device cannot start a phone call.')
     );
   };
@@ -182,16 +183,19 @@ export default function ProduceDetailScreen({ route, navigation }) {
 
           {/* ── Farmer Card ── */}
           <View style={styles.farmerCard}>
-            <Image source={{ uri: item.farmerPhoto }} style={styles.farmerPhoto} />
+            <Image
+              source={{ uri: item.farmerPhoto || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400' }}
+              style={styles.farmerPhoto}
+            />
             <View style={styles.farmerInfo}>
               <View style={styles.farmerNameRow}>
-                <Text style={styles.farmerName}>{item.farmer}</Text>
+                <Text style={styles.farmerName}>{item.farmer || 'Local Farmer'}</Text>
                 <Ionicons name="checkmark-circle" size={16} color={COLORS.green} />
               </View>
               <View style={styles.farmerRatingRow}>
                 <Ionicons name="star" size={12} color="#E5A500" />
                 <Text style={styles.farmerRatingText}>
-                  {item.farmerRating} ({item.farmerReviews} reviews)
+                  {item.farmerRating || item.rating || 4.8} ({item.farmerReviews || item.reviews || 42} reviews)
                 </Text>
               </View>
             </View>
