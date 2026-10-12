@@ -105,7 +105,19 @@ export default function LoginScreen({ navigation, route }) {
 
               <Pressable
                 accessibilityRole="button"
-                onPress={() => navigation.replace('MarketPrices')}
+                onPress={() => {
+                  // If the user logs in, pass their email/identifier as their name!
+                  const farmerName = identifier ? identifier.split('@')[0] : 'Kamal';
+                  // Take them straight to your Farmer Dashboard with their real name!
+                  navigation.replace('MarketPrices', {
+                    loggedInUser: {
+                      name: farmerName.charAt(0).toUpperCase() + farmerName.slice(1),
+                      email: identifier || 'kamal@farm.lk',
+                      phone: '0764951582',
+                      location: 'Kurunegala District',
+                    }
+                  });
+                }}
                 style={styles.signInButton}
               >
                 <LinearGradient
