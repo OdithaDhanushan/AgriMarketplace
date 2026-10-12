@@ -33,6 +33,9 @@ import RoleSelectionScreen from './src/screens/user-management/RoleSelectionScre
 import RegistrationScreen from './src/screens/user-management/RegistrationScreen';
 import ProfileScreen from './src/screens/user-management/ProfileScreen';
 
+import { CartProvider } from './src/context/CartContext';
+import BuyerTabNavigator from './src/navigation/BuyerTabNavigator';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -43,6 +46,7 @@ export default function App() {
       <View style={styles.phoneChassis}>
         {isWeb && <View style={styles.dynamicIsland} />}
         
+        {/* SINGLE ENCLOSING ROOT TAG FOR NAVIGATION */}
         <NavigationContainer>
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingScreen1">
             {/* Member 1 Farmer Screens */}
@@ -58,6 +62,7 @@ export default function App() {
             {/* Member 2 Buyer Screens */}
             <Stack.Screen name="BuyerSearch" component={BuyerSearchScreen} />
             <Stack.Screen name="BuyerHome" component={BuyerHomeScreen} />
+            <Stack.Screen name="ProduceDetail" component={ProduceDetailScreen} />
             <Stack.Screen name="MyFarmers" component={MyFarmersScreen} />
             <Stack.Screen name="CartCheckout" component={CartCheckoutScreen} />
             <Stack.Screen name="Checkout" component={CheckoutScreen} />
