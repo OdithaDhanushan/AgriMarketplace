@@ -54,6 +54,7 @@ export default function App() {
             <Stack.Screen name="AddProduct" component={AddProductScreen} />
             <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
             <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+            <Stack.Screen name="SellerProductDetail" component={ProductDetailScreen} />
             <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
             <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
             <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />

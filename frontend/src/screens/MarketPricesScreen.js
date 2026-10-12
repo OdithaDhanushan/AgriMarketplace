@@ -273,7 +273,15 @@ export default function MarketPricesScreen({ navigation }) {
         >
           <SafeAreaView style={styles.headerOverlay}>
             <View style={styles.topRow}>
-              <TouchableOpacity style={styles.circleBtn} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={styles.circleBtn}
+                activeOpacity={0.8}
+                onPress={() => {
+                  if (navigation && navigation.canGoBack()) {
+                    navigation.goBack();
+                  }
+                }}
+              >
                 <Ionicons name="chevron-back" size={20} color="#333" />
               </TouchableOpacity>
               <Text style={styles.mainTitle}>Market Prices</Text>
