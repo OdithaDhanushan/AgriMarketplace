@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Linking,
+  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -33,6 +35,9 @@ export default function FarmerProfileScreen({ navigation }) {
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [smsAlertsEnabled, setSmsAlertsEnabled] = useState(true);
+  const [offlineSyncEnabled, setOfflineSyncEnabled] = useState(true);
 
   const applyProfile = (nextUser) => {
     setProfile(nextUser);
@@ -90,7 +95,7 @@ export default function FarmerProfileScreen({ navigation }) {
 
   const saveProfile = async () => {
     if ([form.name, form.email, form.phone, form.location].some((value) => !value.trim())) {
-      showMessage('Update failed', 'Please complete every profile field before saving.');
+      showMessage('Update failed', 'Please complete every required profile field before saving.');
       return;
     }
 
@@ -135,7 +140,7 @@ export default function FarmerProfileScreen({ navigation }) {
   };
 
   const confirmDelete = () => {
-    const message = 'This will permanently remove your account and profile data. This action cannot be undone.';
+    const message = 'This permanently removes your account and its linked listings and orders. This cannot be undone.';
     if (Platform.OS === 'web') {
       if (window.confirm(`Delete account?\n\n${message}`)) deleteAccount();
       return;
@@ -145,6 +150,12 @@ export default function FarmerProfileScreen({ navigation }) {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: deleteAccount },
     ]);
+  };
+
+  const handleCallCooperative = () => {
+    Linking.openURL('tel:+94771234567').catch(() => {
+      showMessage('Cooperative Support', 'Phone calling is unavailable on this device.');
+    });
   };
 
   const cancelEdit = () => {
@@ -172,9 +183,21 @@ export default function FarmerProfileScreen({ navigation }) {
           value={form[field]}
         />
       ) : (
-        <Text style={styles.value}>{profile?.[field] || '—'}</Text>
+        <Text style={styles.value}>{profile?.[field] || 'Not set'}</Text>
       )}
     </View>
+  );
+
+  const renderSetting = (title, description, enabled, onToggle) => (
+    <TouchableOpacity style={styles.settingItem} activeOpacity={0.8} onPress={onToggle}>
+      <View style={styles.settingCopy}>
+        <Text style={styles.settingName}>{title}</Text>
+        <Text style={styles.settingSub}>{description}</Text>
+      </View>
+      <Text style={[styles.settingBadge, enabled ? styles.badgeEnabled : styles.badgeDisabled]}>
+        {enabled ? 'ENABLED' : 'DISABLED'}
+      </Text>
+    </TouchableOpacity>
   );
 
   return (
@@ -187,11 +210,11 @@ export default function FarmerProfileScreen({ navigation }) {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Farmer Profile</Text>
           <TouchableOpacity
-            accessibilityLabel={editMode ? 'Cancel editing' : 'Edit profile'}
-            onPress={editMode ? cancelEdit : () => setEditMode(true)}
+            accessibilityLabel="Profile settings"
+            onPress={() => setSettingsVisible(true)}
             style={styles.headerButton}
           >
-            <Ionicons name={editMode ? 'close-outline' : 'create-outline'} size={20} color="#1f2937" />
+            <Ionicons name="settings-outline" size={20} color="#1f2937" />
           </TouchableOpacity>
         </View>
 
@@ -210,7 +233,7 @@ export default function FarmerProfileScreen({ navigation }) {
 
             <View style={styles.section}>
               <View style={styles.sectionHeading}>
-                <Text style={styles.sectionTitle}>Account details</Text>
+                <Text style={styles.sectionTitle}>Farm & contact information</Text>
                 {!editMode && (
                   <TouchableOpacity onPress={() => setEditMode(true)}>
                     <Text style={styles.editText}>Edit</Text>
@@ -223,7 +246,7 @@ export default function FarmerProfileScreen({ navigation }) {
               {renderField('location', 'Location', 'location-outline')}
               {renderField('farmName', 'Farm', 'home-outline')}
               <View style={styles.paymentRow}>
-                <Text style={styles.paymentLabel}>Payment</Text>
+                <Text style={styles.paymentLabel}>Preferred payment</Text>
                 {editMode ? (
                   <View style={styles.paymentOptions}>
                     {PAYMENT_OPTIONS.map((option) => (
@@ -277,6 +300,39 @@ export default function FarmerProfileScreen({ navigation }) {
         )}
 
         <BottomNavBar activeTab="Profile" navigation={navigation} />
+
+        <Modal
+          visible={settingsVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setSettingsVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <TouchableOpacity
+              accessibilityLabel="Close settings"
+              style={styles.modalBackdrop}
+              activeOpacity={1}
+              onPress={() => setSettingsVisible(false)}
+            />
+            <View style={styles.modalContent}>
+              <View style={styles.sectionHeading}>
+                <Text style={styles.sectionTitle}>App settings</Text>
+                <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                  <Ionicons name="close-circle" size={26} color="#333" />
+                </TouchableOpacity>
+              </View>
+              {renderSetting('SMS Order Alerts', 'Status alerts when buyers request produce', smsAlertsEnabled, () => setSmsAlertsEnabled((value) => !value))}
+              {renderSetting('Offline Draft Sync', 'Sync listing drafts when back online', offlineSyncEnabled, () => setOfflineSyncEnabled((value) => !value))}
+              <TouchableOpacity style={styles.settingItem} onPress={handleCallCooperative}>
+                <View style={styles.settingCopy}>
+                  <Text style={styles.settingName}>Cooperative Support</Text>
+                  <Text style={styles.settingSub}>Call the cooperative hotline</Text>
+                </View>
+                <Ionicons name="call-outline" size={19} color="#1d7a3e" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     </View>
   );
@@ -354,20 +410,10 @@ const styles = StyleSheet.create({
     color: '#1f2d1f',
     backgroundColor: '#fff',
   },
-  paymentRow: {
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#edf2ee',
-  },
+  paymentRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#edf2ee' },
   paymentLabel: { color: '#4b5d4d', fontSize: 13, fontWeight: '600', marginBottom: 8 },
   paymentOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  paymentOption: {
-    borderWidth: 1,
-    borderColor: '#dfe9e2',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
+  paymentOption: { borderWidth: 1, borderColor: '#dfe9e2', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8 },
   paymentOptionSelected: { backgroundColor: '#e7f4e9', borderColor: '#1a7a3d' },
   paymentOptionText: { color: '#435b48', fontSize: 12 },
   paymentOptionTextSelected: { color: '#145d2d', fontWeight: '700' },
@@ -376,36 +422,20 @@ const styles = StyleSheet.create({
   primaryButtonText: { color: '#fff', fontWeight: '700' },
   secondaryButton: { flex: 1, backgroundColor: '#edf5ee', borderRadius: 10, padding: 12, alignItems: 'center' },
   secondaryButtonText: { color: '#1d3f28', fontWeight: '700' },
-  dashboardButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#f3faf4',
-    borderRadius: 10,
-    padding: 14,
-    marginTop: 12,
-  },
+  dashboardButton: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#f3faf4', borderRadius: 10, padding: 14, marginTop: 12 },
   dashboardText: { flex: 1, color: '#1d4d2d', fontWeight: '600' },
-  signOutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#edf5ee',
-    borderRadius: 10,
-    padding: 14,
-    marginTop: 10,
-  },
+  signOutButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#edf5ee', borderRadius: 10, padding: 14, marginTop: 10 },
   signOutText: { color: '#315b3b', fontWeight: '700' },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#c9342b',
-    borderRadius: 10,
-    padding: 14,
-    marginTop: 12,
-  },
+  deleteButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#c9342b', borderRadius: 10, padding: 14, marginTop: 12 },
   deleteText: { color: '#fff', fontWeight: '700' },
+  modalOverlay: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+  modalBackdrop: { ...StyleSheet.absoluteFillObject },
+  modalContent: { backgroundColor: '#fff', borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 20, paddingBottom: 28 },
+  settingItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#edf2ee' },
+  settingCopy: { flex: 1, paddingRight: 12 },
+  settingName: { fontSize: 14, fontWeight: '700', color: '#1e2d1f' },
+  settingSub: { fontSize: 11, color: '#66756a', marginTop: 3 },
+  settingBadge: { fontSize: 10, fontWeight: '700', paddingVertical: 5, paddingHorizontal: 8, borderRadius: 8, overflow: 'hidden' },
+  badgeEnabled: { backgroundColor: '#e8f5e9', color: '#2e7d32' },
+  badgeDisabled: { backgroundColor: '#ffebee', color: '#c62828' },
 });

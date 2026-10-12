@@ -1,6 +1,6 @@
 const express = require('express');
-const cors = require('cors');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
 const connectDB = require('./config/db');
 
@@ -21,6 +21,7 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Routes
 const produceRoutes = require('./routes/produceRoutes');
 const userRoutes = require('./routes/userRoutes');
 
@@ -84,6 +85,6 @@ const startServer = async () => {
 };
 
 startServer().catch((error) => {
-  console.error('Unable to start backend:', error.message);
+  console.error('❌ Unable to start backend:', error.message);
   process.exit(1);
 });

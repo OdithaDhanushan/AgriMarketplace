@@ -1,4 +1,4 @@
-import axiosClient from 'axios';
+import { create } from 'axios';
 import { Platform } from 'react-native';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
@@ -6,9 +6,10 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
     ? 'http://localhost:5000/api'
     : 'http://192.168.1.29:5000/api');
 
-const api = axiosClient;
-api.defaults.baseURL = BASE_URL;
-api.defaults.timeout = 10000;
+const api = create({
+  baseURL: BASE_URL,
+  timeout: 10000,
+});
 
 export const setAuthToken = (token) => {
   if (token) {
