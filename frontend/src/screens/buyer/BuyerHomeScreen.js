@@ -189,8 +189,6 @@ export default function BuyerHomeScreen({ navigation }) {
     return list;
   }, [produceList, customProduce, query, selectedCategory, selectedRadius, selectedPrice, selectedRating, selectedSort]);
 
-  const { addToCart } = useCart();
-
   const handleAddToCart = (item) => {
     addToCart(item, 1);
     navigation.navigate('My Cart');

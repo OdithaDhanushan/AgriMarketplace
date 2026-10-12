@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 
 // Automatically detect host IP from Expo debugger/hostUri if available
 const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.manifest?.debuggerHost;
-const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '10.100.108.143';
+const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '10.223.25.41';
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
   (Platform.OS === 'web'

@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const mongoose = require('mongoose');
 require('dotenv').config();
 const connectDB = require('./config/db');
 
@@ -65,7 +66,7 @@ const startServer = async () => {
     throw new Error('MONGO_URI is required. Set it in backend/.env.');
   }
 
-  await mongoose.connect(process.env.MONGO_URI);
+  await connectDB();
   await User.init();
   console.log('MongoDB connected.');
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
