@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
     enum: ['', 'Direct Bank Transfer', 'Cash on Pickup / Delivery', 'Mobile Wallet'],
     default: '',
   },
+  profileImage: { type: String, default: '' },
 }, { timestamps: true });
 
 module.exports = mongoose.model('User', userSchema);
