@@ -15,6 +15,7 @@ import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgGradient, Stop } fr
 import BottomNavBar from '../components/BottomNavBar';
 import api from '../services/api';
 import { useFocusEffect } from '@react-navigation/native';
+import { getCropImage } from '../utils/cropImages';
 
 // Precise Chart Dimensions strictly contained inside the 412px Phone Chassis
 const chartWidth = 300;
@@ -238,7 +239,7 @@ export default function MarketPricesScreen({ navigation }) {
 
   const featuredCropName = latestCrop ? latestCrop.cropName : currentData.featured.cropName;
   const featuredPrice = latestCrop ? latestCrop.sellingPricePerKg : currentData.featured.todayPrice;
-  const featuredPhoto = latestCrop ? latestCrop.photoUrl : currentData.featured.photoUrl;
+  const featuredPhoto = getCropImage(featuredCropName, latestCrop ? latestCrop.photoUrl : currentData.featured.photoUrl);
   const featuredLocation = latestCrop ? latestCrop.location : currentData.location;
   const featuredQty = latestCrop ? latestCrop.quantityKg : 20;
 
@@ -473,7 +474,7 @@ export default function MarketPricesScreen({ navigation }) {
                     price: p.sellingPricePerKg,
                     tag: '🌱 Your Crop',
                     tagType: 'green',
-                    photo: p.photoUrl || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=200',
+                    photo: getCropImage(p.cropName, p.photoUrl),
                     isRealItem: true,
                     rawItem: p,
                   });

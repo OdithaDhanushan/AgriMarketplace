@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { getCropImage } from '../utils/cropImages';
 
 // REAL MULTILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
@@ -105,6 +106,32 @@ export default function AddProductScreen({ route, navigation }) {
     setCropName(name);
   };
 
+  const processSelectedAsset = async (asset) => {
+    if (!asset) return;
+    if (asset.base64) {
+      setPhotoUri(`data:image/jpeg;base64,${asset.base64}`);
+      return;
+    }
+    // If running on web without base64, convert the blob into a persistent base64 data URI
+    if (Platform.OS === 'web' && asset.uri && asset.uri.startsWith('blob:')) {
+      try {
+        const response = await fetch(asset.uri);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) {
+            setPhotoUri(reader.result);
+          }
+        };
+        reader.readAsDataURL(blob);
+        return;
+      } catch (err) {
+        console.warn('Failed to convert blob image to base64:', err);
+      }
+    }
+    setPhotoUri(asset.uri);
+  };
+
   const pickImageFromGallery = async () => {
     setModalVisible(false);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -116,9 +143,12 @@ export default function AddProductScreen({ route, navigation }) {
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.7,
+      quality: 0.6,
+      base64: true,
     });
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      await processSelectedAsset(result.assets[0]);
+    }
   };
 
   const takePhotoWithCamera = async () => {
@@ -131,9 +161,12 @@ export default function AddProductScreen({ route, navigation }) {
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 0.7,
+      quality: 0.6,
+      base64: true,
     });
-    if (!result.canceled) setPhotoUri(result.assets[0].uri);
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      await processSelectedAsset(result.assets[0]);
+    }
   };
 
   const { addCustomProduce } = useCart();
@@ -157,6 +190,9 @@ export default function AddProductScreen({ route, navigation }) {
     if (harvestTime === 'Yesterday') d.setDate(d.getDate() - 1);
     const calculatedHarvestDate = d.toLocaleDateString('en-GB');
 
+    // Resolve guaranteed persistent photo URL (either uploaded base64 data URI or matching crop photo)
+    const resolvedPhotoUrl = getCropImage(cropName.trim(), photoUri);
+
     setLoading(true);
     try {
       const payload = {
@@ -168,7 +204,7 @@ export default function AddProductScreen({ route, navigation }) {
         harvestDate: calculatedHarvestDate,
         freshness: harvestTime, // 'Today' | 'Yesterday'
         location,
-        photoUrl: photoUri || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+        photoUrl: resolvedPhotoUrl,
         description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer Sunil.`,
         farmer: "Sunil's Farm",
         farmerPhone: '+94 77 123 4567',

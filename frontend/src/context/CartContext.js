@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import api from '../services/api';
+import { getCropImage } from '../utils/cropImages';
 
 const CartContext = createContext();
 
@@ -21,7 +22,7 @@ export function CartProvider({ children }) {
       harvestDate: produceItem.harvestDate || 'Today',
       freshness: produceItem.freshness || 'Today',
       location: produceItem.location || 'Kurunegala',
-      photoUrl: produceItem.photoUrl || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+      photoUrl: getCropImage(produceItem.cropName, produceItem.photoUrl),
       description: produceItem.description || '',
       farmer: produceItem.farmer || "Sunil's Farm",
       farmerPhone: produceItem.farmerPhone || '+94 77 123 4567',

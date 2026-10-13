@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import BottomNavBar from '../components/BottomNavBar';
 import api from '../services/api';
+import { getCropImage } from '../utils/cropImages';
 
 // REAL TRILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
@@ -423,7 +424,7 @@ export default function VoiceListingScreen({ navigation }) {
         harvestDate: 'Today',
         freshness: 'Today',
         location: 'Kurunegala',
-        photoUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+        photoUrl: getCropImage(recognizedData.cropName),
         description: `Voice listed produce: ${recognizedData.quantityKg || 20}kg ${recognizedData.cropName} at Rs. ${recognizedData.sellingPricePerKg || 180}/kg`,
       });
       setLoading(false);
