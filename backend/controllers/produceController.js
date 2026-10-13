@@ -236,11 +236,22 @@ exports.updateProduce = async (req, res) => {
   }
 
   try {
-    const updated = await Produce.findOneAndUpdate({ _id: req.params.id, farmerId: req.user._id }, updates, {
+    const existing = await Produce.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: 'Produce not found.' });
+    }
+
+    // STRICT OWNER CHECK: Only the farmer who added this produce can update it
+    const isOwner = existing.farmerId && existing.farmerId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'Admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'You can only edit products you added yourself.' });
+    }
+
+    const updated = await Produce.findByIdAndUpdate(req.params.id, updates, {
       new: true,
       runValidators: true,
     });
-    if (!updated) return res.status(404).json({ message: 'Produce not found.' });
     res.status(200).json(updated);
   } catch (error) {
     const status = error.name === 'ValidationError' || error.name === 'CastError' ? 400 : 500;
@@ -254,8 +265,19 @@ exports.deleteProduce = async (req, res) => {
   }
 
   try {
-    const deleted = await Produce.findOneAndDelete({ _id: req.params.id, farmerId: req.user._id });
-    if (!deleted) return res.status(404).json({ message: 'Produce not found.' });
+    const existing = await Produce.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: 'Produce not found.' });
+    }
+
+    // STRICT OWNER CHECK: Only the farmer who added this produce can delete it
+    const isOwner = existing.farmerId && existing.farmerId.toString() === req.user._id.toString();
+    const isAdmin = req.user.role === 'Admin';
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ message: 'You can only delete products you added yourself.' });
+    }
+
+    await Produce.findByIdAndDelete(req.params.id);
     res.status(200).json({ message: 'Produce deleted.' });
   } catch (error) {
     res.status(500).json({ message: 'Unable to delete produce.' });

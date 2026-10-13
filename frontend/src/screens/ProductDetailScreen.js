@@ -1,19 +1,21 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
-  View,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  SafeAreaView,
-  Alert,
   TextInput,
-  Platform,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const chartWidth = 300;
 const chartHeight = 110;
@@ -37,6 +39,7 @@ const CROP_BASELINES = {
 };
 
 export default function ProductDetailScreen({ route, navigation }) {
+  const { user } = useAuth();
   const item = route?.params?.item || {
     _id: 'default',
     cropName: 'Carrots',
@@ -50,11 +53,50 @@ export default function ProductDetailScreen({ route, navigation }) {
     description: 'Fresh and organic produce from local farmers.',
   };
 
+  const [productItem, setProductItem] = useState(item);
+
+  // Sync latest produce data from backend if valid ObjectId
+  useEffect(() => {
+    if (item?._id && item._id.length === 24) {
+      api.get(`/produce/${item._id}`)
+        .then((res) => {
+          if (res.data) {
+            setProductItem(res.data);
+            if (res.data.sellingPricePerKg !== undefined) {
+              setSellingPrice(res.data.sellingPricePerKg);
+              setEditPriceInput(String(res.data.sellingPricePerKg));
+            }
+            if (res.data.quantityKg !== undefined) {
+              setQuantity(res.data.quantityKg);
+              setEditQtyInput(String(res.data.quantityKg));
+            }
+          }
+        })
+        .catch((err) => {
+          console.log('Product fetch error:', err.message);
+        });
+    }
+  }, [item?._id]);
+
+  const currentUserId = user?.id || user?._id;
+  const rawFarmerId = productItem?.farmerId || item?.farmerId;
+  const itemFarmerId = (rawFarmerId && typeof rawFarmerId === 'object')
+    ? (rawFarmerId._id || rawFarmerId.id)
+    : rawFarmerId;
+
+  // STRICT OWNER VERIFICATION: Only the specific farmer who added this product can edit/delete
+  const isOwner = Boolean(
+    currentUserId &&
+    itemFarmerId &&
+    String(currentUserId) === String(itemFarmerId)
+  );
+
   const [selectedMarket, setSelectedMarket] = useState(
     item.location ? `${item.location} Market` : 'Kurunegala Market'
   );
   const [marketModalVisible, setMarketModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const marketInfo = REGIONAL_MARKETS[selectedMarket] || REGIONAL_MARKETS['Kurunegala Market'];
   const multiplier = marketInfo.rate;
@@ -64,11 +106,27 @@ export default function ProductDetailScreen({ route, navigation }) {
   const officialTodayMarketPrice = Math.round(cropBaseline.today * multiplier);
   const fixedYesterdayPrice = Math.round(cropBaseline.yesterday * multiplier);
 
-  const [sellingPrice, setSellingPrice] = useState(officialTodayMarketPrice);
-  const [quantity, setQuantity] = useState(item.quantityKg || 30);
+  // Initialize with the item's actual listed price & quantity if available
+  const initialPrice = item.sellingPricePerKg !== undefined
+    ? Number(item.sellingPricePerKg)
+    : officialTodayMarketPrice;
+  const initialQty = item.quantityKg !== undefined
+    ? Number(item.quantityKg)
+    : 30;
 
-  const [editPriceInput, setEditPriceInput] = useState(String(sellingPrice));
-  const [editQtyInput, setEditQtyInput] = useState(String(quantity));
+  const [sellingPrice, setSellingPrice] = useState(initialPrice);
+  const [quantity, setQuantity] = useState(initialQty);
+
+  const [editPriceInput, setEditPriceInput] = useState(String(initialPrice));
+  const [editQtyInput, setEditQtyInput] = useState(String(initialQty));
+
+  const showMessage = (title, message) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
 
   const handleSelectMarket = (m) => {
     setSelectedMarket(m);
@@ -80,20 +138,30 @@ export default function ProductDetailScreen({ route, navigation }) {
   };
 
   const handleOpenEditModal = () => {
+    if (!isOwner) {
+      showMessage('Permission Denied', 'You can only edit products you added yourself.');
+      return;
+    }
     setEditPriceInput(String(sellingPrice));
     setEditQtyInput(String(quantity));
     setEditModalVisible(true);
   };
 
   const handleUpdate = async () => {
+    if (!isOwner) {
+      showMessage('Permission Denied', 'You can only edit products you added yourself.');
+      return;
+    }
+
     const newPriceNum = Number(editPriceInput);
     const newQtyNum = Number(editQtyInput);
 
     if (isNaN(newPriceNum) || isNaN(newQtyNum) || newPriceNum <= 0 || newQtyNum <= 0) {
-      Alert.alert('Invalid values', 'Please enter valid positive numbers for price and quantity.');
+      showMessage('Invalid values', 'Please enter valid positive numbers for price and quantity.');
       return;
     }
 
+    setSaving(true);
     try {
       if (item._id && item._id.length === 24) {
         await api.put(`/produce/${item._id}`, {
@@ -101,19 +169,29 @@ export default function ProductDetailScreen({ route, navigation }) {
           quantityKg: newQtyNum,
         });
       }
-    } catch (error) {
-      Alert.alert('Unable to update listing', error.response?.data?.message || error.message);
-      return;
-    }
 
-    setSellingPrice(newPriceNum);
-    setQuantity(newQtyNum);
-    setEditModalVisible(false);
-    Alert.alert(
-      '✅ Listing Updated!',
-      `Your selling price is now Rs. ${newPriceNum} /kg\nAvailable Quantity: ${newQtyNum} kg`,
-      [{ text: 'OK' }]
-    );
+      setSellingPrice(newPriceNum);
+      setQuantity(newQtyNum);
+      if (item) {
+        item.sellingPricePerKg = newPriceNum;
+        item.quantityKg = newQtyNum;
+      }
+      setProductItem((prev) => ({
+        ...prev,
+        sellingPricePerKg: newPriceNum,
+        quantityKg: newQtyNum,
+      }));
+      setEditModalVisible(false);
+      showMessage(
+        'Listing Updated!',
+        `Your selling price is now Rs. ${newPriceNum} /kg\nAvailable Quantity: ${newQtyNum} kg`
+      );
+    } catch (error) {
+      const errMsg = error.response?.data?.message || error.message || 'Unable to update listing.';
+      showMessage('Unable to update listing', errMsg);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const executeDelete = async () => {
@@ -122,20 +200,20 @@ export default function ProductDetailScreen({ route, navigation }) {
         await api.delete(`/produce/${item._id}`);
       }
     } catch (error) {
-      Alert.alert('Unable to delete listing', error.response?.data?.message || error.message);
+      showMessage('Unable to delete listing', error.response?.data?.message || error.message);
       return;
     }
 
-    if (Platform.OS === 'web') {
-      window.alert(`${item.cropName} listing removed successfully.`);
-    } else {
-      Alert.alert('Deleted', `${item.cropName} removed successfully.`);
-    }
-
+    showMessage('Deleted', `${item.cropName} listing removed successfully.`);
     navigation.navigate('MarketPrices', { refresh: Date.now() });
   };
 
   const handleDelete = () => {
+    if (!isOwner) {
+      showMessage('Permission Denied', 'You can only delete products you added yourself.');
+      return;
+    }
+
     if (Platform.OS === 'web') {
       const confirmed = window.confirm(`Are you sure you want to delete ${item.cropName} from the marketplace?`);
       if (confirmed) executeDelete();
@@ -407,18 +485,34 @@ export default function ProductDetailScreen({ route, navigation }) {
             Fresh {item.cropName.toLowerCase()} sourced for {currentLocation} Market. Handpicked and packed in standard crates.
           </Text>
 
-          {/* CRUD ACTION BUTTONS */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.editBtn} activeOpacity={0.85} onPress={handleOpenEditModal}>
-              <Ionicons name="create-outline" size={18} color="#fff" />
-              <Text style={styles.btnText}>Edit Stock / Price</Text>
-            </TouchableOpacity>
+          {/* CRUD ACTION BUTTONS - Only shown if logged-in farmer added this produce */}
+          {isOwner ? (
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={styles.editBtn} activeOpacity={0.85} onPress={handleOpenEditModal}>
+                <Ionicons name="create-outline" size={18} color="#fff" />
+                <Text style={styles.btnText}>Edit Stock / Price</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity style={styles.deleteBtn} activeOpacity={0.85} onPress={handleDelete}>
-              <Ionicons name="trash-outline" size={18} color="#fff" />
-              <Text style={styles.btnText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity style={styles.deleteBtn} activeOpacity={0.85} onPress={handleDelete}>
+                <Ionicons name="trash-outline" size={18} color="#fff" />
+                <Text style={styles.btnText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.ownerNoticeBox}>
+              <View style={styles.ownerNoticeIcon}>
+                <Ionicons name="shield-checkmark" size={20} color="#2e7d32" />
+              </View>
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.ownerNoticeTitle}>
+                  Seller: {productItem?.farmer || item?.farmer || 'Local Farmer'}
+                </Text>
+                <Text style={styles.ownerNoticeSub}>
+                  Only the farmer who listed this produce can edit stock or delete it.
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -465,13 +559,22 @@ export default function ProductDetailScreen({ route, navigation }) {
       {editModalVisible && (
         <View style={styles.editModalOverlay}>
           <TouchableOpacity
-            style={styles.backdropDismiss}
+            style={styles.modalBackdropTouch}
             activeOpacity={1}
-            onPress={() => setEditModalVisible(false)}
+            onPress={() => !saving && setEditModalVisible(false)}
           />
 
           <View style={styles.editModalContent}>
-            <Text style={styles.modalTitle}>Update Produce Stock</Text>
+            <View style={styles.rowBetween}>
+              <Text style={styles.modalTitle}>Update Produce Stock</Text>
+              <TouchableOpacity
+                onPress={() => !saving && setEditModalVisible(false)}
+                disabled={saving}
+                style={{ padding: 4 }}
+              >
+                <Ionicons name="close-circle" size={24} color="#888" />
+              </TouchableOpacity>
+            </View>
 
             <Text style={styles.inputLabel}>New Selling Price (Rs/kg):</Text>
             <TextInput
@@ -479,6 +582,8 @@ export default function ProductDetailScreen({ route, navigation }) {
               keyboardType="numeric"
               value={editPriceInput}
               onChangeText={setEditPriceInput}
+              placeholder="e.g. 180"
+              editable={!saving}
             />
 
             <Text style={styles.inputLabel}>New Available Quantity (kg):</Text>
@@ -487,13 +592,28 @@ export default function ProductDetailScreen({ route, navigation }) {
               keyboardType="numeric"
               value={editQtyInput}
               onChangeText={setEditQtyInput}
+              placeholder="e.g. 15"
+              editable={!saving}
             />
 
-            <TouchableOpacity style={styles.saveBtn} activeOpacity={0.85} onPress={handleUpdate}>
-              <Text style={styles.saveBtnText}>Save Changes</Text>
+            <TouchableOpacity
+              style={[styles.saveBtn, saving && { opacity: 0.7 }]}
+              activeOpacity={0.85}
+              onPress={handleUpdate}
+              disabled={saving}
+            >
+              {saving ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.saveBtnText}>Save Changes</Text>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditModalVisible(false)}>
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              onPress={() => !saving && setEditModalVisible(false)}
+              disabled={saving}
+            >
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -665,10 +785,20 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
-    padding: 24,
+    alignItems: 'center',
+    padding: 20,
     zIndex: 999999,
   },
+  modalBackdropTouch: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   editModalContent: {
+    width: '100%',
+    maxWidth: 360,
     backgroundColor: '#fff',
     borderRadius: 24,
     padding: 24,
@@ -677,6 +807,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 16,
     elevation: 10,
+    zIndex: 10,
   },
   backdropDismiss: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   inputLabel: { fontSize: 13, color: '#555', marginTop: 10, marginBottom: 4 },
@@ -686,4 +817,32 @@ const styles = StyleSheet.create({
   cancelBtn: { paddingVertical: 12, alignItems: 'center', marginTop: 6 },
   cancelBtnText: { color: '#777', fontSize: 14 },
   rowBetween: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  ownerNoticeBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f1f8f3',
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 24,
+    borderWidth: 1,
+    borderColor: '#d2ead7',
+  },
+  ownerNoticeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#e1f2e4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ownerNoticeTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1b4d27',
+  },
+  ownerNoticeSub: {
+    fontSize: 12,
+    color: '#4f6955',
+    marginTop: 2,
+  },
 });
