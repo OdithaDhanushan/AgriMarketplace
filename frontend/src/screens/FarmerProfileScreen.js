@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   Linking,
-  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -13,8 +13,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
 import { useAuth } from '../context/AuthContext';
 import { deleteCurrentUser, getCurrentUser, setAuthToken, updateUserProfile } from '../services/api';
@@ -31,11 +31,13 @@ export default function FarmerProfileScreen({ navigation }) {
     location: user?.location || '',
     farmName: user?.farmName || '',
     paymentMode: user?.paymentMode || '',
+    profileImage: user?.profileImage || '',
   });
   const [editMode, setEditMode] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [smsAlertsEnabled, setSmsAlertsEnabled] = useState(true);
   const [offlineSyncEnabled, setOfflineSyncEnabled] = useState(true);
 
@@ -48,6 +50,7 @@ export default function FarmerProfileScreen({ navigation }) {
       location: nextUser?.location || '',
       farmName: nextUser?.farmName || '',
       paymentMode: nextUser?.paymentMode || '',
+      profileImage: nextUser?.profileImage || '',
     });
   };
 
@@ -93,6 +96,84 @@ export default function FarmerProfileScreen({ navigation }) {
     setForm((current) => ({ ...current, [field]: value }));
   };
 
+  // Profile Picture Helpers
+  const openPhotoPicker = () => {
+    setPhotoModalVisible(true);
+  };
+
+  const handlePickFromGallery = async () => {
+    setPhotoModalVisible(false);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        showMessage('Permission needed', 'Gallery permission is required to choose a profile photo.');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const imageUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        await handleApplyProfilePhoto(imageUri);
+      }
+    } catch (e) {
+      showMessage('Photo error', e.message || 'Unable to select photo.');
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    setPhotoModalVisible(false);
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        showMessage('Permission needed', 'Camera permission is required to take a profile photo.');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.7,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const imageUri = asset.base64 ? `data:image/jpeg;base64,${asset.base64}` : asset.uri;
+        await handleApplyProfilePhoto(imageUri);
+      }
+    } catch (e) {
+      showMessage('Camera error', e.message || 'Unable to capture photo.');
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoModalVisible(false);
+    await handleApplyProfilePhoto('');
+  };
+
+  const handleApplyProfilePhoto = async (imageUri) => {
+    if (editMode) {
+      updateField('profileImage', imageUri);
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await updateUserProfile({ profileImage: imageUri });
+      const nextUser = response.user || response;
+      applyProfile(nextUser);
+      login({ user: nextUser, token });
+      showMessage('Success', imageUri ? 'Profile photo updated!' : 'Profile photo removed.');
+    } catch (error) {
+      showMessage('Update failed', error.response?.data?.message || 'Unable to update profile photo.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const saveProfile = async () => {
     if ([form.name, form.email, form.phone, form.location].some((value) => !value.trim())) {
       showMessage('Update failed', 'Please complete every required profile field before saving.');
@@ -108,6 +189,7 @@ export default function FarmerProfileScreen({ navigation }) {
         location: form.location.trim(),
         farmName: form.farmName.trim(),
         paymentMode: form.paymentMode,
+        profileImage: form.profileImage,
       });
       const nextUser = response.user || response;
       applyProfile(nextUser);
@@ -169,6 +251,10 @@ export default function FarmerProfileScreen({ navigation }) {
     .slice(0, 2)
     .join('');
 
+  const displayedPhoto = editMode
+    ? (form.profileImage !== undefined ? form.profileImage : profile?.profileImage)
+    : profile?.profileImage;
+
   const renderField = (field, label, icon, keyboardType = 'default') => (
     <View style={styles.infoRow}>
       <Ionicons name={icon} size={19} color="#327044" />
@@ -202,31 +288,56 @@ export default function FarmerProfileScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={['#dff3d9', '#edf9e9', '#ffffff']} style={styles.gradient} />
-      <SafeAreaView style={styles.safeArea}>
+      {/* Top Header with Safe Area & Phone Camera Clearance */}
+      <SafeAreaView style={styles.safeHeaderArea}>
         <View style={styles.header}>
-          <TouchableOpacity accessibilityLabel="Go back" onPress={() => navigation.goBack()} style={styles.headerButton}>
-            <Ionicons name="chevron-back" size={22} color="#1f2937" />
+          <TouchableOpacity
+            accessibilityLabel="Go back"
+            onPress={() => navigation.goBack()}
+            style={styles.circleBtn}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="chevron-back" size={20} color="#1f2937" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Farmer Profile</Text>
           <TouchableOpacity
             accessibilityLabel="Profile settings"
             onPress={() => setSettingsVisible(true)}
-            style={styles.headerButton}
+            style={styles.circleBtn}
+            activeOpacity={0.8}
           >
             <Ionicons name="settings-outline" size={20} color="#1f2937" />
           </TouchableOpacity>
         </View>
+      </SafeAreaView>
 
-        {loading ? (
-          <View style={styles.loadingWrap}>
-            <ActivityIndicator size="large" color="#1a7a3d" />
-            <Text style={styles.loadingText}>Loading profile...</Text>
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#1a7a3d" />
+          <Text style={styles.loadingText}>Loading profile...</Text>
+        </View>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.body}>
+            {/* Farmer Avatar with Click-to-upload */}
             <View style={styles.profileHero}>
-              <View style={styles.avatarCircle}><Text style={styles.avatarText}>{initials || 'F'}</Text></View>
+              <TouchableOpacity
+                onPress={openPhotoPicker}
+                activeOpacity={0.85}
+                style={styles.avatarTouchable}
+                accessibilityLabel="Add or change profile picture"
+              >
+                <View style={styles.avatarCircle}>
+                  {displayedPhoto ? (
+                    <Image source={{ uri: displayedPhoto }} style={styles.avatarImage} />
+                  ) : (
+                    <Text style={styles.avatarText}>{initials || 'F'}</Text>
+                  )}
+                  <View style={styles.cameraBadge}>
+                    <Ionicons name="camera" size={13} color="#fff" />
+                  </View>
+                </View>
+              </TouchableOpacity>
               <Text style={styles.nameText}>{profile?.name || 'Your Name'}</Text>
               <Text style={styles.roleText}>{profile?.role || 'Farmer'}</Text>
             </View>
@@ -240,6 +351,35 @@ export default function FarmerProfileScreen({ navigation }) {
                   </TouchableOpacity>
                 )}
               </View>
+
+              {/* Explicit Option in Edit Panel to Add/Change Profile Photo */}
+              {editMode && (
+                <TouchableOpacity
+                  onPress={openPhotoPicker}
+                  style={styles.editPhotoOption}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.editPhotoLeft}>
+                    <Ionicons name="camera-outline" size={20} color="#1d7a3e" />
+                    <Text style={styles.editPhotoText}>
+                      {displayedPhoto ? 'Change profile picture' : 'Add profile picture'}
+                    </Text>
+                  </View>
+                  {displayedPhoto ? (
+                    <TouchableOpacity
+                      onPress={handleRemovePhoto}
+                      style={styles.removePhotoBadge}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="trash-outline" size={15} color="#c62828" />
+                      <Text style={styles.removePhotoText}>Remove</Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Ionicons name="chevron-forward" size={18} color="#888" />
+                  )}
+                </TouchableOpacity>
+              )}
+
               {renderField('name', 'Name', 'person-outline')}
               {renderField('email', 'Email', 'mail-outline', 'email-address')}
               {renderField('phone', 'Phone', 'call-outline', 'phone-pad')}
@@ -296,85 +436,189 @@ export default function FarmerProfileScreen({ navigation }) {
                 <Text style={styles.deleteText}>Delete account</Text>
               </TouchableOpacity>
             </View>
-          </ScrollView>
-        )}
+          </View>
+        </ScrollView>
+      )}
 
-        <BottomNavBar activeTab="Profile" navigation={navigation} />
+      <BottomNavBar activeTab="Profile" navigation={navigation} />
 
-        <Modal
-          visible={settingsVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setSettingsVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity
-              accessibilityLabel="Close settings"
-              style={styles.modalBackdrop}
-              activeOpacity={1}
-              onPress={() => setSettingsVisible(false)}
-            />
-            <View style={styles.modalContent}>
-              <View style={styles.sectionHeading}>
-                <Text style={styles.sectionTitle}>App settings</Text>
-                <TouchableOpacity onPress={() => setSettingsVisible(false)}>
-                  <Ionicons name="close-circle" size={26} color="#333" />
-                </TouchableOpacity>
-              </View>
-              {renderSetting('SMS Order Alerts', 'Status alerts when buyers request produce', smsAlertsEnabled, () => setSmsAlertsEnabled((value) => !value))}
-              {renderSetting('Offline Draft Sync', 'Sync listing drafts when back online', offlineSyncEnabled, () => setOfflineSyncEnabled((value) => !value))}
-              <TouchableOpacity style={styles.settingItem} onPress={handleCallCooperative}>
-                <View style={styles.settingCopy}>
-                  <Text style={styles.settingName}>Cooperative Support</Text>
-                  <Text style={styles.settingSub}>Call the cooperative hotline</Text>
-                </View>
-                <Ionicons name="call-outline" size={19} color="#1d7a3e" />
+      {/* Settings In-Screen Bottom Sheet */}
+      {settingsVisible && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            accessibilityLabel="Close settings"
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setSettingsVisible(false)}
+          />
+          <View style={styles.modalContent}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>App settings</Text>
+              <TouchableOpacity onPress={() => setSettingsVisible(false)}>
+                <Ionicons name="close-circle" size={26} color="#333" />
               </TouchableOpacity>
             </View>
+            {renderSetting('SMS Order Alerts', 'Status alerts when buyers request produce', smsAlertsEnabled, () => setSmsAlertsEnabled((value) => !value))}
+            {renderSetting('Offline Draft Sync', 'Sync listing drafts when back online', offlineSyncEnabled, () => setOfflineSyncEnabled((value) => !value))}
+            <TouchableOpacity style={styles.settingItem} onPress={handleCallCooperative}>
+              <View style={styles.settingCopy}>
+                <Text style={styles.settingName}>Cooperative Support</Text>
+                <Text style={styles.settingSub}>Call the cooperative hotline</Text>
+              </View>
+              <Ionicons name="call-outline" size={19} color="#1d7a3e" />
+            </TouchableOpacity>
           </View>
-        </Modal>
-      </SafeAreaView>
+        </View>
+      )}
+
+      {/* In-Screen Photo Picker Bottom Sheet */}
+      {photoModalVisible && (
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.modalBackdrop}
+            activeOpacity={1}
+            onPress={() => setPhotoModalVisible(false)}
+          />
+          <View style={styles.photoSheetContent}>
+            <View style={styles.photoSheetHeader}>
+              <Text style={styles.photoSheetTitle}>Farmer Profile Photo</Text>
+              <TouchableOpacity onPress={() => setPhotoModalVisible(false)}>
+                <Ionicons name="close-circle" size={26} color="#555" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.photoSheetSub}>
+              Take a photo or choose from your gallery to add your profile picture
+            </Text>
+
+            <TouchableOpacity style={styles.photoOption} onPress={handleTakePhoto} activeOpacity={0.8}>
+              <View style={styles.photoOptionIcon}>
+                <Ionicons name="camera" size={22} color="#1d7a3e" />
+              </View>
+              <View style={{ marginLeft: 14 }}>
+                <Text style={styles.photoOptionTitle}>Take Photo</Text>
+                <Text style={styles.photoOptionSub}>Use camera to take a new picture</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.photoOption} onPress={handlePickFromGallery} activeOpacity={0.8}>
+              <View style={styles.photoOptionIcon}>
+                <Ionicons name="images" size={22} color="#1d7a3e" />
+              </View>
+              <View style={{ marginLeft: 14 }}>
+                <Text style={styles.photoOptionTitle}>Choose from Gallery</Text>
+                <Text style={styles.photoOptionSub}>Pick a photo from your device storage</Text>
+              </View>
+            </TouchableOpacity>
+
+            {displayedPhoto ? (
+              <TouchableOpacity style={styles.photoOption} onPress={handleRemovePhoto} activeOpacity={0.8}>
+                <View style={[styles.photoOptionIcon, { backgroundColor: '#ffebee' }]}>
+                  <Ionicons name="trash" size={22} color="#c62828" />
+                </View>
+                <View style={{ marginLeft: 14 }}>
+                  <Text style={[styles.photoOptionTitle, { color: '#c62828' }]}>Remove Photo</Text>
+                  <Text style={styles.photoOptionSub}>Delete current profile photo</Text>
+                </View>
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity
+              style={styles.cancelPhotoBtn}
+              onPress={() => setPhotoModalVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.cancelPhotoText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f1f6ee' },
-  gradient: { ...StyleSheet.absoluteFillObject },
-  safeArea: { flex: 1 },
+  container: { flex: 1, backgroundColor: '#f6f8f7', position: 'relative' },
+  safeHeaderArea: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#edf2ee',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingTop: Platform.OS === 'web' ? 44 : 14,
+    paddingBottom: 12,
   },
-  headerButton: {
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1b4d27',
+    textAlign: 'center',
+  },
+  circleBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#ffffffcc',
+    backgroundColor: '#f1f6f1',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#e2ece2',
   },
-  headerTitle: { fontSize: 21, fontWeight: '700', color: '#1c2a1c' },
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  scrollContent: { paddingBottom: 24 },
+  loadingWrap: { paddingVertical: 60, alignItems: 'center', justifyContent: 'center' },
   loadingText: { marginTop: 12, color: '#2b4d35', fontSize: 15 },
-  content: { padding: 18, paddingBottom: 30 },
-  profileHero: { alignItems: 'center', marginBottom: 20 },
+  body: { padding: 18, paddingTop: 16 },
+  profileHero: { alignItems: 'center', marginBottom: 18 },
+  avatarTouchable: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
   avatarCircle: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     backgroundColor: '#1d7a3e',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    position: 'relative',
+    borderWidth: 3,
+    borderColor: '#dcecdb',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 6,
+    elevation: 4,
   },
-  avatarText: { color: '#fff', fontSize: 28, fontWeight: '700' },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 45,
+  },
+  avatarText: { color: '#fff', fontSize: 32, fontWeight: '700' },
+  cameraBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#1d7a3e',
+    borderWidth: 2,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 3,
+  },
   nameText: { fontSize: 23, fontWeight: '700', color: '#1d2b1d' },
-  roleText: { fontSize: 14, color: '#446250', marginTop: 6 },
+  roleText: { fontSize: 14, color: '#446250', marginTop: 4 },
   section: {
     backgroundColor: '#fff',
     borderRadius: 16,
@@ -388,6 +632,32 @@ const styles = StyleSheet.create({
   sectionHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   sectionTitle: { fontSize: 17, fontWeight: '700', color: '#1e2d1f' },
   editText: { color: '#1d7a3e', fontWeight: '700' },
+
+  // Edit Panel Profile Photo Row
+  editPhotoOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f3faf4',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#d2ead6',
+  },
+  editPhotoLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  editPhotoText: { fontSize: 14, fontWeight: '700', color: '#1d7a3e' },
+  removePhotoBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#ffebee',
+    borderRadius: 8,
+  },
+  removePhotoText: { color: '#c62828', fontSize: 12, fontWeight: '700' },
+
   infoRow: {
     minHeight: 54,
     flexDirection: 'row',
@@ -438,4 +708,49 @@ const styles = StyleSheet.create({
   settingBadge: { fontSize: 10, fontWeight: '700', paddingVertical: 5, paddingHorizontal: 8, borderRadius: 8, overflow: 'hidden' },
   badgeEnabled: { backgroundColor: '#e8f5e9', color: '#2e7d32' },
   badgeDisabled: { backgroundColor: '#ffebee', color: '#c62828' },
+
+  // Photo Picker Modal Bottom Sheet Styles
+  photoSheetContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 22,
+    borderTopRightRadius: 22,
+    padding: 22,
+    paddingBottom: 32,
+    elevation: 12,
+  },
+  photoSheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  photoSheetTitle: { fontSize: 18, fontWeight: '800', color: '#1e2d1f' },
+  photoSheetSub: { fontSize: 12, color: '#66756a', marginTop: 4, marginBottom: 16 },
+  photoOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f6f9f6',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e8efe8',
+  },
+  photoOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e7f5e9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoOptionTitle: { fontSize: 15, fontWeight: '700', color: '#1e2d1f' },
+  photoOptionSub: { fontSize: 11, color: '#66756a', marginTop: 2 },
+  cancelPhotoBtn: {
+    backgroundColor: '#edf2ed',
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cancelPhotoText: { color: '#445b49', fontSize: 14, fontWeight: '700' },
 });

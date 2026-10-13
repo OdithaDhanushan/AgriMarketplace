@@ -19,6 +19,7 @@ const safeUser = (user) => ({
   location: user.location,
   farmName: user.farmName || '',
   paymentMode: user.paymentMode || '',
+  profileImage: user.profileImage || '',
   createdAt: user.createdAt,
   updatedAt: user.updatedAt,
 });
@@ -172,10 +173,11 @@ exports.getProfile = async (req, res) => {
 };
 
 exports.updateProfile = async (req, res) => {
-  const { name, email, phone, location, farmName, paymentMode } = req.body;
+  const { name, email, phone, location, farmName, paymentMode, profileImage } = req.body;
   const updates = {};
 
   if (typeof name === 'string' && name.trim()) updates.name = name.trim();
+  if (typeof profileImage === 'string') updates.profileImage = profileImage;
   if (typeof phone === 'string' && phone.trim()) {
     const duplicatePhone = await User.findOne({ phone: phone.trim(), _id: { $ne: req.user._id } });
     if (duplicatePhone) {
