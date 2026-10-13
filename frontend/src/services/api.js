@@ -4,12 +4,13 @@ import { Platform } from 'react-native';
 
 // Automatically detect host IP from Expo debugger/hostUri if available
 const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.manifest?.debuggerHost;
-const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '10.223.25.41';
+const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '192.168.137.204';
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ||
-  (Platform.OS === 'web'
-    ? 'http://localhost:5000/api'
-    : `http://${hostIp}:5000/api`);
+const BASE_URL = Platform.OS === 'web'
+  ? (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api')
+  : (process.env.EXPO_PUBLIC_API_URL && !process.env.EXPO_PUBLIC_API_URL.includes('localhost')
+      ? process.env.EXPO_PUBLIC_API_URL
+      : `http://${hostIp}:5000/api`);
 
 const api = create({
   baseURL: BASE_URL,
