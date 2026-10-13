@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 // REAL MULTILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
@@ -137,6 +138,8 @@ export default function AddProductScreen({ route, navigation }) {
   };
 
   const { addCustomProduce } = useCart();
+  const authContext = useAuth();
+  const currentUser = authContext?.user;
 
   const handleAddProduct = async () => {
     if (!cropName.trim()) {
@@ -159,6 +162,10 @@ export default function AddProductScreen({ route, navigation }) {
 
     setLoading(true);
     try {
+      const farmerDisplayName = currentUser?.name
+        ? (currentUser.name.toLowerCase().includes('farm') ? currentUser.name : `${currentUser.name}'s Farm`)
+        : "Sunil's Farm";
+
       const payload = {
         cropName: cropName.trim(),
         category: 'Vegetables',
@@ -167,11 +174,11 @@ export default function AddProductScreen({ route, navigation }) {
         marketPricePerKg: Number(sellingPrice),
         harvestDate: calculatedHarvestDate,
         freshness: harvestTime, // 'Today' | 'Yesterday'
-        location,
+        location: currentUser?.location || location,
         photoUrl: photoUri || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
-        description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer Sunil.`,
-        farmer: "Sunil's Farm",
-        farmerPhone: '+94 77 123 4567',
+        description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer ${currentUser?.name || 'Sunil'}.`,
+        farmer: farmerDisplayName,
+        farmerPhone: currentUser?.phone || '+94 77 123 4567',
         rating: 4.9,
         distanceKm: 5.0,
         minOrderQty: 1,

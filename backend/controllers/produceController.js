@@ -1,4 +1,5 @@
 const Produce = require('../models/Produce');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 
 const editableFields = [
@@ -29,7 +30,26 @@ const getValidationMessage = (error) => {
 
 exports.createProduce = async (req, res) => {
   try {
-    const newProduce = new Produce({ ...req.body, farmerId: req.user._id });
+    let farmerId = req.user?._id;
+    let farmerName = req.body.farmer;
+    let farmerPhone = req.body.farmerPhone;
+
+    if (!farmerId) {
+      const defaultFarmer = await User.findOne({ role: 'Farmer' });
+      farmerId = defaultFarmer?._id || new mongoose.Types.ObjectId();
+      if (!farmerName) farmerName = defaultFarmer?.name ? `${defaultFarmer.name}'s Farm` : "Sunil's Farm";
+      if (!farmerPhone) farmerPhone = defaultFarmer?.phone || '+94 77 123 4567';
+    } else {
+      if (!farmerName) farmerName = req.user.name ? `${req.user.name}'s Farm` : "Sunil's Farm";
+      if (!farmerPhone) farmerPhone = req.user.phone || '+94 77 123 4567';
+    }
+
+    const newProduce = new Produce({
+      ...req.body,
+      farmer: farmerName,
+      farmerPhone,
+      farmerId,
+    });
     const saved = await newProduce.save();
     res.status(201).json(saved);
   } catch (error) {
