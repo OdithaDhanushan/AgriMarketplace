@@ -170,6 +170,8 @@ export default function AddProductScreen({ route, navigation }) {
   };
 
   const { addCustomProduce } = useCart();
+  const authContext = useAuth();
+  const currentUser = authContext?.user;
 
   const handleAddProduct = async () => {
     if (!cropName.trim()) {
@@ -195,6 +197,10 @@ export default function AddProductScreen({ route, navigation }) {
 
     setLoading(true);
     try {
+      const farmerDisplayName = currentUser?.name
+        ? (currentUser.name.toLowerCase().includes('farm') ? currentUser.name : `${currentUser.name}'s Farm`)
+        : "Sunil's Farm";
+
       const payload = {
         cropName: cropName.trim(),
         category: 'Vegetables',

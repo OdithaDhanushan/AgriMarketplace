@@ -53,7 +53,9 @@ export default function LoginScreen({ navigation, route }) {
 
       login({ user: result.user, token: result.token });
 
-      const targetScreen = result.user.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs';
+      const targetScreen = result.user.role === 'Admin'
+        ? 'AdminDashboard'
+        : (result.user.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs');
       navigation.reset({
         index: 0,
         routes: [{ name: targetScreen }],
@@ -61,6 +63,34 @@ export default function LoginScreen({ navigation, route }) {
     } catch (error) {
       const message = error.response?.data?.message || error.message || 'Unable to sign in. Please try again.';
       showMessage('Sign in failed', message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDemoAdminLogin = async () => {
+    setIdentifier('admin@agri.com');
+    setPassword('Admin@12345');
+    setIsSubmitting(true);
+    try {
+      const result = await loginUser({
+        identifier: 'admin@agri.com',
+        password: 'Admin@12345',
+      });
+
+      if (!result?.user || !result?.token) {
+        throw new Error('Invalid login response.');
+      }
+
+      login({ user: result.user, token: result.token });
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'AdminDashboard' }],
+      });
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Unable to sign in as admin.';
+      showMessage('Admin Sign in failed', message);
     } finally {
       setIsSubmitting(false);
     }
@@ -180,6 +210,16 @@ export default function LoginScreen({ navigation, route }) {
             >
               <FontAwesome name="google" size={18} color="#4285f4" />
               <Text style={styles.googleText}>Continue with Google</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Quick Admin Sign In"
+              onPress={handleDemoAdminLogin}
+              style={styles.adminDemoButton}
+            >
+              <Ionicons name="shield-checkmark" size={17} color="#15803D" />
+              <Text style={styles.adminDemoText}>Admin Portal Quick Login (admin@agri.com)</Text>
             </Pressable>
 
             <View style={styles.registerPrompt}>
@@ -365,6 +405,23 @@ const styles = StyleSheet.create({
     color: '#243a2c',
     fontSize: 14,
     marginLeft: 12,
+  },
+  adminDemoButton: {
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderColor: '#86EFAC',
+    borderRadius: 13,
+    borderWidth: 1,
+    flexDirection: 'row',
+    height: 46,
+    justifyContent: 'center',
+    marginTop: 12,
+    gap: 8,
+  },
+  adminDemoText: {
+    color: '#15803D',
+    fontSize: 13,
+    fontWeight: '700',
   },
   registerPrompt: {
     alignItems: 'center',

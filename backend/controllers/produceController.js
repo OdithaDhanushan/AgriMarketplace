@@ -1,4 +1,5 @@
 const Produce = require('../models/Produce');
+const User = require('../models/User');
 const mongoose = require('mongoose');
 
 const editableFields = [

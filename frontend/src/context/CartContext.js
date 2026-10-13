@@ -42,6 +42,12 @@ export function CartProvider({ children }) {
   };
 
   const fetchOrders = useCallback(async () => {
+    if (!token) {
+      setOrders([]);
+      setLoadingOrders(false);
+      return;
+    }
+
     try {
       setLoadingOrders(true);
       const res = await api.get('/orders');
@@ -76,11 +82,13 @@ export function CartProvider({ children }) {
         setOrders(mappedOrders);
       }
     } catch (err) {
-      console.log('Error fetching backend orders:', err?.message);
+      if (err?.response?.status !== 401) {
+        console.log('Error fetching backend orders:', err?.message);
+      }
     } finally {
       setLoadingOrders(false);
     }
-  }, []);
+  }, [token]);
 
   // Refetch orders whenever authentication token changes (e.g. login / account switch)
   useEffect(() => {
