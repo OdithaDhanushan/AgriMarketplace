@@ -3,7 +3,6 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-// Import Member 1 (Farmer) Screens
 import MarketPricesScreen from './src/screens/MarketPricesScreen';
 import AddProductScreen from './src/screens/AddProductScreen';
 import ProductAddedSuccess from './src/screens/ProductAddedSuccess';
@@ -13,13 +12,11 @@ import VoiceListingScreen from './src/screens/VoiceListingScreen';
 import FarmerProfileScreen from './src/screens/FarmerProfileScreen';
 import FarmerDashboardScreen from './src/screens/FarmerDashboardScreen';
 
-// Buyer screens
 import BuyerHomeScreen from './src/screens/buyer/BuyerHomeScreen';
 import ProduceDetailScreen from './src/screens/buyer/ProduceDetailScreen';
 import MyFarmersScreen from './src/screens/buyer/MyFarmersScreen';
 import CartCheckoutScreen from './src/screens/buyer/CartCheckoutScreen';
 import BuyerSearchScreen from './src/screens/buyer/BuyerSearchScreen';
-import BuyerProductDetailScreen from './src/screens/buyer/ProductDetailScreen';
 import CheckoutScreen from './src/screens/buyer/CheckoutScreen';
 import OtpVerificationScreen from './src/screens/buyer/OtpVerificationScreen';
 import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
@@ -47,6 +44,25 @@ export default function App() {
             {isWeb && <View style={styles.dynamicIsland} />}
             <NavigationContainer>
               <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingScreen1">
+                <Stack.Screen name="BuyerTabs" component={BuyerTabNavigator} />
+                <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
+                <Stack.Screen name="AddProduct" component={AddProductScreen} />
+                <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
+                <Stack.Screen name="ProductDetail" component={ProductDetailScreen} />
+                <Stack.Screen name="SellerProductDetail" component={ProductDetailScreen} />
+                <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
+                <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
+                <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />
+                <Stack.Screen name="FarmerDashboard" component={FarmerDashboardScreen} />
+
+                <Stack.Screen name="BuyerSearch" component={BuyerSearchScreen} />
+                <Stack.Screen name="BuyerHome" component={BuyerHomeScreen} />
+                <Stack.Screen name="ProduceDetail" component={ProduceDetailScreen} />
+                <Stack.Screen name="MyFarmers" component={MyFarmersScreen} />
+                <Stack.Screen name="CartCheckout" component={CartCheckoutScreen} />
+                <Stack.Screen name="Checkout" component={CheckoutScreen} />
+                <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
+                <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
                 <Stack.Screen name="OnboardingScreen1" component={OnboardingScreen1} />
                 <Stack.Screen name="OnboardingScreen2" component={OnboardingScreen2} />
                 <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} />
@@ -54,24 +70,6 @@ export default function App() {
                 <Stack.Screen name="RoleSelectionScreen" component={RoleSelectionScreen} />
                 <Stack.Screen name="RegistrationScreen" component={RegistrationScreen} />
                 <Stack.Screen name="ProfileScreen" component={ProfileScreen} />
-                <Stack.Screen name="BuyerTabs" component={BuyerTabNavigator} />
-                <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
-                <Stack.Screen name="AddProduct" component={AddProductScreen} />
-                <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
-                <Stack.Screen name="SellerProductDetail" component={ProductDetailScreen} />
-                <Stack.Screen name="OtherProducts" component={OtherProductsScreen} />
-                <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
-                <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />
-                <Stack.Screen name="FarmerDashboard" component={FarmerDashboardScreen} />
-                <Stack.Screen name="BuyerSearch" component={BuyerSearchScreen} />
-                <Stack.Screen name="BuyerHome" component={BuyerHomeScreen} />
-                <Stack.Screen name="ProduceDetail" component={ProduceDetailScreen} />
-                <Stack.Screen name="MyFarmers" component={MyFarmersScreen} />
-                <Stack.Screen name="CartCheckout" component={CartCheckoutScreen} />
-                <Stack.Screen name="ProductDetail" component={BuyerProductDetailScreen} />
-                <Stack.Screen name="Checkout" component={CheckoutScreen} />
-                <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
-                <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
               </Stack.Navigator>
             </NavigationContainer>
           </View>

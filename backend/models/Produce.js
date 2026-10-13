@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const produceSchema = new mongoose.Schema({
+  farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   cropName: { type: String, required: true, trim: true },
   category: { type: String, default: 'Vegetables' },
   quantityKg: { type: Number, required: true, min: 0.01 },

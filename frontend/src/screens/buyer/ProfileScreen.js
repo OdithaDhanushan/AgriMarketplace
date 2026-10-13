@@ -38,7 +38,7 @@ export default function ProfileScreen({ navigation, route }) {
   const [address, setAddress] = useState(
     initialUser.address || initialUser.location || 'No. 45, Green Path, Colombo 07',
   );
-  const [businessType, setBusinessType] = useState('Restaurant / Hotel');
+  const [businessType] = useState('Restaurant / Hotel');
 
   // Preferences toggles
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);

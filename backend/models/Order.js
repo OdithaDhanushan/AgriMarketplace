@@ -12,6 +12,7 @@ const orderItemSchema = new mongoose.Schema({
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
+  buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   orderNumber: {
     type: String,
     required: true,
@@ -33,7 +34,7 @@ const orderSchema = new mongoose.Schema({
   userEmail: { type: String, trim: true, lowercase: true, default: '' },
   otpCode: {
     type: String,
-    default: '4827',
+    required: true,
     match: [/^\d{4}$/, 'OTP must be exactly 4 digits.']
   },
   status: {

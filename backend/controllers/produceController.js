@@ -29,7 +29,7 @@ const getValidationMessage = (error) => {
 
 exports.createProduce = async (req, res) => {
   try {
-    const newProduce = new Produce(req.body);
+    const newProduce = new Produce({ ...req.body, farmerId: req.user._id });
     const saved = await newProduce.save();
     res.status(201).json(saved);
   } catch (error) {
@@ -200,6 +200,15 @@ exports.seedProduce = async (req, res) => {
   }
 };
 
+exports.getMyProduce = async (req, res) => {
+  try {
+    const list = await Produce.find({ farmerId: req.user._id }).sort({ createdAt: -1 });
+    return res.status(200).json(list);
+  } catch (error) {
+    return res.status(500).json({ message: 'Unable to fetch your produce.' });
+  }
+};
+
 exports.getProduceById = async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return res.status(400).json({ message: 'Invalid produce ID.' });
@@ -227,7 +236,7 @@ exports.updateProduce = async (req, res) => {
   }
 
   try {
-    const updated = await Produce.findByIdAndUpdate(req.params.id, updates, {
+    const updated = await Produce.findOneAndUpdate({ _id: req.params.id, farmerId: req.user._id }, updates, {
       new: true,
       runValidators: true,
     });
@@ -245,7 +254,7 @@ exports.deleteProduce = async (req, res) => {
   }
 
   try {
-    const deleted = await Produce.findByIdAndDelete(req.params.id);
+    const deleted = await Produce.findOneAndDelete({ _id: req.params.id, farmerId: req.user._id });
     if (!deleted) return res.status(404).json({ message: 'Produce not found.' });
     res.status(200).json({ message: 'Produce deleted.' });
   } catch (error) {

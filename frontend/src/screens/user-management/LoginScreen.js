@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -13,6 +14,8 @@ import {
 import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../../context/AuthContext';
+import { loginUser } from '../../services/api';
 
 const produceIllustration = require('../../../assets/onboarding/login-produce.png');
 
@@ -20,6 +23,48 @@ export default function LoginScreen({ navigation, route }) {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
+
+  const showMessage = (title, message) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+      return;
+    }
+    Alert.alert(title, message);
+  };
+
+  const handleLogin = async () => {
+    if (!identifier.trim() || !password.trim()) {
+      showMessage('Sign in', 'Please enter your email or phone and password.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const result = await loginUser({
+        identifier: identifier.trim(),
+        password,
+      });
+
+      if (!result?.user || !result?.token) {
+        throw new Error('Invalid login response.');
+      }
+
+      login({ user: result.user, token: result.token });
+
+      const targetScreen = result.user.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs';
+      navigation.reset({
+        index: 0,
+        routes: [{ name: targetScreen }],
+      });
+    } catch (error) {
+      const message = error.response?.data?.message || error.message || 'Unable to sign in. Please try again.';
+      showMessage('Sign in failed', message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -105,20 +150,9 @@ export default function LoginScreen({ navigation, route }) {
 
               <Pressable
                 accessibilityRole="button"
-                onPress={() => {
-                  // If the user logs in, pass their email/identifier as their name!
-                  const farmerName = identifier ? identifier.split('@')[0] : 'Kamal';
-                  // Take them straight to your Farmer Dashboard with their real name!
-                  navigation.replace('MarketPrices', {
-                    loggedInUser: {
-                      name: farmerName.charAt(0).toUpperCase() + farmerName.slice(1),
-                      email: identifier || 'kamal@farm.lk',
-                      phone: '0764951582',
-                      location: 'Kurunegala District',
-                    }
-                  });
-                }}
-                style={styles.signInButton}
+                disabled={isSubmitting}
+                onPress={handleLogin}
+                style={[styles.signInButton, isSubmitting && styles.signInButtonDisabled]}
               >
                 <LinearGradient
                   colors={['#17683a', '#2f9252']}
@@ -126,7 +160,7 @@ export default function LoginScreen({ navigation, route }) {
                   end={{ x: 1, y: 1 }}
                   style={styles.signInGradient}
                 >
-                  <Text style={styles.signInText}>Sign In</Text>
+                  <Text style={styles.signInText}>{isSubmitting ? 'Signing in...' : 'Sign In'}</Text>
                   <Ionicons name="arrow-forward" size={18} color="#f0d15b" />
                 </LinearGradient>
               </Pressable>

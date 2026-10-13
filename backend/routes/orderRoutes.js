@@ -3,15 +3,16 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const { sendOtpEmail } = require('../utils/mailer');
+const { requireAuth, requireRole } = require('../middleware/auth');
 
 const router = express.Router();
 
 // In-memory store for active OTPs keyed by normalized email
 const activeOtps = new Map();
 
-router.get('/', async (req, res, next) => {
+router.get('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
   try {
-    const orders = await Order.find().sort({ createdAt: -1 });
+    const orders = await Order.find({ buyerId: req.user._id }).sort({ createdAt: -1 });
     return res.status(200).json(orders);
   } catch (error) {
     return next(error);
@@ -57,16 +58,19 @@ router.post('/send-otp', async (req, res, next) => {
   }
 });
 
-// Endpoint to verify OTP
-router.post('/verify-otp', async (req, res, next) => {
+const authorizeOrderOtp = (req, res, next) => {
+  if (req.body?.email) return next();
+  return requireAuth(req, res, () => requireRole('Buyer')(req, res, next));
+};
+
+router.post('/verify-otp', authorizeOrderOtp, async (req, res, next) => {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ success: false, message: 'Request body must be a JSON object.' });
   }
 
   const { email, otpCode, orderId } = req.body;
 
-  // Case 1: Verification by Email before/during order confirmation
-  if (email) {
+  if (typeof email === 'string') {
     const normalizedEmail = email.trim().toLowerCase();
     if (!otpCode || typeof otpCode !== 'string' || !/^\d{4}$/.test(otpCode)) {
       return res.status(400).json({ success: false, message: 'OTP must be exactly 4 digits.' });
@@ -88,14 +92,13 @@ router.post('/verify-otp', async (req, res, next) => {
     return res.status(200).json({ success: true, message: 'OTP verified successfully.' });
   }
 
-  // Case 2: Verification by orderId (for post-delivery verification)
   if (orderId && mongoose.isValidObjectId(orderId)) {
     if (typeof otpCode !== 'string' || !/^\d{4}$/.test(otpCode)) {
       return res.status(400).json({ message: 'otpCode must be exactly 4 digits.' });
     }
 
     try {
-      const order = await Order.findById(orderId);
+      const order = await Order.findOne({ _id: orderId, buyerId: req.user._id });
       if (!order) {
         return res.status(404).json({ message: 'Order not found.' });
       }
@@ -119,7 +122,7 @@ router.post('/verify-otp', async (req, res, next) => {
   return res.status(400).json({ success: false, message: 'Either email or valid orderId is required.' });
 });
 
-router.post('/', async (req, res, next) => {
+router.post('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ message: 'Request body must be a JSON object.' });
   }
@@ -136,11 +139,10 @@ router.post('/', async (req, res, next) => {
       id,
       otpCode,
       userEmail,
-      email,
-      status
+      email
     } = req.body;
 
-    const formattedItems = (items || []).map((item) => ({
+    const formattedItems = (Array.isArray(items) ? items : []).map((item) => ({
       productName: item.productName || item.name || item.cropName || 'Fresh Item',
       name: item.name || item.cropName || item.productName || 'Fresh Item',
       quantity: Number(item.quantity) || 1,
@@ -155,10 +157,16 @@ router.post('/', async (req, res, next) => {
       ? otpCode
       : crypto.randomInt(1000, 10000).toString();
 
-    const finalOrderNumber = orderNumber || (id ? (id.startsWith('#') ? id : `#${id}`) : undefined);
-    const finalEmail = (userEmail || email || '').trim().toLowerCase();
+    const finalOrderNumber = orderNumber || (id ? (String(id).startsWith('#') ? String(id) : `#${id}`) : undefined);
+    const providedEmail = typeof userEmail === 'string'
+      ? userEmail
+      : typeof email === 'string'
+        ? email
+        : req.user.email;
+    const finalEmail = providedEmail.trim().toLowerCase();
 
     const orderData = {
+      buyerId: req.user._id,
       items: formattedItems,
       totalAmount: Number(totalAmount ?? total ?? 0),
       deliveryFee: Number(deliveryFee ?? 0),
@@ -166,7 +174,7 @@ router.post('/', async (req, res, next) => {
       paymentMethod: paymentMethod || 'Cash on Delivery',
       userEmail: finalEmail,
       otpCode: finalOtp,
-      status: status || 'Confirmed'
+      status: 'Confirmed'
     };
 
     if (finalOrderNumber) {
@@ -188,5 +196,4 @@ router.post('/', async (req, res, next) => {
     return next(error);
   }
 });
-
 module.exports = router;
