@@ -40,14 +40,30 @@ function CheckoutScreen({ route, navigation }) {
     navigation.navigate('OtpVerification', {
       order: {
         id: `SK${Math.floor(1000 + Math.random() * 9000)}`,
+        items: [
+          {
+            name: product.name || DEFAULT_PRODUCT.name,
+            productName: product.name || DEFAULT_PRODUCT.name,
+            quantity,
+            unitPrice,
+            pricePerKg: unitPrice,
+            unit: product.unit || DEFAULT_PRODUCT.unit,
+            image: product.image || DEFAULT_PRODUCT.image,
+            farmer: product.farmer || DEFAULT_PRODUCT.farmer,
+          },
+        ],
         itemName: product.name || DEFAULT_PRODUCT.name,
         quantity,
         unit: product.unit || DEFAULT_PRODUCT.unit,
         total,
+        deliveryFee: DELIVERY_FEE,
+        subtotal: itemsTotal,
         paymentMethod: paymentMethod === 'cod' ? 'Cash on delivery' : 'Online card payment',
+        deliveryAddress: address,
         address,
         userEmail: user?.email || 'sahan@gmail.com',
         productImage: product.image || DEFAULT_PRODUCT.image,
+        farmer: product.farmer || DEFAULT_PRODUCT.farmer,
       },
     });
 

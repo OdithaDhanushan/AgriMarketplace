@@ -3,6 +3,7 @@ import { View, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+// Import Member 1 (Farmer) Screens
 import MarketPricesScreen from './src/screens/MarketPricesScreen';
 import AddProductScreen from './src/screens/AddProductScreen';
 import ProductAddedSuccess from './src/screens/ProductAddedSuccess';
@@ -11,7 +12,9 @@ import OtherProductsScreen from './src/screens/OtherProductsScreen';
 import VoiceListingScreen from './src/screens/VoiceListingScreen';
 import FarmerProfileScreen from './src/screens/FarmerProfileScreen';
 import FarmerDashboardScreen from './src/screens/FarmerDashboardScreen';
+import FarmerOrdersScreen from './src/screens/FarmerOrdersScreen'; // 👈 Newly added Farmer Orders Screen!
 
+// Buyer screens
 import BuyerHomeScreen from './src/screens/buyer/BuyerHomeScreen';
 import ProduceDetailScreen from './src/screens/buyer/ProduceDetailScreen';
 import MyFarmersScreen from './src/screens/buyer/MyFarmersScreen';
@@ -23,6 +26,8 @@ import OrderConfirmedScreen from './src/screens/buyer/OrderConfirmedScreen';
 import BuyerTabNavigator from './src/navigation/BuyerTabNavigator';
 import { CartProvider } from './src/context/CartContext';
 import { AuthProvider } from './src/context/AuthContext';
+
+// User Management Onboarding Screens
 import OnboardingScreen1 from './src/screens/user-management/OnboardingScreen1';
 import OnboardingScreen2 from './src/screens/user-management/OnboardingScreen2';
 import LanguageSelectionScreen from './src/screens/user-management/LanguageSelectionScreen';
@@ -45,7 +50,6 @@ export default function App() {
             {isWeb && <View style={styles.dynamicIsland} />}
             <NavigationContainer>
               <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="OnboardingScreen1">
-                <Stack.Screen name="BuyerTabs" component={BuyerTabNavigator} />
                 <Stack.Screen name="MarketPrices" component={MarketPricesScreen} />
                 <Stack.Screen name="AddProduct" component={AddProductScreen} />
                 <Stack.Screen name="ProductAddedSuccess" component={ProductAddedSuccess} />
@@ -55,7 +59,9 @@ export default function App() {
                 <Stack.Screen name="VoiceListing" component={VoiceListingScreen} />
                 <Stack.Screen name="FarmerProfile" component={FarmerProfileScreen} />
                 <Stack.Screen name="FarmerDashboard" component={FarmerDashboardScreen} />
+                <Stack.Screen name="FarmerOrders" component={FarmerOrdersScreen} />
 
+                <Stack.Screen name="BuyerTabs" component={BuyerTabNavigator} />
                 <Stack.Screen name="BuyerSearch" component={BuyerSearchScreen} />
                 <Stack.Screen name="BuyerHome" component={BuyerHomeScreen} />
                 <Stack.Screen name="ProduceDetail" component={ProduceDetailScreen} />
@@ -64,6 +70,7 @@ export default function App() {
                 <Stack.Screen name="Checkout" component={CheckoutScreen} />
                 <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
                 <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
+
                 <Stack.Screen name="OnboardingScreen1" component={OnboardingScreen1} />
                 <Stack.Screen name="OnboardingScreen2" component={OnboardingScreen2} />
                 <Stack.Screen name="LanguageSelectionScreen" component={LanguageSelectionScreen} />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   Alert,
   Modal,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { setAuthToken } from '../../services/api';
 
 const COLORS = {
   green: '#2E7D32',
@@ -28,7 +30,7 @@ const COLORS = {
 };
 
 export default function ProfileScreen({ navigation, route }) {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const initialUser = route?.params?.user || user;
 
   // Buyer profile state
@@ -84,22 +86,34 @@ export default function ProfileScreen({ navigation, route }) {
     Alert.alert('Profile Updated', `Your login email is set to: ${normalizedEmail}`);
   };
 
+  const performLogout = () => {
+    logout();
+    setAuthToken(null);
+    const rootNav = navigation.getParent() || navigation;
+    if (rootNav?.reset) {
+      rootNav.reset({
+        index: 0,
+        routes: [{ name: 'LoginScreen' }],
+      });
+    } else {
+      rootNav?.navigate('LoginScreen');
+    }
+  };
+
   const handleLogout = () => {
+    if (Platform.OS === 'web') {
+      if (typeof window !== 'undefined' && window.confirm('Are you sure you want to log out?')) {
+        performLogout();
+      }
+      return;
+    }
+
     Alert.alert('Log Out', 'Are you sure you want to log out of AgriDirect?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Log Out',
         style: 'destructive',
-        onPress: () => {
-          if (navigation?.reset) {
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'LoginScreen' }],
-            });
-          } else {
-            navigation?.navigate('LoginScreen');
-          }
-        },
+        onPress: performLogout,
       },
     ]);
   };

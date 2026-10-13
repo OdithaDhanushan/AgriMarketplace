@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useCart } from '../../context/CartContext';
 
 const COLORS = {
@@ -24,6 +25,12 @@ const COLORS = {
 
 export default function OrdersScreen({ navigation }) {
   const { orders, loadingOrders, fetchOrders } = useCart();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchOrders();
+    }, [fetchOrders])
+  );
 
   const renderOrderItem = ({ item }) => {
     const hasItemsArray = Array.isArray(item.items) && item.items.length > 0;
