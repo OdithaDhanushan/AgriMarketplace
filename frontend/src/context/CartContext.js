@@ -1,9 +1,11 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import api from '../services/api';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
+  const { token } = useAuth();
   const [items, setItems] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -36,6 +38,12 @@ export function CartProvider({ children }) {
   };
 
   const fetchOrders = useCallback(async () => {
+    if (!token) {
+      setOrders([]);
+      setLoadingOrders(false);
+      return;
+    }
+
     try {
       setLoadingOrders(true);
       const res = await api.get('/orders');
@@ -70,15 +78,21 @@ export function CartProvider({ children }) {
         setOrders(mappedOrders);
       }
     } catch (err) {
-      console.log('Error fetching backend orders:', err?.message);
+      if (err?.response?.status !== 401) {
+        console.log('Error fetching backend orders:', err?.message);
+      }
     } finally {
       setLoadingOrders(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (token) {
+      fetchOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [fetchOrders, token]);
 
   const addToCart = (product, quantity = 1) => {
     setItems((currentItems) => {
