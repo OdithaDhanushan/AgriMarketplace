@@ -136,6 +136,8 @@ export default function VoiceListingScreen({ navigation }) {
     let crop = '';
     if (lower.includes('tomato') || lower.includes('තක්කාලි') || lower.includes('thakkali') || lower.includes('தக்காளி')) {
       crop = 'Tomatoes';
+    } else if (lower.includes('cucumber') || lower.includes('කුකුම්බර්') || lower.includes('kukumbar') || lower.includes('வெள்ளரிக்காய்') || lower.includes('vellarikai')) {
+      crop = 'Cucumber';
     } else if (lower.includes('carrot') || lower.includes('කැරට්') || lower.includes('கேரட்')) {
       crop = 'Carrots';
     } else if (lower.includes('potato') || lower.includes('අල') || lower.includes('ala') || lower.includes('உருளை')) {
@@ -158,6 +160,14 @@ export default function VoiceListingScreen({ navigation }) {
       crop = 'Ginger';
     } else if (lower.includes('papaya') || lower.includes('පැපොල්') || lower.includes('papol') || lower.includes('பப்பாளி')) {
       crop = 'Sweet Papaya';
+    } else if (lower.includes('corn') || lower.includes('maize') || lower.includes('බඩ ඉරිඟු') || lower.includes('இனிப்பு சோளம்')) {
+      crop = 'Corn';
+    } else if (lower.includes('garlic') || lower.includes('සුදු ළූණු') || lower.includes('பூண்டு')) {
+      crop = 'Garlic';
+    } else if (lower.includes('brinjal') || lower.includes('eggplant') || lower.includes('wambatu') || lower.includes('වම්බටු') || lower.includes('கத்தரிக்காய்')) {
+      crop = 'Brinjal';
+    } else if (lower.includes('capsicum') || lower.includes('pepper') || lower.includes('maalu miris') || lower.includes('மிளகாய்')) {
+      crop = 'Capsicum';
     }
 
     // 2. Detect Quantity (e.g. "20 kilos", "20 kg", "කිලෝ 20", "20 කිලෝ", "20 கிலோ")
@@ -194,9 +204,11 @@ export default function VoiceListingScreen({ navigation }) {
     if (crop || qty > 0 || price > 0) {
       setHasRecognized(true);
       setRecognizedData((prev) => ({
-        cropName: crop || prev.cropName || 'Tomatoes',
-        quantityKg: qty || prev.quantityKg || 20,
-        sellingPricePerKg: price || prev.sellingPricePerKg || 180,
+        // Keep previous value if current speech did not contain that field
+        // Do NOT fall back to hardcoded defaults (that caused wrong crop names)
+        cropName: crop || prev.cropName || '',
+        quantityKg: qty || prev.quantityKg || 0,
+        sellingPricePerKg: price || prev.sellingPricePerKg || 0,
       }));
     }
   }, []);
