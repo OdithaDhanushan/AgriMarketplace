@@ -7,9 +7,9 @@
     "frontend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run start -- --host lan --port 8084\"",
+    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run start -- --host lan --port 8084 --clear\"",
     "backend": "npm --prefix backend run dev",
-    "frontend": "npm --prefix frontend run start -- --host lan --port 8084",
+    "frontend": "npm --prefix frontend run start -- --host lan --port 8084 --clear",
     "install:all": "npm install --workspaces"
   },
   "devDependencies": {

@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const connectDB = require('./config/db');
 
 const app = express();
@@ -22,9 +23,13 @@ app.get('/health', (req, res) => {
 });
 
 const produceRoutes = require('./routes/produceRoutes');
+const userRoutes = require('./routes/userRoutes');
+const User = require('./models/User');
+
 app.use('/api/produce', produceRoutes);
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/users', userRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });
@@ -54,10 +59,6 @@ app.use((error, req, res, next) => {
   console.error('Request error:', error);
   return res.status(500).json({ message: 'Internal server error.' });
 });
-
-const userRoutes = require('./routes/userRoutes');
-app.use('/api/users', userRoutes);
-const User = require('./models/User');
 
 const PORT = process.env.PORT || 5000;
 
