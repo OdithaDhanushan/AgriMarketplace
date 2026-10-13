@@ -271,7 +271,12 @@ export default function BuyerHomeScreen({ navigation }) {
       </View>
 
       {/* ── Category Chips ── */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryList}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.categoryScroll}
+        contentContainerStyle={styles.categoryList}
+      >
         {CATEGORIES.map((cat) => {
           const selected = cat === selectedCategory;
           return (
@@ -287,7 +292,12 @@ export default function BuyerHomeScreen({ navigation }) {
       </ScrollView>
 
       {/* ── Filter Row ── */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.filterScroll}
+        contentContainerStyle={styles.filterRow}
+      >
         <TouchableOpacity style={styles.filterChip} onPress={() => setRadiusModalVisible(true)}>
           <Text style={styles.filterChipText}>Radius: {selectedRadius}</Text>
           <Ionicons name="chevron-down" size={12} color={COLORS.dark} />
@@ -302,22 +312,17 @@ export default function BuyerHomeScreen({ navigation }) {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ── Results Info Row ── */}
-      <View style={styles.resultsRow}>
-        <Text style={styles.resultsText}>Showing {visibleProduce.length} products near you</Text>
-        <TouchableOpacity onPress={() => setSortModalVisible(true)}>
-          <Text style={styles.sortText}>Sort: {selectedSort}</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* ── Section Header ── */}
       <View style={styles.sectionHeader}>
-        <View>
+        <View style={styles.sectionTitleBlock}>
           <Text style={styles.sectionTitle}>Nearby Fresh Produce</Text>
-          <Text style={styles.sectionSubtitle}>{visibleProduce.length} suppliers found near {selectedCity}</Text>
+          <Text style={styles.sectionSubtitle}>
+            Showing {visibleProduce.length} products near {selectedCity}
+          </Text>
         </View>
-        <TouchableOpacity style={styles.sortDistanceBtn} onPress={() => setSortModalVisible(true)}>
-          <Text style={styles.sortDistanceBtnText}>Sort: Distance</Text>
+        <TouchableOpacity style={styles.sortBtn} onPress={() => setSortModalVisible(true)}>
+          <Ionicons name="swap-vertical" size={13} color={COLORS.green} />
+          <Text style={styles.sortBtnText}>Sort: {selectedSort}</Text>
         </TouchableOpacity>
       </View>
 
@@ -326,6 +331,7 @@ export default function BuyerHomeScreen({ navigation }) {
         data={visibleProduce}
         keyExtractor={(item) => String(item.id || item._id)}
         renderItem={renderProduce}
+        style={styles.productList}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -453,44 +459,59 @@ const styles = StyleSheet.create({
   searchInput: { flex: 1, fontSize: 14, color: COLORS.dark },
 
   // Categories
-  categoryList: { paddingHorizontal: 16, gap: 8, paddingBottom: 8 },
+  categoryScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: 8,
+  },
+  categoryList: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   categoryChip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1.5,
     borderColor: COLORS.line,
     backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 36,
   },
   categoryChipSelected: { backgroundColor: COLORS.green, borderColor: COLORS.green },
   categoryChipText: { color: COLORS.dark, fontSize: 13, fontWeight: '600' },
-  categoryChipTextSelected: { color: COLORS.white },
+  categoryChipTextSelected: { color: COLORS.white, fontWeight: '700' },
 
   // Filters
-  filterRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 6 },
+  filterScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+    marginBottom: 10,
+  },
+  filterRow: {
+    paddingHorizontal: 16,
+    gap: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     borderRadius: 18,
     borderWidth: 1,
     borderColor: COLORS.line,
     backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 32,
   },
   filterChipText: { color: COLORS.dark, fontSize: 12, fontWeight: '600' },
-
-  // Results row
-  resultsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-  },
-  resultsText: { color: COLORS.muted, fontSize: 12 },
-  sortText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
 
   // Section header
   sectionHeader: {
@@ -498,18 +519,29 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: 6,
+    paddingTop: 4,
     paddingBottom: 10,
+    flexShrink: 0,
+  },
+  sectionTitleBlock: {
+    flex: 1,
+    marginRight: 8,
   },
   sectionTitle: { color: COLORS.dark, fontSize: 17, fontWeight: '800' },
   sectionSubtitle: { color: COLORS.muted, fontSize: 12, marginTop: 2 },
-  sortDistanceBtn: {
-    paddingHorizontal: 14,
+  sortBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: 16,
     backgroundColor: '#EAF5EB',
   },
-  sortDistanceBtnText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
+  sortBtnText: { color: COLORS.green, fontSize: 12, fontWeight: '700' },
+
+  // Product list
+  productList: { flex: 1 },
 
   // Product list
   listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 10 },
