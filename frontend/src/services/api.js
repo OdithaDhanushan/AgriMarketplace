@@ -1,4 +1,5 @@
 import { create } from 'axios';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Automatically detect host IP from Expo debugger/hostUri if available
