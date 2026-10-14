@@ -72,4 +72,40 @@ export const deleteCurrentUser = async () => {
   return response.data;
 };
 
+// Admin API Services
+export const getAdminMetrics = async () => {
+  const response = await api.get('/admin/metrics');
+  return response.data;
+};
+
+export const getAdminOrders = async (params = {}) => {
+  const response = await api.get('/admin/orders', { params });
+  return response.data;
+};
+
+export const updateAdminOrderStatus = async (orderId, status) => {
+  const response = await api.patch(`/admin/orders/${orderId}/status`, { status });
+  return response.data;
+};
+
+export const getAdminUsers = async (params = {}) => {
+  const response = await api.get('/admin/users', { params });
+  return response.data;
+};
+
+export const deleteAdminUser = async (userId) => {
+  const response = await api.delete(`/admin/users/${userId}`);
+  return response.data;
+};
+
+export const getAdminProduce = async (params = {}) => {
+  const response = await api.get('/admin/produce', { params });
+  return response.data;
+};
+
+export const deleteAdminProduce = async (produceId) => {
+  const response = await api.delete(`/admin/produce/${produceId}`);
+  return response.data;
+};
+
 export default api;

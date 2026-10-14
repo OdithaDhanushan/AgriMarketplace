@@ -1,9 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import api from '../services/api';
+import { getCropImage } from '../utils/cropImages';
+import { useAuth } from './AuthContext';
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
+  const authContext = useAuth();
+  const token = authContext?.token;
+  const user = authContext?.user;
+
   const [items, setItems] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -21,7 +27,7 @@ export function CartProvider({ children }) {
       harvestDate: produceItem.harvestDate || 'Today',
       freshness: produceItem.freshness || 'Today',
       location: produceItem.location || 'Kurunegala',
-      photoUrl: produceItem.photoUrl || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+      photoUrl: getCropImage(produceItem.cropName, produceItem.photoUrl),
       description: produceItem.description || '',
       farmer: produceItem.farmer || "Sunil's Farm",
       farmerPhone: produceItem.farmerPhone || '+94 77 123 4567',
@@ -36,6 +42,12 @@ export function CartProvider({ children }) {
   };
 
   const fetchOrders = useCallback(async () => {
+    if (!token) {
+      setOrders([]);
+      setLoadingOrders(false);
+      return;
+    }
+
     try {
       setLoadingOrders(true);
       const res = await api.get('/orders');
@@ -70,15 +82,22 @@ export function CartProvider({ children }) {
         setOrders(mappedOrders);
       }
     } catch (err) {
-      console.log('Error fetching backend orders:', err?.message);
+      if (err?.response?.status !== 401) {
+        console.log('Error fetching backend orders:', err?.message);
+      }
     } finally {
       setLoadingOrders(false);
     }
-  }, []);
+  }, [token]);
 
+  // Refetch orders whenever authentication token changes (e.g. login / account switch)
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    if (token) {
+      fetchOrders();
+    } else {
+      setOrders([]);
+    }
+  }, [token, fetchOrders]);
 
   const addToCart = (product, quantity = 1) => {
     setItems((currentItems) => {
@@ -129,12 +148,27 @@ export function CartProvider({ children }) {
 
   const addOrder = async (order) => {
     const orderCode = order.id || `SK${Math.floor(1000 + Math.random() * 9000)}`;
+
+    // Ensure items array is NEVER empty so MongoDB validation always succeeds
+    const resolvedItems = (Array.isArray(order.items) && order.items.length > 0)
+      ? order.items
+      : [{
+          name: order.itemName || 'Fresh Produce',
+          productName: order.itemName || 'Fresh Produce',
+          quantity: Number(order.quantity) || 1,
+          unitPrice: Number(order.unitPrice || (order.total || 0) / (Number(order.quantity) || 1)),
+          price: Number(order.unitPrice || (order.total || 0) / (Number(order.quantity) || 1)),
+          unit: order.unit || 'kg',
+          image: order.productImage || order.image || '',
+          farmer: order.farmer || 'Sunil\'s Farm',
+        }];
+
     const formattedOrder = {
       id: orderCode,
-      items: order.items || [],
-      itemName: order.itemName || (order.items?.[0]?.name || 'Fresh Produce'),
-      quantity: order.quantity || order.items?.reduce((s, i) => s + (Number(i.quantity) || 1), 0) || 1,
-      unit: order.unit || order.items?.[0]?.unit || 'kg',
+      items: resolvedItems,
+      itemName: order.itemName || (resolvedItems[0]?.name || 'Fresh Produce'),
+      quantity: order.quantity || resolvedItems.reduce((s, i) => s + (Number(i.quantity) || 1), 0) || 1,
+      unit: order.unit || resolvedItems[0]?.unit || 'kg',
       total: Number(order.total || order.totalAmount || 0),
       subtotal: Number(order.subtotal || 0),
       deliveryFee: Number(order.deliveryFee || 0),
@@ -142,17 +176,18 @@ export function CartProvider({ children }) {
       paymentMethod: order.paymentMethod || 'Cash on Delivery',
       date: order.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
       status: 'Confirmed',
+      otpCode: order.otpCode || '1234',
       createdAt: new Date().toISOString(),
     };
 
-    // Optimistically update local state
+    // Optimistically update local state so user sees it right away
     setOrders((current) => [formattedOrder, ...current]);
 
     // Persist to backend MongoDB
     try {
       const payload = {
-        orderNumber: `#${orderCode}`,
-        items: (order.items || []).map((it) => ({
+        orderNumber: `#${String(orderCode).replace('#', '')}`,
+        items: resolvedItems.map((it) => ({
           productName: it.name || it.productName || 'Fresh Item',
           name: it.name || it.productName || 'Fresh Item',
           quantity: Number(it.quantity) || 1,
@@ -164,14 +199,21 @@ export function CartProvider({ children }) {
         })),
         totalAmount: Number(order.total || order.totalAmount || 0),
         deliveryFee: Number(order.deliveryFee || 0),
-        deliveryAddress: order.deliveryAddress || '24 Flower Road, Colombo 07',
+        deliveryAddress: order.deliveryAddress || order.address || '24 Flower Road, Colombo 07',
         paymentMethod: order.paymentMethod || 'Cash on Delivery',
-        otpCode: order.otpCode || '1234',
+        otpCode: String(order.otpCode || '1234'),
+        userEmail: order.userEmail || user?.email || '',
         status: 'Confirmed',
       };
-      await api.post('/orders', payload);
+      const res = await api.post('/orders', payload);
+      if (res.data?.order) {
+        const savedOrder = res.data.order;
+        setOrders((current) =>
+          current.map((o) => (o.id === formattedOrder.id ? { ...o, _id: savedOrder._id } : o))
+        );
+      }
     } catch (err) {
-      console.log('Error saving order to backend:', err?.message);
+      console.log('Error saving order to backend:', err?.response?.data?.message || err?.message);
     }
 
     return formattedOrder;

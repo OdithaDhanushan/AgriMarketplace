@@ -12,16 +12,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Audio } from 'expo-av';
 import BottomNavBar from '../components/BottomNavBar';
 import api from '../services/api';
+import { getCropImage } from '../utils/cropImages';
 
 // REAL TRILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
   EN: {
     title: 'Voice Listing',
     heading: "Let's create your listing",
-    subheading: 'Speak clearly into your microphone. Your voice will be transcribed live!',
-    exampleTitle: 'Spoken Examples (Or speak naturally):',
+    subheading: 'Speak clearly into your microphone. Your voice will be transcribed live in real-time!',
+    exampleTitle: 'Quick Voice Shortcuts (Tap or speak):',
     recogTitle: 'Live Recognized Information',
     emptyCrop: '— (Waiting for speech)',
     emptyQty: '— kg',
@@ -30,16 +32,22 @@ const TRANSLATIONS = {
     qtyLabel: 'Quantity',
     priceLabel: 'Price',
     editBtn: 'Edit in Form',
-    confirmBtn: 'Confirm',
+    confirmBtn: 'Confirm Listing',
     speakBtn: 'Tap Microphone to Speak',
-    listeningText: '🔴 Listening to your voice... Speak now!',
+    listeningText: '🔴 Listening live... Tap mic when done!',
     tapPrompt: '● Tap microphone to speak',
+    examples: [
+      '20 kg Tomatoes at Rs. 180',
+      '50 kg Carrots at Rs. 220',
+      '30 kg Pumpkin at Rs. 150',
+      '15 kg Fresh Mango at Rs. 240',
+    ],
   },
   'සිං': {
     title: 'කටහඬින් එක් කිරීම',
     heading: 'කටහඬින් තොරතුරු එක් කරමු',
     subheading: 'මයික්‍රෆෝනයට පැහැදිලිව කතා කරන්න. ඔබේ හඬ සජීවීව හඳුනාගනු ඇත!',
-    exampleTitle: 'කතා කළ හැකි උදාහරණ වාක්‍ය:',
+    exampleTitle: 'කතා කළ හැකි උදාහරණ (හෝ ඔබන්න):',
     recogTitle: 'හඳුනාගත් තොරතුරු',
     emptyCrop: '— (කතා කරන තෙක් රැඳී සිටින්න)',
     emptyQty: '— කි.ග්‍රෑ.',
@@ -50,14 +58,20 @@ const TRANSLATIONS = {
     editBtn: 'පෝරමයෙන් සංස්කරණය',
     confirmBtn: 'තහවුරු කරන්න',
     speakBtn: 'කතා කිරීමට මයික්‍රෆෝනය ඔබන්න',
-    listeningText: '🔴 සවන් දෙමින් පවතී... දැන් කතා කරන්න!',
+    listeningText: '🔴 සජීවීව සවන් දෙයි... අවසන් වූ පසු ඔබන්න!',
     tapPrompt: '● කතා කිරීමට මෙතන ඔබන්න',
+    examples: [
+      'තක්කාලි කිලෝ 20ක් රුපියල් 180ට',
+      'කැරට් කිලෝ 50ක් රුපියල් 220ට',
+      'වට්ටක්කා කිලෝ 30ක් රුපියල් 150ට',
+      'අඹ කිලෝ 15ක් රුපියල් 240ට',
+    ],
   },
   'த': {
     title: 'குரல் மூலம் சேர்த்தல்',
     heading: 'குரல் மூலம் விவரங்களைச் சேர்ப்போம்',
     subheading: 'மைக்ரோஃபோனில் தெளிவாகப் பேசுங்கள். உங்கள் குரல் நேரடியாகக் கண்டறியப்படும்!',
-    exampleTitle: 'பேசக்கூடிய மாதிரி வாக்கியங்கள்:',
+    exampleTitle: 'பேசக்கூடிய மாதிரி வாக்கியங்கள் (அல்லது தட்டவும்):',
     recogTitle: 'கண்டறியப்பட்ட தகவல்கள்',
     emptyCrop: '— (பேசும் வரை காத்திருக்கிறது)',
     emptyQty: '— கி.கி.',
@@ -68,8 +82,14 @@ const TRANSLATIONS = {
     editBtn: 'படிவத்தில் திருத்துக',
     confirmBtn: 'உறுதிப்படுத்துக',
     speakBtn: 'பேச மைக்ரோஃபோனைத் தட்டவும்',
-    listeningText: '🔴 கேட்கிறது... இப்போது பேசுங்கள்!',
+    listeningText: '🔴 கேட்கிறது... முடிந்ததும் மீண்டும் தட்டவும்!',
     tapPrompt: '● பேச இங்கே தட்டவும்',
+    examples: [
+      'தக்காளி 20 கிலோ ரூ. 180',
+      'கேரட் 50 கிலோ ரூ. 220',
+      'பூசணிக்காய் 30 கிலோ ரூ. 150',
+      'மாம்பழம் 15 கிலோ ரூ. 240',
+    ],
   },
 };
 
@@ -81,115 +101,310 @@ export default function VoiceListingScreen({ navigation }) {
   const [liveTranscript, setLiveTranscript] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasRecognized, setHasRecognized] = useState(false);
+  const [recordDuration, setRecordDuration] = useState(0);
 
-  // Starts completely empty!
+  // Starts completely empty
   const [recognizedData, setRecognizedData] = useState({
     cropName: '',
     quantityKg: 0,
     sellingPricePerKg: 0,
   });
 
+  const isListeningRef = useRef(false);
   const recognitionRef = useRef(null);
+  const recognizerStartedRef = useRef(false); // tracks if recognizer.start() was actually called
+  const finalTranscriptRef = useRef('');      // accumulates confirmed final text across restart cycles
+  const [interimTranscript, setInterimTranscript] = useState(''); // live in-progress text
+  const restartTimeoutRef = useRef(null);
+  const recordingRef = useRef(null);
+  const timerIntervalRef = useRef(null);
 
+  const showMessage = (title, message) => {
+    if (Platform.OS === 'web') {
+      window.alert(`${title}\n\n${message}`);
+    } else {
+      Alert.alert(title, message);
+    }
+  };
+
+  // MULTILINGUAL PARSER (English, Sinhala, Tamil)
   const parseSpokenWords = React.useCallback((text) => {
     if (!text || !text.trim()) return;
     const lower = text.toLowerCase();
 
-    // 1. Detect Crop Name
+    // 1. Detect Crop Name (English, Sinhala, Tamil, Transliterated)
     let crop = '';
-    if (lower.includes('tomato')) crop = 'Tomatoes';
-    else if (lower.includes('carrot')) crop = 'Carrots';
-    else if (lower.includes('potato')) crop = 'Potatoes';
-    else if (lower.includes('pumpkin')) crop = 'Pumpkin';
-    else if (lower.includes('guava')) crop = 'Guava';
-    else if (lower.includes('banana')) crop = 'Banana';
-    else if (lower.includes('onion')) crop = 'Onions';
-    else if (lower.includes('cabbage')) crop = 'Cabbage';
-    else if (lower.includes('leek')) crop = 'Leeks';
-    else if (lower.includes('bean')) crop = 'Beans';
-    else if (lower.includes('ginger')) crop = 'Ginger';
+    if (lower.includes('tomato') || lower.includes('තක්කාලි') || lower.includes('thakkali') || lower.includes('தக்காளி')) {
+      crop = 'Tomatoes';
+    } else if (lower.includes('cucumber') || lower.includes('කුකුම්බර්') || lower.includes('kukumbar') || lower.includes('வெள்ளரிக்காய்') || lower.includes('vellarikai')) {
+      crop = 'Cucumber';
+    } else if (lower.includes('carrot') || lower.includes('කැරට්') || lower.includes('கேரட்')) {
+      crop = 'Carrots';
+    } else if (lower.includes('potato') || lower.includes('අල') || lower.includes('ala') || lower.includes('உருளை')) {
+      crop = 'Potatoes';
+    } else if (lower.includes('pumpkin') || lower.includes('වට්ටක්කා') || lower.includes('wattakka') || lower.includes('பூசணி')) {
+      crop = 'Pumpkin';
+    } else if (lower.includes('mango') || lower.includes('අඹ') || lower.includes('amba') || lower.includes('மாம்பழம்') || lower.includes('மாங்காய்')) {
+      crop = 'Fresh Mango';
+    } else if (lower.includes('banana') || lower.includes('කෙසෙල්') || lower.includes('kesel') || lower.includes('வாழை')) {
+      crop = 'Banana';
+    } else if (lower.includes('onion') || lower.includes('ළූණු') || lower.includes('ලූණු') || lower.includes('lunu') || lower.includes('வெங்காயம்')) {
+      crop = 'Onions';
+    } else if (lower.includes('cabbage') || lower.includes('ගෝවා') || lower.includes('gowa') || lower.includes('முட்டைக்கோஸ்')) {
+      crop = 'Cabbage';
+    } else if (lower.includes('leek') || lower.includes('ලීක්ස්') || lower.includes('லீக்ஸ்')) {
+      crop = 'Leeks';
+    } else if (lower.includes('bean') || lower.includes('බෝංචි') || lower.includes('bonchi') || lower.includes('பீன்ஸ்')) {
+      crop = 'Beans';
+    } else if (lower.includes('ginger') || lower.includes('ඉඟුරු') || lower.includes('inguru') || lower.includes('இஞ்சி')) {
+      crop = 'Ginger';
+    } else if (lower.includes('papaya') || lower.includes('පැපොල්') || lower.includes('papol') || lower.includes('பப்பாளி')) {
+      crop = 'Sweet Papaya';
+    } else if (lower.includes('corn') || lower.includes('maize') || lower.includes('බඩ ඉරිඟු') || lower.includes('இனிப்பு சோளம்')) {
+      crop = 'Corn';
+    } else if (lower.includes('garlic') || lower.includes('සුදු ළූණු') || lower.includes('பூண்டு')) {
+      crop = 'Garlic';
+    } else if (lower.includes('brinjal') || lower.includes('eggplant') || lower.includes('wambatu') || lower.includes('වම්බටු') || lower.includes('கத்தரிக்காய்')) {
+      crop = 'Brinjal';
+    } else if (lower.includes('capsicum') || lower.includes('pepper') || lower.includes('maalu miris') || lower.includes('மிளகாய்')) {
+      crop = 'Capsicum';
+    }
 
-    // 2. Detect Quantity (e.g. "20 kilos", "15 kg", "25")
-    const qtyMatch = lower.match(/(\d+)\s*(?:kilos?|kg|kilo)?/);
-    const qty = qtyMatch ? parseInt(qtyMatch[1], 10) : 10;
+    // 2. Detect Quantity (e.g. "20 kilos", "20 kg", "කිලෝ 20", "20 කිලෝ", "20 கிலோ")
+    let qty = 0;
+    const qtyMatch =
+      lower.match(/(\d+)\s*(?:kilos?|kg|kilo|කිලෝ|කිලෝග්‍රෑම්|கிலோ)/) ||
+      lower.match(/(?:කිලෝ|කිලෝග්‍රෑම්|කிலோ)\s*(\d+)/) ||
+      lower.match(/(\d+)\s*(?:ක්|ක)/);
+    if (qtyMatch) {
+      qty = parseInt(qtyMatch[1], 10);
+    }
 
-    // 3. Detect Price (e.g. "at 150", "180 rupees", "rs 220")
-    const priceMatch = lower.match(/(?:at|rs\.?|rupees|price)\s*(\d+)/) || lower.match(/(\d+)\s*(?:rupees|rs)/);
-    const price = priceMatch ? parseInt(priceMatch[1], 10) : 150;
+    // 3. Detect Price (e.g. "at 150", "180 rupees", "rs 220", "රුපියල් 180", "180 රුපියල්", "ரூபாய் 180")
+    let price = 0;
+    const priceMatch =
+      lower.match(/(?:at|rs\.?|rupees?|price|රුපියල්|රු\.?|ரூபாய்|මිල|ගාන)\s*(\d+)/) ||
+      lower.match(/(\d+)\s*(?:rupees?|rs\.?|රුපියල්|රු|ரூபாய்|ට)/);
+    if (priceMatch) {
+      price = parseInt(priceMatch[1], 10);
+    }
 
-    if (crop || qtyMatch || priceMatch) {
+    // Fallback simple numbers if one is small (qty) and one is larger (price)
+    if (!qty || !price) {
+      const allNumbers = (lower.match(/\d+/g) || []).map(Number);
+      if (allNumbers.length >= 2) {
+        if (!qty) qty = Math.min(...allNumbers);
+        if (!price) price = Math.max(...allNumbers);
+      } else if (allNumbers.length === 1) {
+        if (!qty && allNumbers[0] <= 100) qty = allNumbers[0];
+        else if (!price && allNumbers[0] > 50) price = allNumbers[0];
+      }
+    }
+
+    if (crop || qty > 0 || price > 0) {
       setHasRecognized(true);
       setRecognizedData((prev) => ({
-        cropName: crop || prev.cropName || 'Tomatoes',
-        quantityKg: qty,
-        sellingPricePerKg: price,
+        // Keep previous value if current speech did not contain that field
+        // Do NOT fall back to hardcoded defaults (that caused wrong crop names)
+        cropName: crop || prev.cropName || '',
+        quantityKg: qty || prev.quantityKg || 0,
+        sellingPricePerKg: price || prev.sellingPricePerKg || 0,
       }));
     }
   }, []);
 
-  // Initialize Real Web Speech Recognition API
+  // Build / rebuild the Web Speech recognizer whenever language changes
   useEffect(() => {
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognizer = new SpeechRecognition();
-        recognizer.continuous = false;
-        recognizer.interimResults = true;
-        recognizer.lang = selectedLanguage === 'සිං' ? 'si-LK' : selectedLanguage === 'த' ? 'ta-LK' : 'en-US';
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
 
-        recognizer.onstart = () => {
-          setIsListening(true);
-        };
-
-        recognizer.onresult = (event) => {
-          const currentText = Array.from(event.results)
-            .map((res) => res[0].transcript)
-            .join('');
-
-          setLiveTranscript(currentText);
-          parseSpokenWords(currentText);
-        };
-
-        recognizer.onerror = (event) => {
-          console.log('Speech recognition event:', event.error);
-          setIsListening(false);
-        };
-
-        recognizer.onend = () => {
-          setIsListening(false);
-        };
-
-        recognitionRef.current = recognizer;
-      }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      // Browser does not support Web Speech API at all
+      recognitionRef.current = null;
+      return;
     }
-  }, [selectedLanguage, parseSpokenWords]);
 
-  // 🎙️ START / STOP REAL MICROPHONE RECORDING
-  const toggleRealMicrophone = () => {
-    if (Platform.OS === 'web' && recognitionRef.current) {
-      try {
-        if (isListening) {
-          recognitionRef.current.stop();
-          setIsListening(false);
+    const langCode =
+      selectedLanguage === 'සිං' ? 'si-LK' :
+      selectedLanguage === 'த'   ? 'ta-LK' : 'en-US';
+
+    const recognizer = new SpeechRecognition();
+    // continuous=true can cause Chrome to throw "already started" on rapid restarts.
+    // We use continuous=false and manually restart on `onend` instead – this is
+    // the most reliable pattern across Chrome / Edge / Safari.
+    recognizer.continuous = false;
+    recognizer.interimResults = true;
+    recognizer.maxAlternatives = 1;
+    recognizer.lang = langCode;
+
+    recognizer.onstart = () => {
+      recognizerStartedRef.current = true;
+      setIsListening(true);
+      isListeningRef.current = true;
+    };
+
+    recognizer.onresult = (event) => {
+      let interim = '';
+      let newFinal = '';
+
+      // Only process results from the last restart cycle (event.resultIndex)
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) {
+          newFinal += result[0].transcript + ' ';
         } else {
-          setLiveTranscript('');
-          recognitionRef.current.start();
+          interim += result[0].transcript;
         }
-      } catch (error) {
-        console.log('Mic trigger:', error.message);
       }
-    } else {
-      // Fallback timer simulation for environments without Web Speech
-      if (!isListening) {
-        setIsListening(true);
-        setTimeout(() => {
-          setIsListening(false);
-          parseSpokenWords('I have 20 kilos of pumpkin at 150 rupees');
-        }, 2500);
+
+      // Accumulate confirmed final text so it survives across restart cycles
+      if (newFinal.trim()) {
+        finalTranscriptRef.current = (finalTranscriptRef.current + ' ' + newFinal).trim();
+      }
+
+      const displayFull = (finalTranscriptRef.current + ' ' + interim).trim();
+      setInterimTranscript(interim);
+      setLiveTranscript(displayFull);
+      if (displayFull) parseSpokenWords(displayFull);
+    };
+
+    recognizer.onerror = (event) => {
+      console.log('[VoiceListing] Speech error:', event.error);
+      recognizerStartedRef.current = false;
+
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        isListeningRef.current = false;
+        setIsListening(false);
+        clearInterval(timerIntervalRef.current);
+        showMessage(
+          'Microphone Access Blocked',
+          'Click the 🔒 lock icon in your browser address bar → Site settings → allow Microphone, then try again.'
+        );
+        return;
+      }
+      // 'no-speech' / 'network' / 'audio-capture' – just restart silently
+    };
+
+    recognizer.onend = () => {
+      recognizerStartedRef.current = false;
+      if (isListeningRef.current) {
+        // Auto-restart after a brief pause so Chrome has time to reset
+        clearTimeout(restartTimeoutRef.current);
+        restartTimeoutRef.current = setTimeout(() => {
+          if (!isListeningRef.current) return;
+          if (recognizerStartedRef.current) return; // avoid double-start
+          try {
+            recognizer.start();
+          } catch (e) {
+            console.log('[VoiceListing] restart error:', e.message);
+          }
+        }, 200);
       } else {
         setIsListening(false);
+        setInterimTranscript('');
+      }
+    };
+
+    recognitionRef.current = recognizer;
+
+    return () => {
+      clearTimeout(restartTimeoutRef.current);
+      clearInterval(timerIntervalRef.current);
+      isListeningRef.current = false;
+      recognizerStartedRef.current = false;
+      try { recognitionRef.current?.abort(); } catch (_) {}
+    };
+  }, [selectedLanguage, parseSpokenWords]);
+
+  // 🎙️ START / STOP REAL MICROPHONE RECORDING (Cross-Platform)
+  const toggleRealMicrophone = async () => {
+    if (isListening) {
+      // STOP LISTENING
+      isListeningRef.current = false;
+      setIsListening(false);
+      clearInterval(timerIntervalRef.current);
+
+      if (Platform.OS === 'web' && recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      } else if (recordingRef.current) {
+        try {
+          await recordingRef.current.stopAndUnloadAsync();
+          recordingRef.current = null;
+        } catch (e) {}
+      }
+      return;
+    }
+
+    // START LISTENING
+    isListeningRef.current = true;
+    recognizerStartedRef.current = false;
+    finalTranscriptRef.current = '';  // clear accumulated text for new session
+    setIsListening(true);
+    setLiveTranscript('');
+    setInterimTranscript('');
+    setRecordDuration(0);
+
+    // Duration timer (keeps track of real seconds spoken)
+    timerIntervalRef.current = setInterval(() => {
+      setRecordDuration((prev) => prev + 1);
+    }, 1000);
+
+    // 1. Web Speech (Browser on Mobile & Desktop)
+    if (Platform.OS === 'web') {
+      if (!recognitionRef.current) {
+        // Browser doesn't support Web Speech API
+        clearInterval(timerIntervalRef.current);
+        isListeningRef.current = false;
+        setIsListening(false);
+        showMessage(
+          'Browser Not Supported',
+          'Your browser does not support voice input. Please use Google Chrome or Microsoft Edge.'
+        );
+        return;
+      }
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.log('[VoiceListing] Web mic start error:', error.message);
+        clearInterval(timerIntervalRef.current);
+        isListeningRef.current = false;
+        setIsListening(false);
+      }
+      return;
+    }
+
+    // 2. Native Mobile (Expo Go on Android / iOS)
+    if (Platform.OS !== 'web') {
+      try {
+        const perm = await Audio.requestPermissionsAsync();
+        if (!perm.granted) {
+          clearInterval(timerIntervalRef.current);
+          setIsListening(false);
+          isListeningRef.current = false;
+          showMessage('Microphone Needed', 'Please allow microphone permissions to record your voice.');
+          return;
+        }
+
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY
+        );
+        recordingRef.current = recording;
+      } catch (err) {
+        console.log('Native recording error:', err.message);
       }
     }
+  };
+
+  const handleApplyPreset = (phrase) => {
+    setLiveTranscript(phrase);
+    parseSpokenWords(phrase);
   };
 
   // Navigates to AddProductScreen pre-filled!
@@ -206,7 +421,7 @@ export default function VoiceListingScreen({ navigation }) {
   // Submit Voice-recognized crop directly to MongoDB Atlas
   const handleConfirm = async () => {
     if (!hasRecognized || !recognizedData.cropName) {
-      Alert.alert('No speech detected', 'Please tap the microphone and speak your produce details first.');
+      showMessage('No speech detected', 'Please tap the microphone and speak your produce details first.');
       return;
     }
 
@@ -215,13 +430,14 @@ export default function VoiceListingScreen({ navigation }) {
       await api.post('/produce', {
         cropName: recognizedData.cropName,
         category: 'Vegetables',
-        quantityKg: recognizedData.quantityKg,
-        sellingPricePerKg: recognizedData.sellingPricePerKg,
-        marketPricePerKg: recognizedData.sellingPricePerKg,
-        harvestDate: new Date().toLocaleDateString('en-GB'),
+        quantityKg: recognizedData.quantityKg || 20,
+        sellingPricePerKg: recognizedData.sellingPricePerKg || 180,
+        marketPricePerKg: recognizedData.sellingPricePerKg || 180,
+        harvestDate: 'Today',
+        freshness: 'Today',
         location: 'Kurunegala',
-        photoUrl: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
-        description: `Voice listed produce: ${recognizedData.quantityKg}kg ${recognizedData.cropName} at Rs. ${recognizedData.sellingPricePerKg}/kg`,
+        photoUrl: getCropImage(recognizedData.cropName),
+        description: `Voice listed produce: ${recognizedData.quantityKg || 20}kg ${recognizedData.cropName} at Rs. ${recognizedData.sellingPricePerKg || 180}/kg`,
       });
       setLoading(false);
       navigation.navigate('ProductAddedSuccess');
@@ -314,18 +530,36 @@ export default function VoiceListingScreen({ navigation }) {
               </View>
             </View>
 
-            <TouchableOpacity style={styles.statusPill} onPress={toggleRealMicrophone}>
+            <TouchableOpacity style={styles.statusPill} activeOpacity={0.8} onPress={toggleRealMicrophone}>
               <View style={[styles.redDot, isListening && { backgroundColor: '#43a047' }]} />
               <Text style={styles.statusText}>
-                {isListening ? t.listeningText : t.tapPrompt}
+                {isListening ? `${t.listeningText} (${recordDuration}s)` : t.tapPrompt}
               </Text>
             </TouchableOpacity>
 
             {/* Live Transcribed Speech Feedback */}
-            {liveTranscript.length > 0 && (
+            {(liveTranscript.length > 0 || (isListening && interimTranscript.length > 0)) && (
               <View style={styles.liveSpeechBox}>
                 <Text style={styles.liveSpeechLabel}>🗣️ You said:</Text>
-                <Text style={styles.liveSpeechText}>{liveTranscript}</Text>
+                {/* Final confirmed text */}
+                {liveTranscript.length > 0 && (
+                  <Text style={styles.liveSpeechText}>{liveTranscript}</Text>
+                )}
+                {/* Interim (in-progress) text shown in lighter colour */}
+                {isListening && interimTranscript.length > 0 && (
+                  <Text style={[styles.liveSpeechText, { color: '#888', fontStyle: 'italic' }]}>
+                    {interimTranscript}
+                  </Text>
+                )}
+              </View>
+            )}
+            {/* Show live placeholder while listening but nothing heard yet */}
+            {isListening && liveTranscript.length === 0 && interimTranscript.length === 0 && (
+              <View style={[styles.liveSpeechBox, { borderColor: '#aed581' }]}>
+                <Text style={[styles.liveSpeechLabel, { color: '#7cb342' }]}>🎙️ Listening… speak now</Text>
+                <Text style={{ color: '#aaa', fontSize: 13, marginTop: 4 }}>
+                  Say e.g. &quot;20 kg tomatoes at 150 rupees&quot;
+                </Text>
               </View>
             )}
           </View>
@@ -366,6 +600,24 @@ export default function VoiceListingScreen({ navigation }) {
             </View>
           </View>
 
+          {/* Quick Voice Shortcuts / Tap or Speak Chips */}
+          <View style={styles.examplesCard}>
+            <Text style={styles.examplesTitle}>{t.exampleTitle}</Text>
+            <View style={styles.exampleChipGroup}>
+              {(t.examples || []).map((phrase, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={styles.exampleChip}
+                  activeOpacity={0.8}
+                  onPress={() => handleApplyPreset(phrase)}
+                >
+                  <Ionicons name="mic-outline" size={15} color="#2e7d32" style={{ marginRight: 6 }} />
+                  <Text style={styles.exampleChipText}>{phrase}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Action Buttons */}
           <View style={styles.buttonRow}>
             <TouchableOpacity style={styles.editBtn} activeOpacity={0.8} onPress={handleEditInForm}>
@@ -379,7 +631,7 @@ export default function VoiceListingScreen({ navigation }) {
           </View>
 
           <TouchableOpacity style={styles.speakAgainBtn} activeOpacity={0.85} onPress={toggleRealMicrophone}>
-            <Text style={styles.speakAgainText}>{t.speakBtn}</Text>
+            <Text style={styles.speakAgainText}>{isListening ? '⏹️ Stop & Process' : t.speakBtn}</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -519,6 +771,47 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     paddingVertical: 14,
     alignItems: 'center',
+    marginTop: 6,
   },
   speakAgainText: { color: '#fff', fontSize: 15, fontWeight: 'bold' },
+
+  examplesCard: {
+    backgroundColor: '#f6faf6',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#d5ebd8',
+    marginBottom: 14,
+  },
+  examplesTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#2e7d32',
+    marginBottom: 8,
+  },
+  exampleChipGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  exampleChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: '#cce6d0',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  exampleChipText: {
+    fontSize: 12,
+    color: '#2e5b35',
+    fontWeight: '600',
+  },
 });

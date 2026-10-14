@@ -10,9 +10,10 @@ const router = express.Router();
 // In-memory store for active OTPs keyed by normalized email
 const activeOtps = new Map();
 
-router.get('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
+router.get('/', requireAuth, async (req, res, next) => {
   try {
-    const orders = await Order.find({ buyerId: req.user._id }).sort({ createdAt: -1 });
+    const filter = req.user.role === 'Buyer' ? { buyerId: req.user._id } : {};
+    const orders = await Order.find(filter).sort({ createdAt: -1 });
     return res.status(200).json(orders);
   } catch (error) {
     return next(error);
@@ -122,7 +123,7 @@ router.post('/verify-otp', authorizeOrderOtp, async (req, res, next) => {
   return res.status(400).json({ success: false, message: 'Either email or valid orderId is required.' });
 });
 
-router.post('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
+router.post('/', requireAuth, async (req, res, next) => {
   if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
     return res.status(400).json({ message: 'Request body must be a JSON object.' });
   }
@@ -139,10 +140,21 @@ router.post('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
       id,
       otpCode,
       userEmail,
-      email
+      email,
+      itemName,
+      productName,
+      cropName,
+      quantity,
+      unit,
+      unitPrice,
+      price,
+      image,
+      productImage,
+      photoUrl,
+      farmer,
     } = req.body;
 
-    const formattedItems = (Array.isArray(items) ? items : []).map((item) => ({
+    let formattedItems = (Array.isArray(items) ? items : []).map((item) => ({
       productName: item.productName || item.name || item.cropName || 'Fresh Item',
       name: item.name || item.cropName || item.productName || 'Fresh Item',
       quantity: Number(item.quantity) || 1,
@@ -152,6 +164,20 @@ router.post('/', requireAuth, requireRole('Buyer'), async (req, res, next) => {
       image: item.image || item.photoUrl || '',
       farmer: item.farmer || ''
     }));
+
+    // Fallback: If items array was omitted or empty (single item checkout)
+    if (formattedItems.length === 0) {
+      formattedItems = [{
+        productName: itemName || productName || cropName || 'Fresh Produce',
+        name: itemName || productName || cropName || 'Fresh Produce',
+        quantity: Number(quantity) || 1,
+        pricePerKg: Number(unitPrice || price || (totalAmount || total || 0)),
+        unitPrice: Number(unitPrice || price || (totalAmount || total || 0)),
+        unit: unit || 'kg',
+        image: productImage || image || photoUrl || '',
+        farmer: farmer || 'Sunil\'s Farm'
+      }];
+    }
 
     const finalOtp = (typeof otpCode === 'string' && /^\d{4}$/.test(otpCode))
       ? otpCode

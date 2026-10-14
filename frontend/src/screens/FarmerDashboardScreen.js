@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
 import { getMyProduceList } from '../services/api';
+import { getCropImage } from '../utils/cropImages';
 
 export default function FarmerDashboardScreen({ navigation }) {
   const [myProduce, setMyProduce] = useState([]);
@@ -108,7 +109,7 @@ export default function FarmerDashboardScreen({ navigation }) {
                 activeOpacity={0.8}
                 onPress={() => navigation.navigate('SellerProductDetail', { item })}
               >
-                <Image source={{ uri: item.photoUrl }} style={styles.invThumb} />
+                <Image source={{ uri: getCropImage(item.cropName, item.photoUrl) }} style={styles.invThumb} />
                 <View style={{ flex: 1, marginLeft: 12 }}>
                   <Text style={styles.invTitle}>{item.cropName}</Text>
                   <Text style={styles.invSub}>{item.quantityKg} kg available • Rs. {item.sellingPricePerKg} /kg</Text>

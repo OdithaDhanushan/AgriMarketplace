@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
+import { getCropImage } from '../utils/cropImages';
 
 export default function OtherProductsScreen({ navigation }) {
   // All 12 Products from your Figma Screen #69
@@ -213,7 +214,7 @@ export default function OtherProductsScreen({ navigation }) {
                 activeOpacity={0.8}
                 onPress={() => navigation.navigate('SellerProductDetail', { item })}
               >
-                <Image source={{ uri: item.photoUrl }} style={styles.thumb} />
+                <Image source={{ uri: getCropImage(item.cropName, item.photoUrl) }} style={styles.thumb} />
                 <Text style={styles.cropTitle}>{item.cropName}</Text>
                 <Text style={styles.cropPrice}>
                   Rs. {item.sellingPricePerKg} <Text style={styles.perKg}>/kg</Text>

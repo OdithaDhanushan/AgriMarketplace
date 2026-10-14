@@ -16,6 +16,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { getCropImage } from '../utils/cropImages';
 
 const chartWidth = 300;
 const chartHeight = 110;
@@ -291,7 +292,10 @@ export default function ProductDetailScreen({ route, navigation }) {
 
         {/* Crop Image */}
         <View style={styles.imageContainer}>
-          <Image source={{ uri: item.photoUrl }} style={styles.mainImage} />
+          <Image
+            source={{ uri: getCropImage(productItem?.cropName || item?.cropName, productItem?.photoUrl || item?.photoUrl) }}
+            style={styles.mainImage}
+          />
         </View>
 
         {/* Details Section */}
