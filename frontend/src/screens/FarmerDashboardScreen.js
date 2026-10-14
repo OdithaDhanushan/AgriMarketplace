@@ -8,30 +8,64 @@ import {
   SafeAreaView,
   Platform,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
-import { getMyProduceList } from '../services/api';
+import api, { getMyProduceList, setAuthToken } from '../services/api';
 import { getCropImage } from '../utils/cropImages';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 export default function FarmerDashboardScreen({ navigation }) {
+  const { token, isLoading: authLoading } = useAuth();
+  const { orders: cartOrders } = useCart();
   const [myProduce, setMyProduce] = useState([]);
+  const [pendingOrdersCount, setPendingOrdersCount] = useState(2);
+  const [loading, setLoading] = useState(true);
 
   const fetchMyProduce = useCallback(async () => {
     try {
-      return await getMyProduceList();
+      setAuthToken(token); // ensure token is set before request
+      const data = await getMyProduceList();
+      return data;
     } catch (e) {
       console.log('Dashboard fetch error:', e.message);
       return null;
     }
-  }, []);
+  }, [token]);
+
+  const fetchOrdersCount = useCallback(async () => {
+    try {
+      const res = await api.get('/orders');
+      if (res.data && Array.isArray(res.data)) {
+        const pending = res.data.filter(
+          (o) => (o.status || '').toUpperCase() === 'PENDING' || (o.status || '').toUpperCase() === 'CONFIRMED'
+        );
+        setPendingOrdersCount(pending.length);
+        return;
+      }
+    } catch (err) {
+      // fallback
+    }
+
+    if (cartOrders && cartOrders.length > 0) {
+      const pending = cartOrders.filter(
+        (o) => (o.status || '').toUpperCase() === 'PENDING' || (o.status || '').toUpperCase() === 'CONFIRMED'
+      );
+      setPendingOrdersCount(pending.length);
+    }
+  }, [cartOrders]);
 
   useEffect(() => {
+    if (authLoading) return; // wait for auth to be ready
     fetchMyProduce().then((produce) => {
       if (produce) setMyProduce(produce);
+      setLoading(false);
     });
-  }, [fetchMyProduce]);
+    fetchOrdersCount();
+  }, [authLoading, fetchMyProduce, fetchOrdersCount]);
 
   return (
     <View style={styles.container}>
@@ -66,11 +100,15 @@ export default function FarmerDashboardScreen({ navigation }) {
               <Text style={styles.metricLabel}>Active Listings</Text>
             </View>
 
-            <View style={styles.metricBox}>
+            <TouchableOpacity
+              style={styles.metricBox}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('FarmerOrders')}
+            >
               <Text style={styles.metricEmoji}>⏳</Text>
-              <Text style={styles.metricNumber}>2</Text>
+              <Text style={styles.metricNumber}>{pendingOrdersCount}</Text>
               <Text style={styles.metricLabel}>Pending Orders</Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.metricBox}>
               <Text style={styles.metricEmoji}>✅</Text>
@@ -97,7 +135,9 @@ export default function FarmerDashboardScreen({ navigation }) {
             </TouchableOpacity>
           </View>
 
-          {myProduce.length === 0 ? (
+          {loading ? (
+            <ActivityIndicator color="#2e7d32" style={{ marginTop: 20 }} />
+          ) : myProduce.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptyText}>No active produce listed yet.</Text>
             </View>

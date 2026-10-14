@@ -427,6 +427,11 @@ export default function FarmerProfileScreen({ navigation }) {
                 <Text style={styles.dashboardText}>Open dashboard</Text>
                 <Ionicons name="chevron-forward" size={18} color="#1d4d2d" />
               </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('FarmerOrders')} style={[styles.dashboardButton, { marginTop: 10 }]}>
+                <Ionicons name="receipt-outline" size={19} color="#1d4d2d" />
+                <Text style={styles.dashboardText}>Incoming orders</Text>
+                <Ionicons name="chevron-forward" size={18} color="#1d4d2d" />
+              </TouchableOpacity>
               <TouchableOpacity onPress={signOut} style={styles.signOutButton}>
                 <Ionicons name="log-out-outline" size={18} color="#315b3b" />
                 <Text style={styles.signOutText}>Sign out</Text>

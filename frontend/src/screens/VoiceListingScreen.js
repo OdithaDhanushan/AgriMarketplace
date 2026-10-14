@@ -14,8 +14,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Audio } from 'expo-av';
 import BottomNavBar from '../components/BottomNavBar';
-import api from '../services/api';
+import api, { setAuthToken } from '../services/api';
 import { getCropImage } from '../utils/cropImages';
+import { useAuth } from '../context/AuthContext';
 
 // REAL TRILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
@@ -94,6 +95,7 @@ const TRANSLATIONS = {
 };
 
 export default function VoiceListingScreen({ navigation }) {
+  const { token } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.EN;
 
@@ -166,8 +168,28 @@ export default function VoiceListingScreen({ navigation }) {
       crop = 'Garlic';
     } else if (lower.includes('brinjal') || lower.includes('eggplant') || lower.includes('wambatu') || lower.includes('වම්බටු') || lower.includes('கத்தரிக்காய்')) {
       crop = 'Brinjal';
-    } else if (lower.includes('capsicum') || lower.includes('pepper') || lower.includes('maalu miris') || lower.includes('மிளகாய்')) {
+    } else if (lower.includes('capsicum') || lower.includes('maalu miris') || lower.includes('மிளகாய்')) {
       crop = 'Capsicum';
+    } else if (lower.includes('radish') || lower.includes('white radish') || lower.includes('රාබු') || lower.includes('rabu') || lower.includes('முள்ளங்கி') || lower.includes('mullangi')) {
+      crop = 'White Radish';
+    } else if (lower.includes('bitter gourd') || lower.includes('karawila') || lower.includes('කරවිල') || lower.includes('பாகல்')) {
+      crop = 'Bitter Gourd';
+    } else if (lower.includes('snake gourd') || lower.includes('pathola') || lower.includes('පතෝල') || lower.includes('புடலங்காய்')) {
+      crop = 'Snake Gourd';
+    } else if (lower.includes('drumstick') || lower.includes('murunga') || lower.includes('මුරුංගා') || lower.includes('முருங்கை')) {
+      crop = 'Drumstick';
+    } else if (lower.includes('spinach') || lower.includes('nivithi') || lower.includes('නිවිති') || lower.includes('கீரை')) {
+      crop = 'Spinach';
+    } else if (lower.includes('lime') || lower.includes('lemon') || lower.includes('දෙහි') || lower.includes('dehi') || lower.includes('எலுமிச்சை')) {
+      crop = 'Lime';
+    } else if (lower.includes('pineapple') || lower.includes('annasi') || lower.includes('අන්නාසි') || lower.includes('அன்னாசி')) {
+      crop = 'Pineapple';
+    } else if (lower.includes('jackfruit') || lower.includes('kos') || lower.includes('කොස්') || lower.includes('பலாப்பழம்')) {
+      crop = 'Jackfruit';
+    } else if (lower.includes('sweet potato') || lower.includes('bathala') || lower.includes('බතල') || lower.includes('சர்க்கரைவள்ளி')) {
+      crop = 'Sweet Potato';
+    } else if (lower.includes('ash plantain') || lower.includes('alu kesel') || lower.includes('ஆடுதின்னா') ) {
+      crop = 'Ash Plantain';
     }
 
     // 2. Detect Quantity (e.g. "20 kilos", "20 kg", "කිලෝ 20", "20 කිලෝ", "20 கிலோ")
@@ -427,6 +449,8 @@ export default function VoiceListingScreen({ navigation }) {
 
     setLoading(true);
     try {
+      // Ensure auth token is set so farmerId is attached to this produce
+      setAuthToken(token);
       await api.post('/produce', {
         cropName: recognizedData.cropName,
         category: 'Vegetables',
