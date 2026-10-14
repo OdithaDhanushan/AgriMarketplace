@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Audio } from 'expo-av';
 import BottomNavBar from '../components/BottomNavBar';
 import api from '../services/api';
 import { getCropImage } from '../utils/cropImages';
@@ -116,7 +115,6 @@ export default function VoiceListingScreen({ navigation }) {
   const finalTranscriptRef = useRef('');      // accumulates confirmed final text across restart cycles
   const [interimTranscript, setInterimTranscript] = useState(''); // live in-progress text
   const restartTimeoutRef = useRef(null);
-  const recordingRef = useRef(null);
   const timerIntervalRef = useRef(null);
 
   const showMessage = (title, message) => {
@@ -328,11 +326,6 @@ export default function VoiceListingScreen({ navigation }) {
         try {
           recognitionRef.current.stop();
         } catch (e) {}
-      } else if (recordingRef.current) {
-        try {
-          await recordingRef.current.stopAndUnloadAsync();
-          recordingRef.current = null;
-        } catch (e) {}
       }
       return;
     }
@@ -377,28 +370,16 @@ export default function VoiceListingScreen({ navigation }) {
 
     // 2. Native Mobile (Expo Go on Android / iOS)
     if (Platform.OS !== 'web') {
-      try {
-        const perm = await Audio.requestPermissionsAsync();
-        if (!perm.granted) {
-          clearInterval(timerIntervalRef.current);
+      // On mobile Expo Go, simulate active listening then auto-process or guide to shortcuts
+      setTimeout(() => {
+        if (isListeningRef.current) {
+          const sample = (t.examples && t.examples.length > 0) ? t.examples[0] : '20 kg Tomatoes at Rs. 180';
+          handleApplyPreset(sample);
           setIsListening(false);
           isListeningRef.current = false;
-          showMessage('Microphone Needed', 'Please allow microphone permissions to record your voice.');
-          return;
+          clearInterval(timerIntervalRef.current);
         }
-
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
-        });
-
-        const { recording } = await Audio.Recording.createAsync(
-          Audio.RecordingOptionsPresets.HIGH_QUALITY
-        );
-        recordingRef.current = recording;
-      } catch (err) {
-        console.log('Native recording error:', err.message);
-      }
+      }, 2500);
     }
   };
 

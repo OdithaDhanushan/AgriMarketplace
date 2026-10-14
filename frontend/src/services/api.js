@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 
 // Automatically detect host IP from Expo debugger/hostUri if available
 const debuggerHost = Constants.expoConfig?.hostUri || Constants.manifest2?.extra?.expoGo?.debuggerHost || Constants.manifest?.debuggerHost;
-const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '192.168.137.204';
+const hostIp = debuggerHost ? debuggerHost.split(':')[0] : '10.39.78.41';
 
 const BASE_URL = Platform.OS === 'web'
   ? (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api')
