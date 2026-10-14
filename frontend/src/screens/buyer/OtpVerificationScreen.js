@@ -126,12 +126,12 @@ export default function OtpVerificationScreen({ route, navigation }) {
       });
 
       if (res.data?.success) {
-        // Confirmed successfully
+        // Verified successfully: order placed with Pending status (waiting for farmer acceptance)
         const confirmedOrder = {
           ...order,
           otpCode: enteredOtp,
           userEmail: targetEmail,
-          status: 'Confirmed',
+          status: 'Pending',
         };
 
         await addOrder(confirmedOrder);

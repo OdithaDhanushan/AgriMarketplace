@@ -56,26 +56,60 @@ export default function FarmerOrdersScreen({ navigation }) {
   const fetchOrdersFromBackend = async () => {
     try {
       const res = await api.get('/orders');
-      if (res.data && res.data.length > 0) {
-        setOrders(res.data);
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        const normalized = res.data.map((o) => ({
+          _id: o._id || o.id,
+          id: o.orderNumber ? o.orderNumber.replace('#', '') : (o._id ? o._id.slice(-6).toUpperCase() : `ORD-${Date.now()}`),
+          buyerName: o.buyerId?.name || (o.userEmail ? o.userEmail.split('@')[0] : 'Retail Buyer'),
+          cropName: o.items?.[0]?.productName || o.items?.[0]?.name || 'Fresh Produce',
+          quantityKg: o.items?.[0]?.quantity || 10,
+          totalAmount: o.totalAmount || o.total || 0,
+          status: o.status || 'Pending',
+          date: o.createdAt
+            ? new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            : 'Recent Order',
+        }));
+        setOrders(normalized);
       }
     } catch (e) {
-      console.log('Using local fallback orders.');
+      console.log('Using local fallback orders:', e.message);
     }
   };
 
   const handleAcceptOrder = async (id) => {
     setOrders((prev) =>
-      prev.map((ord) => (ord._id === id ? { ...ord, status: 'ACCEPTED' } : ord))
+      prev.map((ord) => (ord._id === id ? { ...ord, status: 'Confirmed' } : ord))
     );
-    Alert.alert('Order Accepted!', 'Produce is marked for fulfillment. Now assign a delivery partner.');
+    try {
+      await api.patch(`/orders/${id}/status`, { status: 'Confirmed' });
+    } catch (err) {
+      console.log('Backend sync notice:', err?.response?.data || err.message);
+    }
+    Alert.alert('🔵 Order Confirmed!', 'You have confirmed the order. You can now dispatch a delivery partner.');
   };
 
   const handleRejectOrder = async (id) => {
     setOrders((prev) =>
-      prev.map((ord) => (ord._id === id ? { ...ord, status: 'REJECTED' } : ord))
+      prev.map((ord) => (ord._id === id ? { ...ord, status: 'Cancelled' } : ord))
     );
-    Alert.alert('Order Declined', 'The buyer has been notified.');
+    try {
+      await api.patch(`/orders/${id}/status`, { status: 'Cancelled' });
+    } catch (err) {
+      console.log('Backend sync notice:', err?.response?.data || err.message);
+    }
+    Alert.alert('Order Declined', 'The order has been cancelled.');
+  };
+
+  const handleMarkDelivered = async (id) => {
+    setOrders((prev) =>
+      prev.map((ord) => (ord._id === id ? { ...ord, status: 'Delivered' } : ord))
+    );
+    try {
+      await api.patch(`/orders/${id}/status`, { status: 'Delivered' });
+    } catch (err) {
+      console.log('Backend sync notice:', err?.response?.data || err.message);
+    }
+    Alert.alert('🟢 Order Delivered!', 'This order has been marked as completed & delivered.');
   };
 
   // Open Driver Assignment Modal
@@ -93,7 +127,7 @@ export default function FarmerOrdersScreen({ navigation }) {
 
     // Update local order status to Out for Delivery
     setOrders((prev) =>
-      prev.map((ord) => (ord._id === selectedOrder._id ? { ...ord, status: 'OUT_FOR_DELIVERY' } : ord))
+      prev.map((ord) => (ord._id === selectedOrder._id ? { ...ord, status: 'Out for Delivery' } : ord))
     );
 
     Alert.alert(
@@ -102,22 +136,27 @@ export default function FarmerOrdersScreen({ navigation }) {
     );
 
     try {
-      // Component 3 API integration
+      await api.patch(`/orders/${selectedOrder._id}/status`, { status: 'Out for Delivery' });
       await api.post('/deliveries', {
         orderId: selectedOrder._id,
         driverName: driver.name,
         driverPhone: driver.phone,
         vehicle: driver.vehicle,
-        status: 'OUT_FOR_DELIVERY',
+        status: 'Out for Delivery',
       });
     } catch (e) {
       console.log('Logistics API sync notice:', e.message);
     }
   };
 
+  const isStatusPending = (st) => String(st).toUpperCase() === 'PENDING';
+  const isStatusConfirmed = (st) => ['ACCEPTED', 'CONFIRMED'].includes(String(st).toUpperCase());
+  const isStatusDispatched = (st) => ['OUT_FOR_DELIVERY', 'OUT FOR DELIVERY'].includes(String(st).toUpperCase());
+  const isStatusDelivered = (st) => String(st).toUpperCase() === 'DELIVERED';
+
   const filteredOrders = orders.filter((ord) => {
-    if (filterTab === 'PENDING') return ord.status === 'PENDING';
-    if (filterTab === 'ACCEPTED' || filterTab === 'OUT_FOR_DELIVERY') return ord.status === 'ACCEPTED' || ord.status === 'OUT_FOR_DELIVERY';
+    if (filterTab === 'PENDING') return isStatusPending(ord.status);
+    if (filterTab === 'ACCEPTED') return isStatusConfirmed(ord.status) || isStatusDispatched(ord.status);
     return true;
   });
 
@@ -179,10 +218,11 @@ export default function FarmerOrdersScreen({ navigation }) {
                   <Text
                     style={[
                       styles.statusBadge,
-                      order.status === 'ACCEPTED' && styles.statusACCEPTED,
-                      order.status === 'OUT_FOR_DELIVERY' && styles.statusDispatched,
-                      order.status === 'PENDING' && styles.statusPending,
-                      order.status === 'REJECTED' && styles.statusRejected,
+                      (order.status === 'ACCEPTED' || order.status === 'Confirmed') && styles.statusACCEPTED,
+                      (order.status === 'OUT_FOR_DELIVERY' || order.status === 'Out for Delivery') && styles.statusDispatched,
+                      (order.status === 'PENDING' || order.status === 'Pending') && styles.statusPending,
+                      (order.status === 'REJECTED' || order.status === 'Cancelled') && styles.statusRejected,
+                      (order.status === 'Delivered') && { backgroundColor: '#e8f5e9', color: '#2e7d32' },
                     ]}
                   >
                     {order.status}
@@ -204,7 +244,7 @@ export default function FarmerOrdersScreen({ navigation }) {
                 </View>
 
                 {/* Pending Actions */}
-                {order.status === 'PENDING' && (
+                {(order.status === 'PENDING' || order.status === 'Pending') && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity
                       style={styles.rejectBtn}
@@ -225,7 +265,7 @@ export default function FarmerOrdersScreen({ navigation }) {
                 )}
 
                 {/* 🚚 COMPONENT 3 INTEGRATION: Arrange Delivery Button */}
-                {order.status === 'ACCEPTED' && (
+                {(order.status === 'ACCEPTED' || order.status === 'Confirmed') && (
                   <TouchableOpacity
                     style={styles.logisticsBtn}
                     activeOpacity={0.85}
@@ -234,6 +274,26 @@ export default function FarmerOrdersScreen({ navigation }) {
                     <Ionicons name="car-sport" size={18} color="#fff" style={{ marginRight: 6 }} />
                     <Text style={styles.logisticsBtnText}>🚚 Arrange Delivery (Dispatch Rider)</Text>
                   </TouchableOpacity>
+                )}
+
+                {/* Out for Delivery Action */}
+                {(order.status === 'OUT_FOR_DELIVERY' || order.status === 'Out for Delivery') && (
+                  <TouchableOpacity
+                    style={[styles.logisticsBtn, { backgroundColor: '#2e7d32' }]}
+                    activeOpacity={0.85}
+                    onPress={() => handleMarkDelivered(order._id)}
+                  >
+                    <Ionicons name="checkmark-done" size={18} color="#fff" style={{ marginRight: 6 }} />
+                    <Text style={styles.logisticsBtnText}>🟢 Mark as Delivered</Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Delivered state */}
+                {order.status === 'Delivered' && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 8, padding: 8, borderRadius: 8, backgroundColor: '#e8f5e9' }}>
+                    <Ionicons name="checkmark-circle" size={16} color="#2e7d32" />
+                    <Text style={{ color: '#2e7d32', fontWeight: '700', fontSize: 13 }}>Order Completed & Delivered</Text>
+                  </View>
                 )}
               </View>
             ))

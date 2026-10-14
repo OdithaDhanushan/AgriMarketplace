@@ -75,7 +75,7 @@ export function CartProvider({ children }) {
           date: o.createdAt
             ? new Date(o.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
             : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          status: o.status || 'Confirmed',
+          status: o.status || 'Pending',
           otpCode: o.otpCode,
           createdAt: o.createdAt || new Date().toISOString(),
         }));
@@ -175,7 +175,7 @@ export function CartProvider({ children }) {
       deliveryAddress: order.deliveryAddress || order.address || '24 Flower Road, Colombo 07',
       paymentMethod: order.paymentMethod || 'Cash on Delivery',
       date: order.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      status: 'Confirmed',
+      status: order.status || 'Pending',
       otpCode: order.otpCode || '1234',
       createdAt: new Date().toISOString(),
     };
@@ -203,7 +203,7 @@ export function CartProvider({ children }) {
         paymentMethod: order.paymentMethod || 'Cash on Delivery',
         otpCode: String(order.otpCode || '1234'),
         userEmail: order.userEmail || user?.email || '',
-        status: 'Confirmed',
+        status: order.status || 'Pending',
       };
       const res = await api.post('/orders', payload);
       if (res.data?.order) {
@@ -217,6 +217,22 @@ export function CartProvider({ children }) {
     }
 
     return formattedOrder;
+  };
+
+  const updateOrderStatus = async (orderId, newStatus) => {
+    // Optimistically update
+    setOrders((current) =>
+      current.map((o) =>
+        (o.id === orderId || o._id === orderId || o.id === `#${orderId}` || o.id?.replace('#', '') === orderId?.replace('#', ''))
+          ? { ...o, status: newStatus }
+          : o
+      )
+    );
+    try {
+      await api.patch(`/orders/${orderId}/status`, { status: newStatus });
+    } catch (err) {
+      console.log('Error updating order status:', err?.response?.data?.message || err?.message);
+    }
   };
 
   const totalCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -234,6 +250,7 @@ export function CartProvider({ children }) {
         loadingOrders,
         fetchOrders,
         addOrder,
+        updateOrderStatus,
         customProduce,
         addCustomProduce,
       }}

@@ -200,7 +200,7 @@ router.post('/', requireAuth, async (req, res, next) => {
       paymentMethod: paymentMethod || 'Cash on Delivery',
       userEmail: finalEmail,
       otpCode: finalOtp,
-      status: 'Confirmed'
+      status: req.body.status || 'Pending'
     };
 
     if (finalOrderNumber) {
@@ -209,7 +209,7 @@ router.post('/', requireAuth, async (req, res, next) => {
 
     const order = await Order.create(orderData);
 
-    // Clean up active OTP for this email once order is confirmed
+    // Clean up active OTP for this email once order is placed
     if (finalEmail) {
       activeOtps.delete(finalEmail);
     }
@@ -222,4 +222,43 @@ router.post('/', requireAuth, async (req, res, next) => {
     return next(error);
   }
 });
+
+// Update order status (by Farmer, Driver, Admin or Buyer)
+router.patch('/:id/status', async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    const allowedStatuses = ['Pending', 'Confirmed', 'Out for Delivery', 'Delivered', 'Cancelled'];
+
+    if (!status || !allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid status '${status}'. Allowed: ${allowedStatuses.join(', ')}`
+      });
+    }
+
+    const targetId = req.params.id;
+    const filter = mongoose.isValidObjectId(targetId)
+      ? { _id: targetId }
+      : { orderNumber: targetId.startsWith('#') ? targetId : `#${targetId}` };
+
+    const order = await Order.findOneAndUpdate(
+      filter,
+      { status },
+      { new: true }
+    );
+
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found.' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Order status successfully updated to ${status}.`,
+      order
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 module.exports = router;

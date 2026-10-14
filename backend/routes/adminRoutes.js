@@ -108,7 +108,7 @@ router.get('/orders', async (req, res, next) => {
 router.patch('/orders/:id/status', async (req, res, next) => {
   try {
     const { status } = req.body;
-    const allowedStatuses = ['Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
+    const allowedStatuses = ['Pending', 'Confirmed', 'Processing', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({ message: `Invalid status. Allowed: ${allowedStatuses.join(', ')}` });

@@ -23,8 +23,110 @@ const COLORS = {
   white: '#FFFFFF',
 };
 
+const FILTER_TABS = ['All', 'Pending', 'Confirmed', 'Out for Delivery', 'Delivered'];
+
+// ─── Status Configuration Helper ─────────────────────────────────────────────
+const getStatusConfig = (statusRaw) => {
+  const s = String(statusRaw || 'Pending').toLowerCase().trim();
+
+  if (s.includes('pending')) {
+    return {
+      key: 'Pending',
+      label: 'Pending',
+      sinhalaLabel: '🟡 ගොවියාගේ තහවුරු කිරීම බලාපොරොත්තුවෙන්',
+      subtext: 'Waiting for farmer confirmation',
+      icon: 'time-outline',
+      emoji: '🟡',
+      step: 1,
+      bgColor: '#FEF3C7',
+      borderColor: '#FDE68A',
+      textColor: '#B45309',
+      dotColor: '#F59E0B',
+    };
+  }
+
+  if (s.includes('accept') || s === 'confirmed') {
+    return {
+      key: 'Confirmed',
+      label: 'Confirmed',
+      sinhalaLabel: '🔵 ගොවියා භාරගෙන ඇත',
+      subtext: 'Confirmed by farmer & preparing harvest',
+      icon: 'checkmark-circle-outline',
+      emoji: '🔵',
+      step: 2,
+      bgColor: '#DBEAFE',
+      borderColor: '#BFDBFE',
+      textColor: '#1D4ED8',
+      dotColor: '#2563EB',
+    };
+  }
+
+  if (s.includes('delivery') || s.includes('dispatch') || s.includes('out')) {
+    return {
+      key: 'Out for Delivery',
+      label: 'Out for Delivery',
+      sinhalaLabel: '🚚 ප්‍රවාහනයේ පවතී',
+      subtext: 'Assigned to driver & on the way',
+      icon: 'bicycle-outline',
+      emoji: '🚚',
+      step: 3,
+      bgColor: '#EDE9FE',
+      borderColor: '#DDD6FE',
+      textColor: '#6D28D9',
+      dotColor: '#7C3AED',
+    };
+  }
+
+  if (s.includes('deliver') || s.includes('complete')) {
+    return {
+      key: 'Delivered',
+      label: 'Delivered',
+      sinhalaLabel: '🟢 ලැබී අවසන්',
+      subtext: 'Order successfully delivered to you',
+      icon: 'checkmark-done-circle-outline',
+      emoji: '🟢',
+      step: 4,
+      bgColor: '#DCFCE7',
+      borderColor: '#BBF7D0',
+      textColor: '#15803D',
+      dotColor: '#16A34A',
+    };
+  }
+
+  if (s.includes('cancel') || s.includes('reject')) {
+    return {
+      key: 'Cancelled',
+      label: 'Cancelled',
+      sinhalaLabel: '🔴 අවලංගු කර ඇත',
+      subtext: 'Order declined by farmer',
+      icon: 'close-circle-outline',
+      emoji: '🔴',
+      step: 0,
+      bgColor: '#FEE2E2',
+      borderColor: '#FECACA',
+      textColor: '#B91C1C',
+      dotColor: '#EF4444',
+    };
+  }
+
+  return {
+    key: 'Pending',
+    label: statusRaw || 'Pending',
+    sinhalaLabel: '🟡 ගොවියාගේ තහවුරු කිරීම බලාපොරොත්තුවෙන්',
+    subtext: 'Waiting for farmer confirmation',
+    icon: 'time-outline',
+    emoji: '🟡',
+    step: 1,
+    bgColor: '#FEF3C7',
+    borderColor: '#FDE68A',
+    textColor: '#B45309',
+    dotColor: '#F59E0B',
+  };
+};
+
 export default function OrdersScreen({ navigation }) {
   const { orders, loadingOrders, fetchOrders } = useCart();
+  const [selectedFilter, setSelectedFilter] = React.useState('All');
 
   useFocusEffect(
     React.useCallback(() => {
@@ -32,22 +134,113 @@ export default function OrdersScreen({ navigation }) {
     }, [fetchOrders])
   );
 
+  const filteredOrders = React.useMemo(() => {
+    if (selectedFilter === 'All') return orders;
+    return orders.filter((o) => {
+      const cfg = getStatusConfig(o.status);
+      return cfg.key === selectedFilter || cfg.label === selectedFilter;
+    });
+  }, [orders, selectedFilter]);
+
   const renderOrderItem = ({ item }) => {
     const hasItemsArray = Array.isArray(item.items) && item.items.length > 0;
+    const statusConfig = getStatusConfig(item.status);
 
     return (
       <View style={styles.orderCard}>
-        {/* Top Header: Order ID & Status */}
+        {/* Top Header: Order ID & Status Badge */}
         <View style={styles.cardHeader}>
           <View style={styles.orderIdRow}>
             <Ionicons name="receipt" size={17} color={COLORS.green} />
             <Text style={styles.orderIdText}>#{item.id}</Text>
           </View>
-          <View style={styles.statusBadge}>
-            <View style={styles.statusDot} />
-            <Text style={styles.statusText}>{item.status || 'Confirmed'}</Text>
+          <View
+            style={[
+              styles.statusBadge,
+              {
+                backgroundColor: statusConfig.bgColor,
+                borderColor: statusConfig.borderColor,
+                borderWidth: 1,
+              },
+            ]}
+          >
+            <View style={[styles.statusDot, { backgroundColor: statusConfig.dotColor }]} />
+            <Text style={[styles.statusText, { color: statusConfig.textColor }]}>
+              {statusConfig.emoji} {statusConfig.label}
+            </Text>
           </View>
         </View>
+
+        {/* ── Status Meaning Banner (Sinhala & Real-Time Context) ── */}
+        <View
+          style={[
+            styles.statusExplanationBanner,
+            { backgroundColor: statusConfig.bgColor, borderColor: statusConfig.borderColor },
+          ]}
+        >
+          <Ionicons name={statusConfig.icon} size={16} color={statusConfig.textColor} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.statusSinhalaText, { color: statusConfig.textColor }]}>
+              {statusConfig.sinhalaLabel}
+            </Text>
+            <Text style={[styles.statusSubtext, { color: statusConfig.textColor }]}>
+              {statusConfig.subtext}
+            </Text>
+          </View>
+        </View>
+
+        {/* ── 4-Stage Visual Progress Stepper ── */}
+        {statusConfig.step > 0 && (
+          <View style={styles.stepperContainer}>
+            {[
+              { num: 1, label: 'Pending', emoji: '🟡' },
+              { num: 2, label: 'Confirmed', emoji: '🔵' },
+              { num: 3, label: 'On Way', emoji: '🚚' },
+              { num: 4, label: 'Delivered', emoji: '🟢' },
+            ].map((st, i, arr) => {
+              const isPassed = statusConfig.step >= st.num;
+              const isCurrent = statusConfig.step === st.num;
+
+              return (
+                <React.Fragment key={st.num}>
+                  <View style={styles.stepItem}>
+                    <View
+                      style={[
+                        styles.stepCircle,
+                        isPassed && {
+                          backgroundColor: isCurrent ? statusConfig.dotColor : '#2E7D32',
+                          borderColor: isCurrent ? statusConfig.dotColor : '#2E7D32',
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.stepCircleText, isPassed && { color: '#fff', fontWeight: '800' }]}>
+                        {isPassed ? (st.num < statusConfig.step ? '✓' : st.num) : st.num}
+                      </Text>
+                    </View>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.stepLabel,
+                        isPassed && { color: COLORS.dark, fontWeight: '700' },
+                        isCurrent && { color: statusConfig.textColor, fontWeight: '800' },
+                      ]}
+                    >
+                      {st.label}
+                    </Text>
+                  </View>
+                  {i < arr.length - 1 && (
+                    <View
+                      style={[
+                        styles.stepLine,
+                        statusConfig.step > st.num && { backgroundColor: '#2E7D32' },
+                      ]}
+                    />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </View>
+        )}
 
         <Text style={styles.orderDateText}>{item.date || 'Recent order'}</Text>
 
@@ -137,12 +330,31 @@ export default function OrdersScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.title}>My Orders</Text>
         <Text style={styles.subtitle}>
-          {orders.length} {orders.length === 1 ? 'order confirmed' : 'orders confirmed'}
+          Track real-time order status from farm harvest to your doorstep
         </Text>
+
+        {/* Filter Pills */}
+        <View style={styles.filterTabsRow}>
+          {FILTER_TABS.map((tab) => {
+            const isActive = selectedFilter === tab;
+            return (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.filterTabPill, isActive && styles.filterTabPillActive]}
+                onPress={() => setSelectedFilter(tab)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                  {tab}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
       </View>
 
       <FlatList
-        data={orders}
+        data={filteredOrders}
         keyExtractor={(item, index) => item.id || `order-${index}`}
         renderItem={renderOrderItem}
         contentContainerStyle={styles.listContent}
@@ -160,9 +372,13 @@ export default function OrdersScreen({ navigation }) {
             <View style={styles.emptyIconWrap}>
               <Ionicons name="receipt-outline" size={56} color="#A8B6A9" />
             </View>
-            <Text style={styles.emptyTitle}>No Orders Yet</Text>
+            <Text style={styles.emptyTitle}>
+              {selectedFilter === 'All' ? 'No Orders Yet' : `No ${selectedFilter} Orders`}
+            </Text>
             <Text style={styles.emptySubtitle}>
-              Your confirmed orders will appear here once you complete a purchase.
+              {selectedFilter === 'All'
+                ? 'Your farm orders will appear here once you complete a purchase.'
+                : `You do not have any orders currently marked as '${selectedFilter}'.`}
             </Text>
             <TouchableOpacity
               accessibilityRole="button"
@@ -191,6 +407,34 @@ const styles = StyleSheet.create({
   },
   title: { color: COLORS.dark, fontSize: 24, fontWeight: '800' },
   subtitle: { color: COLORS.muted, fontSize: 13, marginTop: 2 },
+  filterTabsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+    flexWrap: 'wrap',
+  },
+  filterTabPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: '#F0F2F0',
+    borderWidth: 1,
+    borderColor: '#E2E8E3',
+  },
+  filterTabPillActive: {
+    backgroundColor: COLORS.green,
+    borderColor: COLORS.green,
+  },
+  filterTabText: {
+    color: COLORS.muted,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  filterTabTextActive: {
+    color: COLORS.white,
+    fontWeight: '700',
+  },
   listContent: { padding: 16, paddingBottom: 32 },
 
   // Order Card
@@ -229,18 +473,84 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: '#EAF5EB',
   },
   statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.green,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   statusText: {
-    color: COLORS.green,
     fontSize: 12,
     fontWeight: '700',
+  },
+
+  // Status Explanation Banner
+  statusExplanationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  statusSinhalaText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statusSubtext: {
+    fontSize: 11,
+    opacity: 0.85,
+    marginTop: 1,
+  },
+
+  // 4-Stage Stepper
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    paddingHorizontal: 4,
+  },
+  stepItem: {
+    alignItems: 'center',
+    width: 58,
+  },
+  stepCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#E5EAE6',
+    borderWidth: 1.5,
+    borderColor: '#D0D7D1',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepCircleActive: {
+    transform: [{ scale: 1.15 }],
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  stepCircleText: {
+    color: COLORS.muted,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  stepLabel: {
+    color: COLORS.muted,
+    fontSize: 10,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  stepLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#E5EAE6',
+    marginBottom: 16,
+    marginHorizontal: 2,
   },
   orderDateText: {
     color: COLORS.muted,
