@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
   Image,
   ImageBackground,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Path, Circle, Line, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 import BottomNavBar from '../components/BottomNavBar';

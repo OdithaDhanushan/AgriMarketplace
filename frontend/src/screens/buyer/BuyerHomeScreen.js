@@ -5,7 +5,6 @@ import {
   Image,
   Modal,
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '../../context/CartContext';
@@ -56,6 +56,7 @@ const normalizeProduce = (p) => ({
   description: p.description || '',
   isSoldOut: Boolean(p.isSoldOut),
   createdAt: p.createdAt,
+  reviews: Array.isArray(p.reviews) ? p.reviews : [],
 });
 
 // ─── Dropdown Component ───────────────────────────────────────────────────────

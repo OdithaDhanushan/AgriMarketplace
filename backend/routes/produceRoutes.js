@@ -18,6 +18,7 @@ router.post('/seed', requireAuth, requireRole('Farmer'), produceController.seedP
 router.get('/', produceController.getAllProduce);
 router.get('/mine', requireAuth, requireRole('Farmer'), produceController.getMyProduce);
 router.get('/:id', produceController.getProduceById);
+router.post('/:id/reviews', produceController.addProduceReview);
 router.put('/:id', requireAuth, requireRole('Farmer'), produceController.updateProduce);
 router.delete('/:id', requireAuth, requireRole('Farmer'), produceController.deleteProduce);
 

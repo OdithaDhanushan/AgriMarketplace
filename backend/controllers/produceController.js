@@ -303,3 +303,56 @@ exports.deleteProduce = async (req, res) => {
     res.status(500).json({ message: 'Unable to delete produce.' });
   }
 };
+
+exports.addProduceReview = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ message: 'Invalid produce ID.' });
+  }
+
+  const { userName, rating, comment } = req.body || {};
+
+  if (!userName || typeof userName !== 'string' || !userName.trim()) {
+    return res.status(400).json({ message: 'User name is required.' });
+  }
+
+  const numericRating = Number(rating);
+  if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+    return res.status(400).json({ message: 'Rating must be a number between 1 and 5.' });
+  }
+
+  if (!comment || typeof comment !== 'string' || !comment.trim()) {
+    return res.status(400).json({ message: 'Review comment is required.' });
+  }
+
+  try {
+    const produce = await Produce.findById(req.params.id);
+    if (!produce) {
+      return res.status(404).json({ message: 'Produce not found.' });
+    }
+
+    const newReview = {
+      userName: userName.trim(),
+      rating: Math.round(numericRating),
+      comment: comment.trim(),
+      createdAt: new Date()
+    };
+
+    if (!Array.isArray(produce.reviews)) {
+      produce.reviews = [];
+    }
+
+    produce.reviews.unshift(newReview);
+
+    const total = produce.reviews.reduce((sum, item) => sum + item.rating, 0);
+    produce.rating = Math.round((total / produce.reviews.length) * 10) / 10;
+
+    await produce.save();
+
+    return res.status(201).json({
+      message: 'Review submitted successfully.',
+      produce
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to submit review.' });
+  }
+};

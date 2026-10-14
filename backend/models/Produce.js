@@ -1,5 +1,12 @@
 const mongoose = require('mongoose');
 
+const reviewSchema = new mongoose.Schema({
+  userName: { type: String, required: true, trim: true },
+  rating: { type: Number, required: true, min: 1, max: 5 },
+  comment: { type: String, required: true, trim: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
 const produceSchema = new mongoose.Schema({
   farmerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   cropName: { type: String, required: true, trim: true },
@@ -17,7 +24,8 @@ const produceSchema = new mongoose.Schema({
   rating: { type: Number, default: 4.8 },
   distanceKm: { type: Number, default: 5.0 },
   minOrderQty: { type: Number, default: 1 },
-  isSoldOut: { type: Boolean, default: false }
+  isSoldOut: { type: Boolean, default: false },
+  reviews: [reviewSchema]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Produce', produceSchema);

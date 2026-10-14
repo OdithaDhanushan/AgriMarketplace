@@ -17,7 +17,21 @@ const seedProducts = [
     harvestDate: '2026-10-06',
     rating: 4.8,
     farmer: { name: 'Kamal Perera', phone: '+94771234567', isVerified: true },
-    imageUrl: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=800'
+    imageUrl: 'https://images.unsplash.com/photo-1445282768818-728615cc910a?w=800',
+    reviews: [
+      {
+        userName: 'Priya Gunaratne',
+        rating: 5,
+        comment: 'Very fresh carrots! Delivered on time and crisp quality.',
+        createdAt: new Date('2026-10-10')
+      },
+      {
+        userName: 'Kasun Dissanayake',
+        rating: 4,
+        comment: 'Good produce, nicely packed. Will order again.',
+        createdAt: new Date('2026-10-08')
+      }
+    ]
   },
   {
     title: 'Organic Tomatoes',
@@ -106,6 +120,63 @@ router.get('/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'Product not found.' });
     }
     return res.status(200).json(product);
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// @route   POST /api/products/:id/reviews
+// @desc    Submit a review and update dynamic average rating
+// @access  Public
+router.post('/:id/reviews', async (req, res, next) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(400).json({ message: 'Invalid product ID.' });
+  }
+
+  const { userName, rating, comment } = req.body || {};
+
+  if (!userName || typeof userName !== 'string' || !userName.trim()) {
+    return res.status(400).json({ message: 'User name is required.' });
+  }
+
+  const numericRating = Number(rating);
+  if (isNaN(numericRating) || numericRating < 1 || numericRating > 5) {
+    return res.status(400).json({ message: 'Rating must be a number between 1 and 5.' });
+  }
+
+  if (!comment || typeof comment !== 'string' || !comment.trim()) {
+    return res.status(400).json({ message: 'Review comment is required.' });
+  }
+
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found.' });
+    }
+
+    const newReview = {
+      userName: userName.trim(),
+      rating: Math.round(numericRating),
+      comment: comment.trim(),
+      createdAt: new Date()
+    };
+
+    if (!Array.isArray(product.reviews)) {
+      product.reviews = [];
+    }
+
+    product.reviews.unshift(newReview);
+
+    // Dynamic average rating calculation
+    const totalRatingSum = product.reviews.reduce((sum, item) => sum + item.rating, 0);
+    product.rating = Math.round((totalRatingSum / product.reviews.length) * 10) / 10;
+
+    await product.save();
+
+    return res.status(201).json({
+      message: 'Review submitted successfully.',
+      product
+    });
   } catch (error) {
     return next(error);
   }

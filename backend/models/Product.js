@@ -1,5 +1,29 @@
 const mongoose = require('mongoose');
 
+// Sub-document schema for product reviews
+const reviewSchema = new mongoose.Schema({
+  userName: {
+    type: String,
+    required: [true, 'Reviewer name is required'],
+    trim: true
+  },
+  rating: {
+    type: Number,
+    required: [true, 'Rating value is required'],
+    min: [1, 'Minimum rating is 1'],
+    max: [5, 'Maximum rating is 5']
+  },
+  comment: {
+    type: String,
+    required: [true, 'Review comment is required'],
+    trim: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const productSchema = new mongoose.Schema({
   title: { type: String, required: true, trim: true },
   category: {
@@ -19,7 +43,8 @@ const productSchema = new mongoose.Schema({
     phone: { type: String, default: '' },
     isVerified: { type: Boolean, default: false }
   },
-  imageUrl: { type: String, default: '' }
+  imageUrl: { type: String, default: '' },
+  reviews: [reviewSchema]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Product', productSchema);
