@@ -198,7 +198,7 @@ export default function OtherProductsScreen({ navigation }) {
         <View style={styles.dateRow}>
           <Ionicons name="calendar-outline" size={18} color="#444" />
           <View style={{ marginLeft: 8 }}>
-            <Text style={styles.dateLabel}>Today's market</Text>
+            <Text style={styles.dateLabel}>Market overview</Text>
             <Text style={styles.dateValue}>{getTodayFormattedDate()}</Text>
           </View>
         </View>
@@ -211,7 +211,7 @@ export default function OtherProductsScreen({ navigation }) {
                 key={item._id}
                 style={styles.card}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('ProductDetail', { item })}
+                onPress={() => navigation.navigate('SellerProductDetail', { item })}
               >
                 <Image source={{ uri: item.photoUrl }} style={styles.thumb} />
                 <Text style={styles.cropTitle}>{item.cropName}</Text>

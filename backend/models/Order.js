@@ -1,12 +1,18 @@
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema({
-  productName: { type: String, required: true, trim: true },
+  productName: { type: String, default: 'Fresh Produce', trim: true },
+  name: { type: String, trim: true },
   quantity: { type: Number, required: true, min: 0.01 },
-  pricePerKg: { type: Number, required: true, min: 0 }
+  pricePerKg: { type: Number, default: 0, min: 0 },
+  unitPrice: { type: Number, default: 0, min: 0 },
+  unit: { type: String, default: 'kg' },
+  image: { type: String, default: '' },
+  farmer: { type: String, default: '' }
 }, { _id: false });
 
 const orderSchema = new mongoose.Schema({
+  buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   orderNumber: {
     type: String,
     required: true,
@@ -25,16 +31,22 @@ const orderSchema = new mongoose.Schema({
   deliveryFee: { type: Number, default: 0, min: 0 },
   deliveryAddress: { type: String, required: true, trim: true },
   paymentMethod: { type: String, default: 'Cash on Delivery', trim: true },
+  userEmail: { type: String, trim: true, lowercase: true, default: '' },
   otpCode: {
     type: String,
-    default: '4827',
+    required: true,
     match: [/^\d{4}$/, 'OTP must be exactly 4 digits.']
   },
   status: {
     type: String,
-    enum: ['Pending', 'Confirmed', 'Delivered'],
+    enum: ['Pending', 'Confirmed', 'Picked up', 'Out for delivery', 'Delivered'],
     default: 'Pending'
   },
+  driverId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  driverName: { type: String, default: 'Nimal Perera' },
+  driverPhone: { type: String, default: '+94 77 123 4567' },
+  pickupPhoto: { type: String, default: '' },
+  deliveredAt: { type: Date },
   createdAt: { type: Date, default: Date.now }
 });
 

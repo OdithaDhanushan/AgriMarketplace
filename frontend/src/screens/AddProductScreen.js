@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,6 +17,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
+import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 
 // REAL MULTILINGUAL TRANSLATION DICTIONARY
 const TRANSLATIONS = {
@@ -85,28 +87,20 @@ export default function AddProductScreen({ route, navigation }) {
   const [selectedLanguage, setSelectedLanguage] = useState('EN');
   const t = TRANSLATIONS[selectedLanguage] || TRANSLATIONS.EN;
 
+  const initialPrefill = route?.params?.prefill || {};
+
   // Real Form States
-  const [cropName, setCropName] = useState('');
-  const [quantity, setQuantity] = useState(0);
-  const [sellingPrice, setSellingPrice] = useState('');
+  const [cropName, setCropName] = useState(initialPrefill.cropName || '');
+  const [quantity, setQuantity] = useState(initialPrefill.quantity ? Number(initialPrefill.quantity) : 0);
+  const [sellingPrice, setSellingPrice] = useState(initialPrefill.sellingPrice ? String(initialPrefill.sellingPrice) : '');
   const [photoUri, setPhotoUri] = useState(null);
   const [location] = useState('Kurunegala');
-  
+
   // 🌟 1-TAP HARVEST TIME SELECTOR ('Today' | 'Yesterday' | '2 Days Ago')
   const [harvestTime, setHarvestTime] = useState('Today');
 
   const [modalVisible, setModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  // Pre-fill from Voice Screen
-  useEffect(() => {
-    if (route?.params?.prefill) {
-      const { cropName: pCrop, quantity: pQty, sellingPrice: pPrice } = route.params.prefill;
-      if (pCrop) setCropName(pCrop);
-      if (pQty) setQuantity(Number(pQty));
-      if (pPrice) setSellingPrice(String(pPrice));
-    }
-  }, [route?.params?.prefill]);
 
   const handleSuggestionPress = (name) => {
     setCropName(name);
@@ -143,6 +137,10 @@ export default function AddProductScreen({ route, navigation }) {
     if (!result.canceled) setPhotoUri(result.assets[0].uri);
   };
 
+  const { addCustomProduce } = useCart();
+  const authContext = useAuth();
+  const currentUser = authContext?.user;
+
   const handleAddProduct = async () => {
     if (!cropName.trim()) {
       Alert.alert('Missing Crop Name', 'Please type the crop name you are selling.');
@@ -164,6 +162,10 @@ export default function AddProductScreen({ route, navigation }) {
 
     setLoading(true);
     try {
+      const farmerDisplayName = currentUser?.name
+        ? (currentUser.name.toLowerCase().includes('farm') ? currentUser.name : `${currentUser.name}'s Farm`)
+        : "Sunil's Farm";
+
       const payload = {
         cropName: cropName.trim(),
         category: 'Vegetables',
@@ -172,17 +174,34 @@ export default function AddProductScreen({ route, navigation }) {
         marketPricePerKg: Number(sellingPrice),
         harvestDate: calculatedHarvestDate,
         freshness: harvestTime, // 'Today' | 'Yesterday'
-        location,
+        location: currentUser?.location || location,
         photoUrl: photoUri || 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
-        description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer Sunil.`,
+        description: `Fresh organic ${cropName.trim()} harvested ${harvestTime.toLowerCase()} by farmer ${currentUser?.name || 'Sunil'}.`,
+        farmer: farmerDisplayName,
+        farmerPhone: currentUser?.phone || '+94 77 123 4567',
+        rating: 4.9,
+        distanceKm: 5.0,
+        minOrderQty: 1,
       };
 
-      await createProduce(payload);
+      // Add to local state instantly so Explore tab has it immediately
+      if (addCustomProduce) {
+        addCustomProduce(payload);
+      }
+
+      // Persist to MongoDB backend
+      try {
+        await createProduce(payload);
+      } catch (backendErr) {
+        console.log('Backend createProduce failed, saved locally:', backendErr?.message);
+      }
+
       setLoading(false);
       navigation.navigate('ProductAddedSuccess');
     } catch (error) {
       setLoading(false);
-      navigation.navigate('ProductAddedSuccess');
+      const message = error.response?.data?.message || error.message || 'Please try again.';
+      Alert.alert('Unable to post product', message);
     }
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,23 +12,25 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
-import api from '../services/api';
+import { getMyProduceList } from '../services/api';
 
 export default function FarmerDashboardScreen({ navigation }) {
   const [myProduce, setMyProduce] = useState([]);
 
-  useEffect(() => {
-    fetchMyProduce();
-  }, []);
-
-  const fetchMyProduce = async () => {
+  const fetchMyProduce = useCallback(async () => {
     try {
-      const res = await api.get('/produce');
-      if (res.data) setMyProduce(res.data);
+      return await getMyProduceList();
     } catch (e) {
       console.log('Dashboard fetch error:', e.message);
+      return null;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchMyProduce().then((produce) => {
+      if (produce) setMyProduce(produce);
+    });
+  }, [fetchMyProduce]);
 
   return (
     <View style={styles.container}>
@@ -104,7 +106,7 @@ export default function FarmerDashboardScreen({ navigation }) {
                 key={item._id}
                 style={styles.inventoryItem}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('ProductDetail', { item })}
+                onPress={() => navigation.navigate('SellerProductDetail', { item })}
               >
                 <Image source={{ uri: item.photoUrl }} style={styles.invThumb} />
                 <View style={{ flex: 1, marginLeft: 12 }}>

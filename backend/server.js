@@ -1,7 +1,16 @@
+const dns = require('dns');
+// Ensure SRV records resolve reliably on all networks (e.g. mobile hotspots)
+dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
+const mongoose = require('mongoose');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const connectDB = require('./config/db');
+const { connectToMongoDB, disconnectFromMongoDB } = require('./config/mongodb');
+const User = require('./models/User');
+const seedAdminUser = require('./utils/seedAdmin');
 
 const app = express();
 
@@ -12,10 +21,22 @@ app.get('/', (req, res) => {
   res.status(200).json({ message: 'AgriMarketplace Backend Running Successfully!' });
 });
 
+app.get('/health', (req, res) => {
+  const connected = mongoose.connection.readyState === 1;
+  res.status(connected ? 200 : 503).json({
+    status: connected ? 'ok' : 'unavailable',
+    database: connected ? 'connected' : 'disconnected',
+  });
+});
+
 const produceRoutes = require('./routes/produceRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 app.use('/api/produce', produceRoutes);
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
+app.use('/api/users', userRoutes);
+app.use('/api/admin', require('./routes/adminRoutes'));
 
 app.use((req, res) => {
   res.status(404).json({ message: 'Route not found.' });
@@ -46,20 +67,54 @@ app.use((error, req, res, next) => {
   return res.status(500).json({ message: 'Internal server error.' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
-async function startServer() {
+const startServer = async () => {
+  if (process.env.JWT_SECRET && process.env.JWT_SECRET.length < 32) {
+    throw new Error('JWT_SECRET must be set to a random value at least 32 characters long in backend/.env.');
+  }
+  if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is required in production. Set a random value at least 32 characters long in the environment.');
+  }
+  if (!process.env.JWT_SECRET) {
+    console.warn('JWT_SECRET is not set; using a temporary development key. Sessions expire when the backend restarts.');
+  }
+
+  if (!process.env.MONGO_URI) {
+    throw new Error('MONGO_URI is required. Set it in backend/.env.');
+  }
+
   await connectDB();
-  return app.listen(PORT, () => {
-    console.log(`Server listening on port ${PORT}`);
-  });
-}
+  await connectToMongoDB();
+  await User.init();
+  await seedAdminUser();
 
-if (require.main === module) {
-  startServer().catch((error) => {
-    console.error('Unable to start server:', error.message);
-    process.exitCode = 1;
+  app.listen(PORT, () => {
+    console.log('\n================================================================');
+    console.log('🌾  AGRIMARKETPLACE BACKEND API SERVER IS LIVE');
+    console.log('================================================================');
+    console.log(`🚀  Server Base URL:   http://localhost:${PORT}`);
+    console.log(`📡  Health Check:      http://localhost:${PORT}/health`);
+    console.log(`🛒  Produce API:       http://localhost:${PORT}/api/produce`);
+    console.log(`👤  Users / Auth API:  http://localhost:${PORT}/api/users`);
+    console.log(`📦  Orders API:        http://localhost:${PORT}/api/orders`);
+    console.log(`🔐  Admin API:         http://localhost:${PORT}/api/admin`);
+    console.log(`🍃  MongoDB Database:  Connected to "agrimarketplace" on Cluster0`);
+    console.log('================================================================\n');
   });
-}
+};
 
-module.exports = { app, startServer };
+process.on('SIGINT', async () => {
+  await disconnectFromMongoDB();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  await disconnectFromMongoDB();
+  process.exit(0);
+});
+
+startServer().catch((error) => {
+  console.error('Unable to start backend:', error.message);
+  process.exit(1);
+});
