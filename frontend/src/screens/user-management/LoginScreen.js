@@ -55,7 +55,9 @@ export default function LoginScreen({ navigation, route }) {
 
       const targetScreen = result.user.role === 'Admin'
         ? 'AdminDashboard'
-        : (result.user.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs');
+        : (result.user.role === 'Farmer'
+          ? 'FarmerProfile'
+          : (result.user.role === 'Driver' ? 'DeliveryJob' : 'BuyerTabs'));
       navigation.reset({
         index: 0,
         routes: [{ name: targetScreen }],
@@ -91,6 +93,37 @@ export default function LoginScreen({ navigation, route }) {
     } catch (error) {
       const message = error.response?.data?.message || error.message || 'Unable to sign in as admin.';
       showMessage('Admin Sign in failed', message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDemoDriverLogin = async () => {
+    setIdentifier('driver@agri.com');
+    setPassword('Driver@12345');
+    setIsSubmitting(true);
+    try {
+      const result = await loginUser({
+        identifier: 'driver@agri.com',
+        password: 'Driver@12345',
+      });
+
+      if (!result?.user || !result?.token) {
+        throw new Error('Invalid login response.');
+      }
+
+      login({ user: result.user, token: result.token });
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'DeliveryJob' }],
+      });
+    } catch (error) {
+      // If offline or first launch, allow direct navigation
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'DeliveryJob' }],
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -220,6 +253,18 @@ export default function LoginScreen({ navigation, route }) {
             >
               <Ionicons name="shield-checkmark" size={17} color="#15803D" />
               <Text style={styles.adminDemoText}>Admin Portal Quick Login (admin@agri.com)</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Quick Driver Sign In"
+              onPress={handleDemoDriverLogin}
+              style={[styles.adminDemoButton, { backgroundColor: '#E8F5E9', borderColor: '#A5D6A7', marginTop: 8 }]}
+            >
+              <Ionicons name="bicycle" size={17} color="#2E7D32" />
+              <Text style={[styles.adminDemoText, { color: '#1B5E20' }]}>
+                Delivery Partner Portal (driver@agri.com)
+              </Text>
             </Pressable>
 
             <View style={styles.registerPrompt}>

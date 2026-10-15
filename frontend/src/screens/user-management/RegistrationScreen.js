@@ -182,7 +182,9 @@ export default function RegistrationScreen({ navigation, route }) {
 
       login({ user: safeUser, token: result.token });
 
-      const nextScreen = safeUser.role === 'Farmer' ? 'FarmerProfile' : 'BuyerTabs';
+      const nextScreen = safeUser.role === 'Farmer'
+        ? 'FarmerProfile'
+        : (safeUser.role === 'Driver' ? 'DeliveryJob' : 'BuyerTabs');
       showMessage(copy.createAccount, copy.success, () => {
         navigation.reset({
           index: 0,

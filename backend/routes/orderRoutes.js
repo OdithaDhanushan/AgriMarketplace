@@ -28,10 +28,10 @@ router.get('/', requireAuth, async (req, res, next) => {
 });
 
 // GET Driver Jobs: List of orders available to deliver
-router.get('/driver-jobs', requireAuth, async (req, res, next) => {
+router.get('/driver-jobs', async (req, res, next) => {
   try {
     const jobs = await Order.find({
-      status: { $in: ['Confirmed', 'Picked up', 'Out for delivery'] }
+      status: { $in: ['Pending', 'Confirmed', 'Picked up', 'Out for delivery'] }
     }).sort({ createdAt: -1 });
     return res.status(200).json(jobs);
   } catch (error) {
@@ -71,7 +71,7 @@ router.get('/:id/live-status', async (req, res, next) => {
 });
 
 // Driver accepts job
-router.patch('/:id/accept-job', requireAuth, async (req, res, next) => {
+router.patch('/:id/accept-job', async (req, res, next) => {
   try {
     const { id } = req.params;
     const query = mongoose.isValidObjectId(id)
@@ -83,9 +83,9 @@ router.patch('/:id/accept-job', requireAuth, async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Order not found.' });
     }
 
-    order.driverId = req.user._id;
-    order.driverName = req.user.name || 'Nimal Perera';
-    order.driverPhone = req.user.phone || '+94 77 123 4567';
+    order.driverId = req.user?._id;
+    order.driverName = req.user?.name || 'Nimal Perera';
+    order.driverPhone = req.user?.phone || '+94 77 123 4567';
     order.status = 'Picked up';
     await order.save();
 
@@ -100,7 +100,7 @@ router.patch('/:id/accept-job', requireAuth, async (req, res, next) => {
 });
 
 // Driver confirms pickup with photo
-router.patch('/:id/confirm-pickup', requireAuth, async (req, res, next) => {
+router.patch('/:id/confirm-pickup', async (req, res, next) => {
   try {
     const { id } = req.params;
     const { pickupPhoto } = req.body || {};

@@ -88,12 +88,7 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
   const handleDone = () => {
     navigation.reset({
       index: 0,
-      routes: [
-        {
-          name: 'BuyerTabs',
-          params: { screen: 'Orders' },
-        },
-      ],
+      routes: [{ name: 'DeliveryJob' }],
     });
   };
 
@@ -142,11 +137,12 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
           </View>
         </View>
 
-        {/* Customer Verification Code Box */}
+        {/* Customer Verification Code Input (Code is private to customer, driver inputs it here) */}
         <View style={styles.verificationCard}>
-          <Text style={styles.verificationTitle}>Ask Customer For Verification Code</Text>
-          <Text style={styles.codeDisplay}>
-            {(order.otpCode || '4827').split('').join(' ')}
+          <Ionicons name="shield-checkmark" size={32} color="#2E7D32" style={{ marginBottom: 8 }} />
+          <Text style={styles.verificationTitle}>Enter Customer's Verification Code</Text>
+          <Text style={styles.verificationSubtitle}>
+            Ask the customer for the 4-digit code shown on their tracking screen to verify handover.
           </Text>
 
           {/* 4 Digit Input Boxes for Driver to enter customer code */}
@@ -329,17 +325,19 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   verificationTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A2E1C',
-    marginBottom: 12,
-  },
-  codeDisplay: {
-    fontSize: 32,
+    fontSize: 16,
     fontWeight: '800',
-    letterSpacing: 8,
-    color: '#1B5E20',
-    marginBottom: 18,
+    color: '#1A2E1C',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  verificationSubtitle: {
+    fontSize: 13,
+    color: '#546E7A',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 18,
+    paddingHorizontal: 12,
   },
   inputBoxesRow: {
     flexDirection: 'row',

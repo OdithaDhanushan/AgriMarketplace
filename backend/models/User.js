@@ -5,7 +5,7 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, trim: true, lowercase: true, unique: true, maxlength: 254 },
   phone: { type: String, required: true, trim: true, maxlength: 32 },
   passwordHash: { type: String, required: true, select: false },
-  role: { type: String, required: true, enum: ['Farmer', 'Buyer', 'Admin'] },
+  role: { type: String, required: true, enum: ['Farmer', 'Buyer', 'Admin', 'Driver'] },
   language: { type: String, required: true, enum: ['en', 'si', 'ta'] },
   location: { type: String, required: true, trim: true, maxlength: 200 },
   farmName: { type: String, trim: true, maxlength: 100, default: '' },

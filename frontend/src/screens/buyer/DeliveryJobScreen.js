@@ -37,7 +37,11 @@ export default function DeliveryJobScreen({ route, navigation }) {
       }
     };
     fetchDriverJobs();
-    return () => { isMounted = false; };
+    const interval = setInterval(fetchDriverJobs, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
   }, [route?.params?.order]);
 
   const order = activeJob || route?.params?.order || {

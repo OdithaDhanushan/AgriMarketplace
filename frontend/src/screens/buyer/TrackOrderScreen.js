@@ -102,13 +102,7 @@ export default function TrackOrderScreen({ route, navigation }) {
               <Ionicons name="chevron-back" size={22} color="#1E3821" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Track order</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('DeliveryJob', { order })}
-              style={styles.driverModePill}
-              accessibilityLabel="Switch to Driver view"
-            >
-              <Text style={styles.driverModePillText}>Driver View</Text>
-            </TouchableOpacity>
+            <View style={{ width: 36 }} />
           </View>
         </SafeAreaView>
       </LinearGradient>

@@ -126,6 +126,42 @@ export default function RoleSelectionScreen({ navigation, route }) {
                   Shop fresh produce
                 </Text>
               </Pressable>
+
+              <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ checked: selectedRole === 'Driver' }}
+                onPress={() => setSelectedRole('Driver')}
+                style={[styles.roleCard, selectedRole === 'Driver' && styles.roleCardSelected]}
+              >
+                <View
+                  style={[
+                    styles.iconCircle,
+                    selectedRole === 'Driver' && styles.iconCircleSelected,
+                  ]}
+                >
+                  <MaterialCommunityIcons
+                    name="moped"
+                    size={27}
+                    color={selectedRole === 'Driver' ? '#fff' : '#28743a'}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.roleLabel,
+                    selectedRole === 'Driver' && styles.roleLabelSelected,
+                  ]}
+                >
+                  Driver
+                </Text>
+                <Text
+                  style={[
+                    styles.roleDescription,
+                    selectedRole === 'Driver' && styles.roleDescriptionSelected,
+                  ]}
+                >
+                  Deliver orders
+                </Text>
+              </Pressable>
             </View>
 
             <Pressable
@@ -187,7 +223,7 @@ const styles = StyleSheet.create({
   },
   roleChoices: {
     flexDirection: 'row',
-    gap: 14,
+    gap: 8,
   },
   roleCard: {
     alignItems: 'center',
@@ -197,9 +233,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flex: 1,
     justifyContent: 'center',
-    minHeight: 142,
-    paddingHorizontal: 8,
-    paddingVertical: 15,
+    minHeight: 136,
+    paddingHorizontal: 4,
+    paddingVertical: 14,
   },
   roleCardSelected: {
     backgroundColor: '#28743a',

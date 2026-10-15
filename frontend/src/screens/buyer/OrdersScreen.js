@@ -130,44 +130,25 @@ export default function OrdersScreen({ navigation }) {
           </View>
         )}
 
-        {/* Order Actions: Track Order & Driver View */}
-        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: '#EAF5EB',
-              paddingVertical: 9,
-              borderRadius: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              borderWidth: 1,
-              borderColor: '#C8E6C9',
-            }}
-            onPress={() => navigation.navigate('TrackOrder', { order: item })}
-          >
-            <Ionicons name="navigate-outline" size={15} color={COLORS.green} />
-            <Text style={{ color: COLORS.green, fontWeight: '700', fontSize: 13 }}>Track Delivery</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={{
-              flex: 1,
-              backgroundColor: '#F1F4F1',
-              paddingVertical: 9,
-              borderRadius: 8,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-            }}
-            onPress={() => navigation.navigate('DeliveryJob', { order: item })}
-          >
-            <Ionicons name="bicycle-outline" size={15} color="#455A64" />
-            <Text style={{ color: '#455A64', fontWeight: '700', fontSize: 13 }}>Driver View</Text>
-          </TouchableOpacity>
-        </View>
+        {/* Order Action: Track Delivery */}
+        <TouchableOpacity
+          style={{
+            marginTop: 12,
+            backgroundColor: '#EAF5EB',
+            paddingVertical: 10,
+            borderRadius: 10,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 6,
+            borderWidth: 1,
+            borderColor: '#C8E6C9',
+          }}
+          onPress={() => navigation.navigate('TrackOrder', { order: item })}
+        >
+          <Ionicons name="navigate-outline" size={16} color={COLORS.green} />
+          <Text style={{ color: COLORS.green, fontWeight: '700', fontSize: 14 }}>Track Delivery</Text>
+        </TouchableOpacity>
       </View>
     );
   };

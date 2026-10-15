@@ -70,17 +70,6 @@ function OrderConfirmedScreen({ route, navigation }) {
           <Ionicons name="leaf-outline" size={18} color={COLORS.green} />
           <Text style={styles.deliveryText}>Thank you for supporting local farmers.</Text>
         </View>
-
-        {/* Test Delivery Partner Flow link */}
-        <TouchableOpacity
-          onPress={() => navigation.navigate('DeliveryJob', { order })}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14, paddingVertical: 6 }}
-        >
-          <Ionicons name="bicycle-outline" size={16} color={COLORS.green} />
-          <Text style={{ color: COLORS.green, fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' }}>
-            Test Delivery Partner Flow (Driver Job)
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <View style={styles.bottom}>

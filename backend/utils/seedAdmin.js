@@ -77,6 +77,27 @@ async function seedAdminUser() {
       console.log(`[SEED] Farmer account ready: ${existingFarmer.email}`);
     }
 
+    // Seed Demo Driver (Nimal Perera) if not existing
+    const driverEmail = 'driver@agri.com';
+    let existingDriver = await User.findOne({ email: driverEmail.toLowerCase() });
+    if (!existingDriver) {
+      const driverHash = await hashPassword('Driver@12345');
+      existingDriver = await User.create({
+        name: 'Nimal Perera (Driver)',
+        email: driverEmail.toLowerCase(),
+        phone: '+94 77 123 4567',
+        passwordHash: driverHash,
+        role: 'Driver',
+        language: 'en',
+        location: 'Kurunegala, Sri Lanka',
+        farmName: 'Express Agri Logistics',
+        paymentMode: 'Mobile Wallet',
+      });
+      console.log(`[SEED] Default Driver created: ${existingDriver.email} / Driver@12345`);
+    } else {
+      console.log(`[SEED] Driver account ready: ${existingDriver.email}`);
+    }
+
     return existingAdmin;
   } catch (error) {
     console.error('[SEED] Failed to seed default users:', error.message);
