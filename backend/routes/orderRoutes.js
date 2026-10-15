@@ -31,7 +31,7 @@ router.get('/', requireAuth, async (req, res, next) => {
 router.get('/driver-jobs', async (req, res, next) => {
   try {
     const jobs = await Order.find({
-      status: { $in: ['Pending', 'Confirmed', 'Picked up', 'Out for delivery'] }
+      status: { $in: ['Pending', 'Confirmed', 'Picked up', 'Out for delivery', 'Delivered'] }
     }).sort({ createdAt: -1 });
     return res.status(200).json(jobs);
   } catch (error) {

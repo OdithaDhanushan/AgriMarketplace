@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const { promisify } = require('node:util');
 const User = require('../models/User');
+const Order = require('../models/Order');
 
 const scrypt = promisify(crypto.scrypt);
 
@@ -96,6 +97,62 @@ async function seedAdminUser() {
       console.log(`[SEED] Default Driver created: ${existingDriver.email} / Driver@12345`);
     } else {
       console.log(`[SEED] Driver account ready: ${existingDriver.email}`);
+    }
+
+    // Seed Demo Delivery Orders if no active orders exist
+    const orderCount = await Order.countDocuments();
+    if (orderCount === 0 && existingBuyer) {
+      await Order.create([
+        {
+          buyerId: existingBuyer._id,
+          orderNumber: '#SK1024',
+          items: [
+            {
+              productName: 'Fresh Tomatoes',
+              name: 'Fresh Tomatoes',
+              quantity: 10,
+              unitPrice: 245,
+              unit: 'kg',
+              image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400',
+              farmer: "Sunil's Farm, Dambadeniya",
+            },
+          ],
+          totalAmount: 2450,
+          deliveryFee: 650,
+          deliveryAddress: 'Green Leaf Restaurant, Kurunegala',
+          paymentMethod: 'Cash on Delivery',
+          userEmail: existingBuyer.email,
+          otpCode: '4827',
+          status: 'Confirmed',
+          driverName: 'Nimal Perera',
+          driverPhone: '+94 77 123 4567',
+        },
+        {
+          buyerId: existingBuyer._id,
+          orderNumber: '#SK1025',
+          items: [
+            {
+              productName: 'Organic Carrots',
+              name: 'Organic Carrots',
+              quantity: 15,
+              unitPrice: 240,
+              unit: 'kg',
+              image: 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400',
+              farmer: "Sunil's Farm, Dambadeniya",
+            },
+          ],
+          totalAmount: 3600,
+          deliveryFee: 750,
+          deliveryAddress: 'Colombo Central Market, Pettah',
+          paymentMethod: 'Cash on Delivery',
+          userEmail: existingBuyer.email,
+          otpCode: '8192',
+          status: 'Pending',
+          driverName: 'Nimal Perera',
+          driverPhone: '+94 77 123 4567',
+        },
+      ]);
+      console.log('[SEED] Demo delivery orders (#SK1024, #SK1025) created for Driver Portal.');
     }
 
     return existingAdmin;

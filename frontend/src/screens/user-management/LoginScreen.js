@@ -57,7 +57,7 @@ export default function LoginScreen({ navigation, route }) {
         ? 'AdminDashboard'
         : (result.user.role === 'Farmer'
           ? 'FarmerProfile'
-          : (result.user.role === 'Driver' ? 'DeliveryJob' : 'BuyerTabs'));
+          : (result.user.role === 'Driver' ? 'DriverHome' : 'BuyerTabs'));
       navigation.reset({
         index: 0,
         routes: [{ name: targetScreen }],
@@ -116,13 +116,13 @@ export default function LoginScreen({ navigation, route }) {
 
       navigation.reset({
         index: 0,
-        routes: [{ name: 'DeliveryJob' }],
+        routes: [{ name: 'DriverHome' }],
       });
     } catch (error) {
       // If offline or first launch, allow direct navigation
       navigation.reset({
         index: 0,
-        routes: [{ name: 'DeliveryJob' }],
+        routes: [{ name: 'DriverHome' }],
       });
     } finally {
       setIsSubmitting(false);

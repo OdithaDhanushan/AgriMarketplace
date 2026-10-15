@@ -103,17 +103,20 @@ export default function DeliveryJobScreen({ route, navigation }) {
       >
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerRow}>
-            <View style={styles.driverInfoPill}>
-              <Ionicons name="bicycle" size={16} color="#1E3821" />
-              <Text style={styles.driverInfoPillText}>Driver: {user?.name || 'Nimal Perera'}</Text>
-            </View>
+            <TouchableOpacity
+              onPress={() => navigation.navigate('DriverHome')}
+              style={styles.backButton}
+              accessibilityLabel="Back to Driver Home"
+            >
+              <Ionicons name="chevron-back" size={20} color="#1E3821" />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>Delivery Job</Text>
             <TouchableOpacity
               onPress={handleLogout}
               style={styles.logoutButton}
               accessibilityLabel="Driver Logout"
             >
-              <Ionicons name="log-out-outline" size={18} color="#C62828" />
+              <Ionicons name="log-out-outline" size={17} color="#C62828" />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -182,11 +185,11 @@ export default function DeliveryJobScreen({ route, navigation }) {
 
         {/* Bottom Reject & Accept Buttons */}
         <View style={styles.bottomButtonsRow}>
-          <TouchableOpacity onPress={handleReject} style={styles.rejectBtn}>
-            <Text style={styles.btnText}>Reject</Text>
+          <TouchableOpacity onPress={handleReject} style={styles.rejectBtn} activeOpacity={0.8}>
+            <Text style={styles.rejectBtnText}>Decline</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleAccept} disabled={loading} style={styles.acceptBtn}>
-            <Text style={styles.btnText}>{loading ? 'Accepting...' : 'Accept'}</Text>
+          <TouchableOpacity onPress={handleAccept} disabled={loading} style={styles.acceptBtn} activeOpacity={0.85}>
+            <Text style={styles.btnText}>{loading ? 'Accepting...' : 'Accept Delivery ➔'}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -197,15 +200,25 @@ export default function DeliveryJobScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7FAF7',
+    backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 20,
+    paddingBottom: 18,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
   safeArea: {
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'web' ? 24 : 10,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -264,24 +277,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   productCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    borderRadius: 22,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E2EBE2',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   productThumb: {
-    width: 100,
+    width: 90,
     height: 70,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#E0EAE0',
   },
   productInfo: {
@@ -290,7 +304,7 @@ const styles = StyleSheet.create({
   },
   productTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1A2E1C',
   },
   productQty: {
@@ -300,21 +314,22 @@ const styles = StyleSheet.create({
   },
   orderIdText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#263238',
+    fontWeight: '800',
+    color: '#1B5E20',
     marginTop: 4,
   },
   routeCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    borderRadius: 22,
     padding: 20,
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2EBE2',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   routePoint: {
     flexDirection: 'row',
@@ -380,31 +395,35 @@ const styles = StyleSheet.create({
   },
   rejectBtn: {
     flex: 1,
-    height: 50,
-    borderRadius: 12,
-    backgroundColor: '#2E7D32',
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 235, 238, 0.85)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(239, 154, 154, 0.7)',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2E7D32',
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+  },
+  rejectBtnText: {
+    color: '#C62828',
+    fontSize: 15,
+    fontWeight: '800',
   },
   acceptBtn: {
-    flex: 1,
-    height: 50,
-    borderRadius: 12,
+    flex: 1.4,
+    height: 52,
+    borderRadius: 16,
     backgroundColor: '#2E7D32',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#2E7D32',
-    shadowOpacity: 0.18,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   btnText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
   },
 });

@@ -102,14 +102,21 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerRow}>
             <TouchableOpacity
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('DriverHome')}
               style={styles.backButton}
-              accessibilityLabel="Go back"
+              accessibilityLabel="Back to Driver Home"
             >
-              <Ionicons name="chevron-back" size={22} color="#1E3821" />
+              <Ionicons name="chevron-back" size={20} color="#1E3821" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Complete Delivery</Text>
-            <View style={{ width: 36 }} />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('DriverHome')}
+              style={styles.homePillBtn}
+              accessibilityLabel="Driver Home"
+            >
+              <Ionicons name="home-outline" size={15} color="#1E3821" />
+              <Text style={styles.homePillBtnText}>Home</Text>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
@@ -191,13 +198,14 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
               </View>
             </View>
 
-            {/* Done Button - Returns Driver to Delivery Jobs */}
+            {/* Done Button - Returns Driver to Driver Home */}
             <TouchableOpacity
               onPress={handleDone}
               style={styles.doneBtn}
               activeOpacity={0.85}
             >
-              <Text style={styles.doneBtnText}>Done ! Return to Jobs</Text>
+              <Ionicons name="home" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.doneBtnText}>Return to Driver Home</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -209,15 +217,15 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7FAF7',
+    backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 20,
+    paddingBottom: 18,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
   safeArea: {
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'web' ? 24 : 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -227,12 +235,30 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  homePillBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+  },
+  homePillBtnText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1E3821',
   },
   headerTitle: {
     fontSize: 22,
@@ -247,24 +273,25 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   productCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
+    borderRadius: 22,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E2EBE2',
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   productThumb: {
-    width: 100,
+    width: 90,
     height: 70,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: '#E0EAE0',
   },
   productInfo: {
@@ -273,7 +300,7 @@ const styles = StyleSheet.create({
   },
   productTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#1A2E1C',
   },
   productQty: {
@@ -283,19 +310,25 @@ const styles = StyleSheet.create({
   },
   orderIdText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#263238',
+    fontWeight: '800',
+    color: '#1B5E20',
     marginTop: 4,
   },
   deliverToSection: {
-    marginBottom: 20,
-    paddingHorizontal: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 18,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.85)',
   },
   deliverToLabel: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#78909C',
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   deliverToRow: {
     flexDirection: 'row',
@@ -316,13 +349,18 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   verificationCard: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderRadius: 24,
     padding: 22,
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: '#C8E6C9',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     marginBottom: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   verificationTitle: {
     fontSize: 16,
@@ -346,10 +384,10 @@ const styles = StyleSheet.create({
   digitBox: {
     width: 54,
     height: 54,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1.5,
-    borderColor: '#B0BEC5',
+    borderColor: '#CFD8DC',
     textAlign: 'center',
     fontSize: 24,
     fontWeight: '800',
@@ -361,8 +399,8 @@ const styles = StyleSheet.create({
     borderColor: '#2E7D32',
   },
   confirmBtn: {
-    height: 52,
-    borderRadius: 14,
+    height: 54,
+    borderRadius: 16,
     backgroundColor: '#CFD8DC',
     alignItems: 'center',
     justifyContent: 'center',
@@ -374,26 +412,26 @@ const styles = StyleSheet.create({
   confirmBtnActive: {
     backgroundColor: '#2E7D32',
     shadowColor: '#2E7D32',
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   confirmBtnText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   successSection: {
     marginTop: 10,
     gap: 16,
   },
   successBanner: {
-    backgroundColor: '#E8F5E9',
-    borderRadius: 16,
+    backgroundColor: 'rgba(232, 245, 233, 0.9)',
+    borderRadius: 18,
     padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#A5D6A7',
     gap: 14,
   },
@@ -425,15 +463,17 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   doneBtn: {
-    height: 52,
-    borderRadius: 14,
+    height: 54,
+    borderRadius: 16,
     backgroundColor: '#2E7D32',
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#2E7D32',
-    shadowOpacity: 0.22,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
   doneBtnText: {
     color: '#FFFFFF',

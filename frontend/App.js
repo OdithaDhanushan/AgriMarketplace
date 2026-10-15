@@ -26,6 +26,7 @@ import PickupScreen from './src/screens/buyer/PickupScreen';
 import NavigationScreen from './src/screens/buyer/NavigationScreen';
 import OfflineNavigationScreen from './src/screens/buyer/OfflineNavigationScreen';
 import CompleteDeliveryScreen from './src/screens/buyer/CompleteDeliveryScreen';
+import DriverHomeScreen from './src/screens/buyer/DriverHomeScreen';
 import BuyerTabNavigator from './src/navigation/BuyerTabNavigator';
 import { CartProvider } from './src/context/CartContext';
 import { AuthProvider } from './src/context/AuthContext';
@@ -71,6 +72,7 @@ export default function App() {
                 <Stack.Screen name="OtpVerification" component={OtpVerificationScreen} />
                 <Stack.Screen name="OrderConfirmed" component={OrderConfirmedScreen} />
                 <Stack.Screen name="TrackOrder" component={TrackOrderScreen} />
+                <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
                 <Stack.Screen name="DeliveryJob" component={DeliveryJobScreen} />
                 <Stack.Screen name="Pickup" component={PickupScreen} />
                 <Stack.Screen name="Navigation" component={NavigationScreen} />
@@ -96,37 +98,37 @@ export default function App() {
 const styles = StyleSheet.create({
   webContainer: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#d8e1ea' : '#fff',
+    backgroundColor: Platform.OS === 'web' ? '#C9C8C5' : '#EDECEB',
     alignItems: 'center',
     justifyContent: 'center',
     height: Platform.OS === 'web' ? '100vh' : '100%',
-    paddingVertical: Platform.OS === 'web' ? 24 : 0,
+    paddingVertical: Platform.OS === 'web' ? 18 : 0,
   },
   phoneChassis: {
     flex: 1,
     width: '100%',
-    maxWidth: Platform.OS === 'web' ? 412 : '100%',
-    maxHeight: Platform.OS === 'web' ? 860 : '100%',
-    backgroundColor: '#fff',
-    borderRadius: Platform.OS === 'web' ? 48 : 0,
-    borderWidth: Platform.OS === 'web' ? 10 : 0,
-    borderColor: '#111827',
+    maxWidth: Platform.OS === 'web' ? 420 : '100%',
+    maxHeight: Platform.OS === 'web' ? 890 : '100%',
+    backgroundColor: '#EDECEB',
+    borderRadius: Platform.OS === 'web' ? 52 : 0,
+    borderWidth: Platform.OS === 'web' ? 9 : 0,
+    borderColor: '#1D1E20',
     overflow: 'hidden',
     position: 'relative',
     shadowColor: '#000',
-    shadowOpacity: Platform.OS === 'web' ? 0.25 : 0,
-    shadowOffset: { width: 0, height: 16 },
-    shadowRadius: 36,
-    elevation: 10,
+    shadowOpacity: Platform.OS === 'web' ? 0.28 : 0,
+    shadowOffset: { width: 0, height: 20 },
+    shadowRadius: 40,
+    elevation: 12,
   },
   dynamicIsland: {
     position: 'absolute',
-    top: 10,
+    top: 11,
     alignSelf: 'center',
-    width: 110,
-    height: 26,
-    backgroundColor: '#000',
-    borderRadius: 13,
+    width: 126,
+    height: 30,
+    backgroundColor: '#000000',
+    borderRadius: 15,
     zIndex: 99999,
   },
 });

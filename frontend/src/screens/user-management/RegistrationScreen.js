@@ -184,7 +184,7 @@ export default function RegistrationScreen({ navigation, route }) {
 
       const nextScreen = safeUser.role === 'Farmer'
         ? 'FarmerProfile'
-        : (safeUser.role === 'Driver' ? 'DeliveryJob' : 'BuyerTabs');
+        : (safeUser.role === 'Driver' ? 'DriverHome' : 'BuyerTabs');
       showMessage(copy.createAccount, copy.success, () => {
         navigation.reset({
           index: 0,

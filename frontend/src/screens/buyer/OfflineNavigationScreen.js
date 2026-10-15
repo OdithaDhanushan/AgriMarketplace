@@ -124,15 +124,15 @@ export default function OfflineNavigationScreen({ route, navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7FAF7',
+    backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 20,
+    paddingBottom: 18,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
   safeArea: {
-    paddingTop: 10,
+    paddingTop: Platform.OS === 'web' ? 24 : 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -142,12 +142,14 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.9)',
   },
   headerTitle: {
     fontSize: 22,
@@ -162,11 +164,13 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
   },
   alertBanner: {
-    backgroundColor: '#FFCDD2',
-    borderRadius: 14,
+    backgroundColor: 'rgba(255, 205, 210, 0.8)',
+    borderRadius: 16,
     paddingVertical: 12,
     paddingHorizontal: 16,
     marginBottom: 12,
+    borderWidth: 1.2,
+    borderColor: '#EF9A9A',
   },
   alertHeaderRow: {
     flexDirection: 'row',
