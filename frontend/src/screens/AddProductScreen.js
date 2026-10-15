@@ -18,6 +18,7 @@ import * as ImagePicker from 'expo-image-picker';
 import BottomNavBar from '../components/BottomNavBar';
 import { createProduce } from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { getCropImage } from '../utils/cropImages';
 
 // REAL MULTILINGUAL TRANSLATION DICTIONARY

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,12 +8,15 @@ import {
   SafeAreaView,
   Platform,
   Alert,
-  Modal,
+  ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomNavBar from '../components/BottomNavBar';
-import api from '../services/api';
+import api, { setAuthToken } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 
 // Available Delivery Drivers (Component 3: Secondary Stakeholder - e.g., Nimal, 40)
 const MOCK_DRIVERS = [
@@ -22,46 +25,122 @@ const MOCK_DRIVERS = [
   { id: 'drv_3', name: 'Sunil Silva', vehicle: 'Motorcycle with Box', phone: '+94 75 444 3322', distance: '0.8 km away' },
 ];
 
+const mapBackendOrder = (ord) => {
+  const firstItem = (Array.isArray(ord.items) && ord.items.length > 0) ? ord.items[0] : {};
+  const cropTitle = ord.cropName || ord.itemName || firstItem.productName || firstItem.name || 'Fresh Produce';
+  const totalQty = ord.quantityKg || ord.quantity || (Array.isArray(ord.items) ? ord.items.reduce((sum, i) => sum + (Number(i.quantity) || 0), 0) : 1);
+  const buyerDisplayName = ord.buyerName || ord.buyerId?.name || (ord.userEmail ? ord.userEmail.split('@')[0] : 'Retail Buyer');
+
+  const rawStatus = (ord.status || 'PENDING').toUpperCase();
+  let displayStatus = 'PENDING';
+  if (rawStatus === 'ACCEPTED' || rawStatus === 'PROCESSING') {
+    displayStatus = 'ACCEPTED';
+  } else if (rawStatus === 'OUT_FOR_DELIVERY' || rawStatus === 'OUT FOR DELIVERY') {
+    displayStatus = 'OUT_FOR_DELIVERY';
+  } else if (rawStatus === 'DELIVERED') {
+    displayStatus = 'DELIVERED';
+  } else if (rawStatus === 'REJECTED' || rawStatus === 'CANCELLED') {
+    displayStatus = 'REJECTED';
+  } else {
+    // Both 'CONFIRMED' from buyer checkout and 'PENDING' are incoming new orders for the farmer
+    displayStatus = 'PENDING';
+  }
+
+  let dateDisplay = ord.date;
+  if (!dateDisplay && ord.createdAt) {
+    const d = new Date(ord.createdAt);
+    dateDisplay = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  return {
+    _id: ord._id || ord.id || `ord_${Date.now()}`,
+    id: ord.id || ord._id,
+    orderNumber: ord.orderNumber || (ord.id ? `#${String(ord.id).replace('#', '')}` : '#ORD'),
+    buyerName: buyerDisplayName,
+    cropName: cropTitle,
+    quantityKg: totalQty,
+    totalAmount: ord.totalAmount || ord.total || (Number(firstItem.pricePerKg || firstItem.unitPrice || 0) * totalQty),
+    status: displayStatus,
+    rawStatus: ord.status,
+    date: dateDisplay || 'Today, Just now',
+    deliveryAddress: ord.deliveryAddress || ord.address || '',
+    paymentMethod: ord.paymentMethod || 'Cash on Delivery',
+  };
+};
+
 export default function FarmerOrdersScreen({ navigation }) {
+  const { token, isLoading: authLoading } = useAuth();
+  const { orders: cartOrders, fetchOrders: fetchCartOrders } = useCart();
+
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filterTab, setFilterTab] = useState('ALL'); // 'ALL' | 'PENDING' | 'ACCEPTED'
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [driverModalVisible, setDriverModalVisible] = useState(false);
   const [assignedDrivers, setAssignedDrivers] = useState({}); // { orderId: driverName }
+  const [orders, setOrders] = useState([]);
 
-  const [orders, setOrders] = useState([
-    {
-      _id: 'ord_1',
-      buyerName: 'Priya Restaurant (Colombo)',
-      cropName: 'Apples',
-      quantityKg: 10,
-      totalAmount: 3000,
-      status: 'PENDING',
-      date: 'Today, 10:30 AM',
-    },
-    {
-      _id: 'ord_2',
-      buyerName: 'Green Leaf Retail Shop',
-      cropName: 'Carrots',
-      quantityKg: 25,
-      totalAmount: 5500,
-      status: 'ACCEPTED',
-      date: 'Yesterday, 2:15 PM',
-    },
-  ]);
-
-  useEffect(() => {
-    fetchOrdersFromBackend();
-  }, []);
-
-  const fetchOrdersFromBackend = async () => {
+  const fetchOrdersFromBackend = useCallback(async () => {
     try {
+      if (token) {
+        setAuthToken(token);
+      }
       const res = await api.get('/orders');
-      if (res.data && res.data.length > 0) {
-        setOrders(res.data);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        const mapped = res.data.map(mapBackendOrder);
+        setOrders(mapped);
+        return;
       }
     } catch (e) {
-      console.log('Using local fallback orders.');
+      console.log('Backend orders fetch notice:', e.message);
     }
+
+    // Fallback/merge with CartContext orders if available
+    if (cartOrders && cartOrders.length > 0) {
+      const mappedLocal = cartOrders.map(mapBackendOrder);
+      setOrders(mappedLocal);
+    } else {
+      // Demo fallback orders
+      setOrders([
+        {
+          _id: 'ord_1',
+          buyerName: 'Priya Restaurant (Colombo)',
+          cropName: 'Apples',
+          quantityKg: 10,
+          totalAmount: 3000,
+          status: 'PENDING',
+          date: 'Today, 10:30 AM',
+        },
+        {
+          _id: 'ord_2',
+          buyerName: 'Green Leaf Retail Shop',
+          cropName: 'Carrots',
+          quantityKg: 25,
+          totalAmount: 5500,
+          status: 'ACCEPTED',
+          date: 'Yesterday, 2:15 PM',
+        },
+      ]);
+    }
+  }, [token, cartOrders]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    setLoading(true);
+    fetchOrdersFromBackend().finally(() => setLoading(false));
+  }, [authLoading, fetchOrdersFromBackend]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    if (fetchCartOrders) {
+      try {
+        await fetchCartOrders();
+      } catch (err) {
+        // silent
+      }
+    }
+    await fetchOrdersFromBackend();
+    setRefreshing(false);
   };
 
   const handleAcceptOrder = async (id) => {
@@ -69,6 +148,12 @@ export default function FarmerOrdersScreen({ navigation }) {
       prev.map((ord) => (ord._id === id ? { ...ord, status: 'ACCEPTED' } : ord))
     );
     Alert.alert('Order Accepted!', 'Produce is marked for fulfillment. Now assign a delivery partner.');
+
+    try {
+      await api.patch(`/orders/${id}/status`, { status: 'Accepted' });
+    } catch (e) {
+      console.log('Status sync error:', e.message);
+    }
   };
 
   const handleRejectOrder = async (id) => {
@@ -76,6 +161,12 @@ export default function FarmerOrdersScreen({ navigation }) {
       prev.map((ord) => (ord._id === id ? { ...ord, status: 'REJECTED' } : ord))
     );
     Alert.alert('Order Declined', 'The buyer has been notified.');
+
+    try {
+      await api.patch(`/orders/${id}/status`, { status: 'Rejected' });
+    } catch (e) {
+      console.log('Status sync error:', e.message);
+    }
   };
 
   // Open Driver Assignment Modal
@@ -102,6 +193,7 @@ export default function FarmerOrdersScreen({ navigation }) {
     );
 
     try {
+      await api.patch(`/orders/${selectedOrder._id}/status`, { status: 'Out for Delivery' });
       // Component 3 API integration
       await api.post('/deliveries', {
         orderId: selectedOrder._id,
@@ -116,8 +208,9 @@ export default function FarmerOrdersScreen({ navigation }) {
   };
 
   const filteredOrders = orders.filter((ord) => {
-    if (filterTab === 'PENDING') return ord.status === 'PENDING';
-    if (filterTab === 'ACCEPTED' || filterTab === 'OUT_FOR_DELIVERY') return ord.status === 'ACCEPTED' || ord.status === 'OUT_FOR_DELIVERY';
+    const s = (ord.status || '').toUpperCase();
+    if (filterTab === 'PENDING') return s === 'PENDING';
+    if (filterTab === 'ACCEPTED') return s === 'ACCEPTED' || s === 'OUT_FOR_DELIVERY';
     return true;
   });
 
@@ -136,10 +229,20 @@ export default function FarmerOrdersScreen({ navigation }) {
             <Ionicons name="chevron-back" size={20} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Incoming Farm Orders</Text>
-          <View style={{ width: 38 }} />
+          <TouchableOpacity
+            style={styles.backButton}
+            activeOpacity={0.8}
+            onPress={onRefresh}
+          >
+            <Ionicons name="refresh" size={19} color="#2e7d32" />
+          </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#2e7d32']} />}
+        >
           <View style={styles.infoBanner}>
             <Ionicons name="receipt-outline" size={22} color="#2e7d32" />
             <Text style={styles.infoBannerText}>
@@ -163,8 +266,9 @@ export default function FarmerOrdersScreen({ navigation }) {
             ))}
           </View>
 
-          {/* Orders List */}
-          {filteredOrders.length === 0 ? (
+          {loading ? (
+            <ActivityIndicator size="large" color="#2e7d32" style={{ marginTop: 30 }} />
+          ) : filteredOrders.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptyText}>No orders found under this filter.</Text>
             </View>
@@ -174,7 +278,7 @@ export default function FarmerOrdersScreen({ navigation }) {
                 <View style={styles.orderCardTop}>
                   <View style={styles.rowAlign}>
                     <MaterialCommunityIcons name="storefront-outline" size={20} color="#2e7d32" />
-                    <Text style={styles.buyerName}>{order.buyerName || 'Retail Buyer'}</Text>
+                    <Text style={styles.buyerName}>{order.buyerName}</Text>
                   </View>
                   <Text
                     style={[
@@ -182,19 +286,20 @@ export default function FarmerOrdersScreen({ navigation }) {
                       order.status === 'ACCEPTED' && styles.statusACCEPTED,
                       order.status === 'OUT_FOR_DELIVERY' && styles.statusDispatched,
                       order.status === 'PENDING' && styles.statusPending,
+                      order.status === 'DELIVERED' && styles.statusDelivered,
                       order.status === 'REJECTED' && styles.statusRejected,
                     ]}
                   >
-                    {order.status}
+                    {order.status === 'PENDING' ? 'PENDING' : order.status}
                   </Text>
                 </View>
 
                 <View style={styles.orderDetailsBox}>
                   <Text style={styles.cropOrdered}>
-                    📦 {order.quantityKg || order.requestedQuantityKg} kg of <Text style={{ fontWeight: '900' }}>{order.cropName || 'Produce'}</Text>
+                    📦 {order.quantityKg} kg of <Text style={{ fontWeight: '900', color: '#1b5e20' }}>{order.cropName}</Text>
                   </Text>
-                  <Text style={styles.orderAmount}>Total: Rs. {order.totalAmount || 3000}</Text>
-                  <Text style={styles.orderDate}>{order.date || 'Recent Order'}</Text>
+                  <Text style={styles.orderAmount}>Total: Rs. {Number(order.totalAmount).toLocaleString()}</Text>
+                  <Text style={styles.orderDate}>{order.date}</Text>
 
                   {assignedDrivers[order._id] && (
                     <Text style={styles.assignedDriverText}>
@@ -350,6 +455,7 @@ const styles = StyleSheet.create({
   statusPending: { backgroundColor: '#fff8e1', color: '#b7791f' },
   statusACCEPTED: { backgroundColor: '#e8f5e9', color: '#2e7d32' },
   statusDispatched: { backgroundColor: '#e3f2fd', color: '#1976d2' },
+  statusDelivered: { backgroundColor: '#e8f5e9', color: '#1b5e20' },
   statusRejected: { backgroundColor: '#ffebee', color: '#c62828' },
   orderDetailsBox: { backgroundColor: '#f8faf9', borderRadius: 12, padding: 12, marginBottom: 12 },
   cropOrdered: { fontSize: 15, color: '#333', marginBottom: 4 },
