@@ -110,9 +110,9 @@ const INITIAL_FORM = {
 export default function RegistrationScreen({ navigation, route }) {
   const [selectedRole, setSelectedRole] = useState(route?.params?.selectedRole ?? 'Farmer');
   const { language, setLanguage } = useLanguage();
-  const effectiveLanguage = (route?.params?.selectedLanguage === 'si' || route?.params?.selectedLanguage === 'ta')
+  const effectiveLanguage = (route?.params?.selectedLanguage === 'en' || route?.params?.selectedLanguage === 'si' || route?.params?.selectedLanguage === 'ta')
     ? route.params.selectedLanguage
-    : (language || 'si');
+    : (language || 'en');
   const [selectedLanguage] = useState(effectiveLanguage);
   const [form, setForm] = useState(INITIAL_FORM);
   const [passwordVisible, setPasswordVisible] = useState(false);

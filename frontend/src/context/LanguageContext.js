@@ -11,13 +11,13 @@ const readStoredLanguage = async () => {
     const raw = Platform.OS === 'web'
       ? (typeof window !== 'undefined' ? window.sessionStorage?.getItem(STORAGE_KEY) : null)
       : await SecureStore.getItemAsync(STORAGE_KEY);
-    if (raw === 'si' || raw === 'ta') {
+    if (raw === 'en' || raw === 'si' || raw === 'ta') {
       return raw;
     }
-    return 'si'; // Default to Sinhala
+    return 'en'; // Default to English
   } catch (error) {
     console.warn('Language storage read failed:', error.message);
-    return 'si';
+    return 'en';
   }
 };
 
@@ -36,7 +36,7 @@ const persistLanguage = async (lang) => {
 };
 
 export function LanguageProvider({ children }) {
-  const [language, setLanguageState] = useState('si');
+  const [language, setLanguageState] = useState('en');
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
@@ -53,27 +53,28 @@ export function LanguageProvider({ children }) {
   }, []);
 
   const setLanguage = (newLang) => {
-    if (newLang === 'si' || newLang === 'ta') {
+    if (newLang === 'en' || newLang === 'si' || newLang === 'ta') {
       setLanguageState(newLang);
       persistLanguage(newLang);
     }
   };
 
   const t = (key, fallback = '') => {
-    const currentDict = TRANSLATIONS[language] || TRANSLATIONS.si;
+    const currentDict = TRANSLATIONS[language] || TRANSLATIONS.en;
     if (currentDict && currentDict[key]) {
       return currentDict[key];
     }
     return fallback || key;
   };
 
-  const strings = TRANSLATIONS[language] || TRANSLATIONS.si;
+  const strings = TRANSLATIONS[language] || TRANSLATIONS.en;
 
   const value = useMemo(() => ({
     language,
     setLanguage,
     t,
     strings,
+    isEnglish: language === 'en',
     isSinhala: language === 'si',
     isTamil: language === 'ta',
     languages: SUPPORTED_LANGUAGES,
@@ -90,16 +91,16 @@ export function LanguageProvider({ children }) {
 export function useLanguage() {
   const context = useContext(LanguageContext);
   if (!context) {
-    // Provide safe fallback if accessed outside provider
     return {
-      language: 'si',
+      language: 'en',
       setLanguage: () => {},
       t: (key, fallback = '') => {
-        const dict = TRANSLATIONS.si;
+        const dict = TRANSLATIONS.en;
         return dict[key] || fallback || key;
       },
-      strings: TRANSLATIONS.si,
-      isSinhala: true,
+      strings: TRANSLATIONS.en,
+      isEnglish: true,
+      isSinhala: false,
       isTamil: false,
       languages: SUPPORTED_LANGUAGES,
       isLoaded: true,

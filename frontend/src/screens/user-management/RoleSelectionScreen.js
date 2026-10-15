@@ -22,7 +22,7 @@ export default function RoleSelectionScreen({ navigation, route }) {
   const headerHeight = Math.min(width * 0.42, 175);
 
   React.useEffect(() => {
-    if (route?.params?.selectedLanguage && (route.params.selectedLanguage === 'si' || route.params.selectedLanguage === 'ta')) {
+    if (route?.params?.selectedLanguage && (route.params.selectedLanguage === 'en' || route.params.selectedLanguage === 'si' || route.params.selectedLanguage === 'ta')) {
       setLanguage(route.params.selectedLanguage);
     }
   }, [route?.params?.selectedLanguage]);

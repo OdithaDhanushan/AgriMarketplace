@@ -11,21 +11,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLanguage } from '../../context/LanguageContext';
 
 const LANGUAGES = [
+  { code: 'en', label: 'English', nativeName: 'English', flag: '🇬🇧' },
   { code: 'si', label: 'Sinhala', nativeName: 'සිංහල', flag: '🇱🇰' },
   { code: 'ta', label: 'Tamil', nativeName: 'தமிழ்', flag: '🇱🇰' },
 ];
 
 export default function LanguageSelectionScreen({ navigation }) {
   const { language, setLanguage } = useLanguage();
-  const [selectedLanguage, setSelectedLanguage] = useState(language || 'si');
+  const [selectedLanguage, setSelectedLanguage] = useState(language || 'en');
 
-  const isSinhala = selectedLanguage === 'si';
+  const headingText = selectedLanguage === 'si'
+    ? 'ඔබගේ භාෂාව තෝරන්න'
+    : (selectedLanguage === 'ta' ? 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்' : 'Choose Your Language');
 
-  const headingText = isSinhala ? 'ඔබගේ භාෂාව තෝරන්න' : 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்';
-  const subtitleText = isSinhala
+  const subtitleText = selectedLanguage === 'si'
     ? 'භාෂාව තෝරා ඉදිරියට යන්න'
-    : 'தொடர மொழியைத் தேர்ந்தெடுக்கவும்';
-  const continueText = isSinhala ? 'ඉදිරියට යන්න' : 'தொடரவும்';
+    : (selectedLanguage === 'ta' ? 'தொடர மொழியைத் தேர்ந்தெடுக்கவும்' : 'Select your preferred language to continue');
+
+  const continueText = selectedLanguage === 'si'
+    ? 'ඉදිරියට යන්න'
+    : (selectedLanguage === 'ta' ? 'தொடரவும்' : 'Continue');
 
   const handleContinue = () => {
     setLanguage(selectedLanguage);

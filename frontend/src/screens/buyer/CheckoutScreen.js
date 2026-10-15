@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 const DEFAULT_PRODUCT = {
   id: 'carrot-01',
@@ -26,6 +27,7 @@ const DELIVERY_FEE = 1500;
 
 function CheckoutScreen({ route, navigation }) {
   const { user } = useAuth();
+  const { strings } = useLanguage();
   const product = route?.params?.product || DEFAULT_PRODUCT;
   const quantity = Number(route?.params?.quantity || DEFAULT_QUANTITY);
   const unitPrice = Number(product.price || DEFAULT_PRODUCT.price);
@@ -198,18 +200,33 @@ function CheckoutScreen({ route, navigation }) {
             An unique SMS confirmation will be sent to your phone once the delivery driver accepts the pickup.
           </Text>
         </View>
+
+        {/* Inline Confirm Button */}
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={proceedToVerification}
+          style={styles.inlineConfirmButton}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.inlineConfirmButtonText}>
+            {paymentMethod === 'cod' ? (strings.placeOrder || 'Confirm Order (Pay on Delivery)') : (strings.proceedToCheckout || 'Continue to Payment')}
+          </Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
+        </TouchableOpacity>
       </ScrollView>
 
-      {/* Confirm Button */}
+      {/* Fixed Bottom Confirm Bar */}
       <View style={styles.bottomBar}>
         <TouchableOpacity
           accessibilityRole="button"
           onPress={proceedToVerification}
           style={styles.confirmButton}
+          activeOpacity={0.85}
         >
           <Text style={styles.confirmButtonText}>
-            {paymentMethod === 'cod' ? 'Confirm Order (Pay on Delivery)' : 'Continue to Payment'}
+            {paymentMethod === 'cod' ? (strings.placeOrder || 'Confirm Order (Pay on Delivery)') : (strings.proceedToCheckout || 'Continue to Payment')}
           </Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 6 }} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -398,6 +415,25 @@ const styles = StyleSheet.create({
   },
   codMessageText: { color: COLORS.muted, fontSize: 11, flex: 1, lineHeight: 16 },
 
+  inlineConfirmButton: {
+    marginTop: 18,
+    minHeight: 52,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 26,
+    backgroundColor: COLORS.green,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 14,
+    elevation: 4,
+  },
+  inlineConfirmButtonText: { color: '#FFFFFF', fontSize: 14.5, fontWeight: '750', letterSpacing: 0.2 },
+
   // Bottom confirm
   bottomBar: {
     position: 'absolute',
@@ -405,21 +441,30 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: COLORS.white,
-    borderTopWidth: 1,
+    paddingTop: 10,
+    paddingBottom: Platform.OS === 'web' ? 24 : 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    backdropFilter: 'blur(20px)',
+    borderTopWidth: 1.5,
     borderTopColor: COLORS.line,
   },
   confirmButton: {
-    minHeight: 52,
-    paddingHorizontal: 12,
+    minHeight: 50,
+    paddingHorizontal: 16,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 25,
     backgroundColor: COLORS.green,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 3,
   },
-  confirmButtonText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
+  confirmButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '750' },
 });
 
 export default CheckoutScreen;

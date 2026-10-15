@@ -29,7 +29,7 @@ export default function LoginScreen({ navigation, route }) {
   const { language, strings, setLanguage } = useLanguage();
 
   React.useEffect(() => {
-    if (route?.params?.selectedLanguage && (route.params.selectedLanguage === 'si' || route.params.selectedLanguage === 'ta')) {
+    if (route?.params?.selectedLanguage && (route.params.selectedLanguage === 'en' || route.params.selectedLanguage === 'si' || route.params.selectedLanguage === 'ta')) {
       setLanguage(route.params.selectedLanguage);
     }
   }, [route?.params?.selectedLanguage]);
