@@ -15,6 +15,7 @@ import { FontAwesome, Ionicons, MaterialCommunityIcons } from '@expo/vector-icon
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { loginUser } from '../../services/api';
 
 const produceIllustration = require('../../../assets/onboarding/login-produce.png');
@@ -25,6 +26,13 @@ export default function LoginScreen({ navigation, route }) {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
+  const { language, strings, setLanguage } = useLanguage();
+
+  React.useEffect(() => {
+    if (route?.params?.selectedLanguage && (route.params.selectedLanguage === 'si' || route.params.selectedLanguage === 'ta')) {
+      setLanguage(route.params.selectedLanguage);
+    }
+  }, [route?.params?.selectedLanguage]);
 
   const showMessage = (title, message) => {
     if (Platform.OS === 'web') {
@@ -36,7 +44,7 @@ export default function LoginScreen({ navigation, route }) {
 
   const handleLogin = async () => {
     if (!identifier.trim() || !password.trim()) {
-      showMessage('Sign in', 'Please enter your email or phone and password.');
+      showMessage(strings.signIn, strings.loginRequired);
       return;
     }
 
@@ -151,136 +159,138 @@ export default function LoginScreen({ navigation, route }) {
               </Text>
             </View>
 
-            <View style={styles.welcome}>
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>Sign in to continue to Fresh Vegi</Text>
-            </View>
-
-            <View style={styles.form}>
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Email or Phone Number</Text>
-                <View style={styles.inputShell}>
-                  <Ionicons name="person-outline" size={17} color="#68796d" />
-                  <TextInput
-                    accessibilityLabel="Email or Phone Number"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    onChangeText={setIdentifier}
-                    placeholder="Enter your email or phone number"
-                    placeholderTextColor="#849188"
-                    returnKeyType="next"
-                    style={styles.input}
-                    value={identifier}
-                  />
-                </View>
+            <View style={styles.glassCard}>
+              <View style={styles.welcome}>
+                <Text style={styles.title}>{strings.welcomeBack}</Text>
+                <Text style={styles.subtitle}>{strings.signInSub}</Text>
               </View>
 
-              <View style={styles.fieldGroup}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputShell}>
-                  <Ionicons name="lock-closed-outline" size={17} color="#68796d" />
-                  <TextInput
-                    accessibilityLabel="Password"
-                    onChangeText={setPassword}
-                    placeholder="Enter your password"
-                    placeholderTextColor="#849188"
-                    returnKeyType="done"
-                    secureTextEntry={!isPasswordVisible}
-                    style={styles.input}
-                    value={password}
-                  />
+              <View style={styles.form}>
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>{strings.emailOrPhone}</Text>
+                  <View style={styles.inputShell}>
+                    <Ionicons name="person-outline" size={17} color="#68796d" />
+                    <TextInput
+                      accessibilityLabel={strings.emailOrPhone}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      onChangeText={setIdentifier}
+                      placeholder={strings.emailOrPhonePlaceholder}
+                      placeholderTextColor="#849188"
+                      returnKeyType="next"
+                      style={styles.input}
+                      value={identifier}
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.fieldGroup}>
+                  <Text style={styles.label}>{strings.password}</Text>
+                  <View style={styles.inputShell}>
+                    <Ionicons name="lock-closed-outline" size={17} color="#68796d" />
+                    <TextInput
+                      accessibilityLabel={strings.password}
+                      onChangeText={setPassword}
+                      placeholder={strings.passwordPlaceholder}
+                      placeholderTextColor="#849188"
+                      returnKeyType="done"
+                      secureTextEntry={!isPasswordVisible}
+                      style={styles.input}
+                      value={password}
+                    />
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
+                      onPress={() => setIsPasswordVisible((visible) => !visible)}
+                      hitSlop={10}
+                    >
+                      <Ionicons
+                        name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
+                        size={19}
+                        color="#68796d"
+                      />
+                    </Pressable>
+                  </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={isPasswordVisible ? 'Hide password' : 'Show password'}
-                    onPress={() => setIsPasswordVisible((visible) => !visible)}
-                    hitSlop={10}
+                    onPress={() => {}}
+                    style={styles.forgotButton}
                   >
-                    <Ionicons
-                      name={isPasswordVisible ? 'eye-off-outline' : 'eye-outline'}
-                      size={19}
-                      color="#68796d"
-                    />
+                    <Text style={styles.forgotText}>{strings.forgotPassword}</Text>
                   </Pressable>
                 </View>
+
                 <Pressable
                   accessibilityRole="button"
-                  onPress={() => {}}
-                  style={styles.forgotButton}
+                  disabled={isSubmitting}
+                  onPress={handleLogin}
+                  style={[styles.signInButton, isSubmitting && styles.signInButtonDisabled]}
                 >
-                  <Text style={styles.forgotText}>Forgot Password?</Text>
+                  <LinearGradient
+                    colors={['#17683a', '#2f9252']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={styles.signInGradient}
+                  >
+                    <Text style={styles.signInText}>{isSubmitting ? strings.signingIn : strings.signIn}</Text>
+                    <Ionicons name="arrow-forward" size={18} color="#f0d15b" />
+                  </LinearGradient>
                 </Pressable>
               </View>
 
+              <View style={styles.separator}>
+                <View style={styles.separatorLine} />
+                <Text style={styles.separatorText}>{strings.or}</Text>
+                <View style={styles.separatorLine} />
+              </View>
+
               <Pressable
                 accessibilityRole="button"
-                disabled={isSubmitting}
-                onPress={handleLogin}
-                style={[styles.signInButton, isSubmitting && styles.signInButtonDisabled]}
+                accessibilityLabel={strings.googleSignIn}
+                onPress={() => {}}
+                style={styles.googleButton}
               >
-                <LinearGradient
-                  colors={['#17683a', '#2f9252']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.signInGradient}
+                <FontAwesome name="google" size={18} color="#4285f4" />
+                <Text style={styles.googleText}>{strings.googleSignIn}</Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={strings.adminDemo}
+                onPress={handleDemoAdminLogin}
+                style={styles.adminDemoButton}
+              >
+                <Ionicons name="shield-checkmark" size={17} color="#15803D" />
+                <Text style={styles.adminDemoText}>{strings.adminDemo}</Text>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={strings.driverDemo}
+                onPress={handleDemoDriverLogin}
+                style={[styles.adminDemoButton, { backgroundColor: '#E8F5E9', borderColor: '#A5D6A7', marginTop: 8 }]}
+              >
+                <Ionicons name="bicycle" size={17} color="#2E7D32" />
+                <Text style={[styles.adminDemoText, { color: '#1B5E20' }]}>
+                  {strings.driverDemo}
+                </Text>
+              </Pressable>
+
+              <View style={styles.registerPrompt}>
+                <Text style={styles.registerText}>{strings.noAccount} </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => navigation.navigate('RoleSelectionScreen', {
+                    selectedLanguage: language,
+                  })}
+                  hitSlop={6}
                 >
-                  <Text style={styles.signInText}>{isSubmitting ? 'Signing in...' : 'Sign In'}</Text>
-                  <Ionicons name="arrow-forward" size={18} color="#f0d15b" />
-                </LinearGradient>
-              </Pressable>
+                  <Text style={styles.registerLink}>{strings.createAccount}</Text>
+                </Pressable>
+              </View>
             </View>
 
-            <View style={styles.separator}>
-              <View style={styles.separatorLine} />
-              <Text style={styles.separatorText}>OR</Text>
-              <View style={styles.separatorLine} />
-            </View>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Continue with Google"
-              onPress={() => {}}
-              style={styles.googleButton}
-            >
-              <FontAwesome name="google" size={18} color="#4285f4" />
-              <Text style={styles.googleText}>Continue with Google</Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Quick Admin Sign In"
-              onPress={handleDemoAdminLogin}
-              style={styles.adminDemoButton}
-            >
-              <Ionicons name="shield-checkmark" size={17} color="#15803D" />
-              <Text style={styles.adminDemoText}>Admin Portal Quick Login (admin@agri.com)</Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Quick Driver Sign In"
-              onPress={handleDemoDriverLogin}
-              style={[styles.adminDemoButton, { backgroundColor: '#E8F5E9', borderColor: '#A5D6A7', marginTop: 8 }]}
-            >
-              <Ionicons name="bicycle" size={17} color="#2E7D32" />
-              <Text style={[styles.adminDemoText, { color: '#1B5E20' }]}>
-                Delivery Partner Portal (driver@agri.com)
-              </Text>
-            </Pressable>
-
-            <View style={styles.registerPrompt}>
-              <Text style={styles.registerText}>Don’t have an account? </Text>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => navigation.navigate('RoleSelectionScreen', {
-                  selectedLanguage: route?.params?.selectedLanguage ?? route?.params?.language ?? 'en',
-                })}
-                hitSlop={6}
-              >
-                <Text style={styles.registerLink}>Create Account</Text>
-              </Pressable>
-            </View>
-
-            <View style={styles.footer}>
+          <View style={styles.footer}>
               <Image
                 source={produceIllustration}
                 resizeMode="contain"
@@ -298,95 +308,114 @@ export default function LoginScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#f8faf6',
+    backgroundColor: '#EDECEB',
     flex: 1,
+    paddingTop: Platform.OS === 'web' ? 36 : 8,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
+    paddingBottom: 24,
   },
   content: {
     alignSelf: 'center',
     flexGrow: 1,
     maxWidth: 420,
-    paddingBottom: 4,
     width: '100%',
+  },
+  glassCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(24px)',
+    borderRadius: 32,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
   },
   brand: {
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 4,
   },
   brandMark: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    height: 46,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    height: 48,
     justifyContent: 'center',
-    shadowColor: '#244e32',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    width: 46,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    width: 48,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   brandName: {
     fontSize: 22,
-    fontWeight: '700',
-    marginTop: 7,
+    fontWeight: '800',
+    marginTop: 8,
+    letterSpacing: -0.3,
   },
   brandFresh: {
-    color: '#185a34',
+    color: '#1B5E20',
   },
   brandVegi: {
-    color: '#258443',
+    color: '#2E7D32',
   },
   welcome: {
     alignItems: 'center',
-    marginTop: 22,
+    marginTop: 14,
+    marginBottom: 4,
   },
   title: {
-    color: '#193d2b',
-    fontSize: 26,
-    fontWeight: '700',
-    lineHeight: 32,
+    color: '#193322',
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    color: '#77847a',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 3,
+    color: '#637367',
+    fontSize: 13,
+    marginTop: 4,
     textAlign: 'center',
   },
   form: {
-    gap: 17,
-    marginTop: 26,
+    gap: 14,
+    marginTop: 18,
   },
   fieldGroup: {
     gap: 6,
   },
   label: {
-    color: '#1d3d2d',
+    color: '#243D2C',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   inputShell: {
     alignItems: 'center',
-    backgroundColor: '#f7faf6',
-    borderColor: '#dce7dc',
-    borderRadius: 13,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    borderWidth: 1.5,
     flexDirection: 'row',
-    height: 49,
-    paddingHorizontal: 13,
+    height: 50,
+    paddingHorizontal: 14,
   },
   input: {
-    color: '#243a2c',
+    color: '#1F3325',
     flex: 1,
-    fontSize: 13,
-    marginLeft: 11,
+    fontSize: 14,
+    marginLeft: 10,
     minWidth: 0,
     paddingVertical: 0,
   },
@@ -395,77 +424,92 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   forgotText: {
-    color: '#188044',
+    color: '#2E7D32',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   signInButton: {
-    borderRadius: 13,
-    elevation: 4,
-    marginTop: 1,
+    borderRadius: 25,
+    marginTop: 4,
     overflow: 'hidden',
-    shadowColor: '#1b683a',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  signInButtonDisabled: {
+    opacity: 0.65,
   },
   signInGradient: {
     alignItems: 'center',
     flexDirection: 'row',
-    height: 49,
+    height: 52,
     justifyContent: 'center',
+    gap: 8,
   },
   signInText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   separator: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 12,
-    marginTop: 20,
+    marginTop: 18,
   },
   separatorLine: {
-    backgroundColor: '#e1e8df',
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
     flex: 1,
     height: 1,
   },
   separatorText: {
-    color: '#69776c',
+    color: '#7B8B80',
     fontSize: 11,
+    fontWeight: '600',
   },
   googleButton: {
     alignItems: 'center',
-    backgroundColor: '#fff',
-    borderColor: '#dce7dc',
-    borderRadius: 13,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+    backdropFilter: 'blur(16px)',
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 24,
+    borderWidth: 1.5,
     flexDirection: 'row',
-    height: 46,
+    height: 48,
     justifyContent: 'center',
-    marginTop: 16,
+    marginTop: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
   },
   googleText: {
     color: '#243a2c',
     fontSize: 14,
-    marginLeft: 12,
+    fontWeight: '600',
+    marginLeft: 10,
   },
   adminDemoButton: {
     alignItems: 'center',
-    backgroundColor: '#F0FDF4',
-    borderColor: '#86EFAC',
-    borderRadius: 13,
-    borderWidth: 1,
+    backgroundColor: 'rgba(240, 253, 244, 0.75)',
+    backdropFilter: 'blur(16px)',
+    borderColor: 'rgba(134, 239, 172, 0.6)',
+    borderRadius: 22,
+    borderWidth: 1.5,
     flexDirection: 'row',
     height: 46,
     justifyContent: 'center',
-    marginTop: 12,
+    marginTop: 10,
     gap: 8,
   },
   adminDemoText: {
     color: '#15803D',
-    fontSize: 13,
+    fontSize: 12.5,
     fontWeight: '700',
   },
   registerPrompt: {
@@ -473,29 +517,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 18,
   },
   registerText: {
-    color: '#78857b',
-    fontSize: 12,
+    color: '#6D7C72',
+    fontSize: 13,
   },
   registerLink: {
-    color: '#188044',
-    fontSize: 12,
-    fontWeight: '700',
+    color: '#2E7D32',
+    fontSize: 13,
+    fontWeight: '800',
   },
   footer: {
     alignItems: 'center',
-    marginTop: 'auto',
-    paddingTop: 16,
+    marginTop: 16,
   },
   produceImage: {
-    height: 55,
-    width: 140,
+    height: 48,
+    width: 120,
   },
   footerText: {
-    color: '#839087',
-    fontSize: 10,
-    marginTop: 3,
+    color: '#7D8C81',
+    fontSize: 11,
+    marginTop: 2,
   },
 });

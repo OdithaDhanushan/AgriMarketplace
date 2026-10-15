@@ -13,11 +13,13 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../../context/LanguageContext';
 import api from '../../services/api';
 
 const TOMATO_IMG = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400';
 
 export default function CompleteDeliveryScreen({ route, navigation }) {
+  const { strings } = useLanguage();
   const order = route?.params?.order || {
     id: 'SK1024',
     itemName: 'Fresh Tomatoes',
@@ -89,38 +91,37 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
   const handleDone = () => {
     navigation.reset({
       index: 0,
-      routes: [{ name: 'DeliveryJob' }],
+      routes: [{ name: 'DriverHome' }],
     });
   };
 
   return (
     <View style={styles.container}>
-      {/* Top Green Gradient Header */}
-      <LinearGradient
-        colors={['#43A047', '#7CB342', '#F4F7F4']}
-        style={styles.gradientHeader}
-      >
+      {/* Frosted Glass Header */}
+      <View style={styles.gradientHeader}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               onPress={() => navigation.navigate('DriverHome')}
               style={styles.backButton}
               accessibilityLabel="Back to Driver Home"
+              activeOpacity={0.7}
             >
               <Ionicons name="chevron-back" size={20} color="#1E3821" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Complete Delivery</Text>
+            <Text style={styles.headerTitle}>{strings.completeDeliveryTitle}</Text>
             <TouchableOpacity
               onPress={() => navigation.navigate('DriverHome')}
               style={styles.homePillBtn}
               accessibilityLabel="Driver Home"
+              activeOpacity={0.7}
             >
               <Ionicons name="home-outline" size={15} color="#1E3821" />
-              <Text style={styles.homePillBtnText}>Home</Text>
+              <Text style={styles.homePillBtnText}>{strings.home}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Produce Card */}
@@ -129,13 +130,13 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
           <View style={styles.productInfo}>
             <Text style={styles.productTitle}>{itemName}</Text>
             <Text style={styles.productQty}>{quantity} {unit}</Text>
-            <Text style={styles.orderIdText}>Order {orderId}</Text>
+            <Text style={styles.orderIdText}>{strings.orders} {orderId}</Text>
           </View>
         </View>
 
         {/* Deliver To Section */}
         <View style={styles.deliverToSection}>
-          <Text style={styles.deliverToLabel}>Deliver to</Text>
+          <Text style={styles.deliverToLabel}>{strings.dropoffLocation}</Text>
           <View style={styles.deliverToRow}>
             <Ionicons name="location-sharp" size={22} color="#212121" />
             <View style={styles.deliverToTextWrap}>
@@ -148,9 +149,9 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
         {/* Customer Verification Code Input (Code is private to customer, driver inputs it here) */}
         <View style={styles.verificationCard}>
           <Ionicons name="shield-checkmark" size={32} color="#2E7D32" style={{ marginBottom: 8 }} />
-          <Text style={styles.verificationTitle}>Enter Customer's Verification Code</Text>
+          <Text style={styles.verificationTitle}>{strings.enterOtpPrompt}</Text>
           <Text style={styles.verificationSubtitle}>
-            Ask the customer for the 4-digit code shown on their tracking screen to verify handover.
+            {strings.otpInstructions}
           </Text>
 
           {/* 4 Digit Input Boxes for Driver to enter customer code */}
@@ -180,7 +181,7 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
             activeOpacity={0.85}
           >
             <Text style={styles.confirmBtnText}>
-              {isSubmitting ? 'Verifying...' : 'Confirm delivery'}
+              {isSubmitting ? strings.signingIn : strings.verifyAndComplete}
             </Text>
           </TouchableOpacity>
         )}
@@ -193,9 +194,9 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
                 <Ionicons name="checkmark" size={22} color="#FFFFFF" />
               </View>
               <View style={styles.successCopy}>
-                <Text style={styles.successTitle}>Delivery completed !</Text>
-                <Text style={styles.successSubtitle}>Order {orderId} • {itemName}</Text>
-                <Text style={styles.successTime}>Handover verified with customer code</Text>
+                <Text style={styles.successTitle}>{strings.deliverySuccessTitle}</Text>
+                <Text style={styles.successSubtitle}>{orderId} • {itemName}</Text>
+                <Text style={styles.successTime}>{strings.deliverySuccessSub}</Text>
               </View>
             </View>
 
@@ -206,7 +207,7 @@ export default function CompleteDeliveryScreen({ route, navigation }) {
               activeOpacity={0.85}
             >
               <Ionicons name="home" size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.doneBtnText}>Return to Driver Home</Text>
+              <Text style={styles.doneBtnText}>{strings.returnToDriverHome}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -221,12 +222,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 18,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   safeArea: {
-    paddingTop: Platform.OS === 'web' ? 24 : 10,
+    paddingTop: Platform.OS === 'web' ? 44 : 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -239,22 +249,22 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   homePillBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
-    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   homePillBtnText: {
     fontSize: 12,
@@ -262,12 +272,9 @@ const styles = StyleSheet.create({
     color: '#1E3821',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#1B2E1E',
   },
   content: {
     padding: 16,

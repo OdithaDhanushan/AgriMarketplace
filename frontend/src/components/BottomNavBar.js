@@ -1,8 +1,11 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function BottomNavBar({ activeTab = 'Explore', navigation }) {
+  const { strings } = useLanguage();
+
   return (
     <View style={styles.bottomNav}>
       {/* 1. Explore (Home / Dashboard) */}
@@ -16,23 +19,29 @@ export default function BottomNavBar({ activeTab = 'Explore', navigation }) {
           color={activeTab === 'Explore' ? '#2e7d32' : '#888'}
         />
         <Text style={activeTab === 'Explore' ? styles.navTextActive : styles.navText}>
-          Explore
+          {strings.home}
         </Text>
       </TouchableOpacity>
 
       {/* 2. My Cart */}
-      <TouchableOpacity style={styles.navItem}>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigation && navigation.navigate('CartCheckout')}
+      >
         <Ionicons name="cart-outline" size={20} color="#888" />
-        <Text style={styles.navText}>My Cart</Text>
+        <Text style={styles.navText}>{strings.cart}</Text>
       </TouchableOpacity>
 
       {/* 3. Orders */}
-      <TouchableOpacity style={styles.navItem}>
+      <TouchableOpacity
+        style={styles.navItem}
+        onPress={() => navigation && navigation.navigate('Orders')}
+      >
         <Ionicons name="receipt-outline" size={20} color="#888" />
-        <Text style={styles.navText}>Orders</Text>
+        <Text style={styles.navText}>{strings.orders}</Text>
       </TouchableOpacity>
 
-      {/* 4. Profile (Navigates to FarmerProfileScreen) */}
+      {/* 4. Profile */}
       <TouchableOpacity
         style={[styles.navItem, activeTab === 'Profile' && styles.navItemActive]}
         onPress={() => navigation && navigation.navigate('FarmerProfile')}
@@ -43,7 +52,7 @@ export default function BottomNavBar({ activeTab = 'Explore', navigation }) {
           color={activeTab === 'Profile' ? '#2e7d32' : '#888'}
         />
         <Text style={activeTab === 'Profile' ? styles.navTextActive : styles.navText}>
-          Profile
+          {strings.profile}
         </Text>
       </TouchableOpacity>
     </View>
@@ -55,10 +64,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(24px)',
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(255, 255, 255, 0.95)',
     paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    paddingBottom: 12,
   },
   navItem: {
     alignItems: 'center',
@@ -66,20 +77,23 @@ const styles = StyleSheet.create({
     minWidth: 64,
   },
   navItemActive: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: 'rgba(46, 125, 50, 0.12)',
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.25)',
   },
   navText: {
     fontSize: 10,
-    color: '#888',
+    color: '#7A867E',
     marginTop: 3,
+    fontWeight: '500',
   },
   navTextActive: {
     fontSize: 10,
-    color: '#2e7d32',
-    fontWeight: 'bold',
+    color: '#2E7D32',
+    fontWeight: '700',
     marginTop: 3,
   },
 });

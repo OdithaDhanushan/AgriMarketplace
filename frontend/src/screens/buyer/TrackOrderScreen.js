@@ -14,12 +14,14 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import SriLankaMapView from '../../components/SriLankaMapView';
+import { useLanguage } from '../../context/LanguageContext';
 import api from '../../services/api';
 
 const TOMATO_IMG = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400';
 const DRIVER_IMG = 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400';
 
 export default function TrackOrderScreen({ route, navigation }) {
+  const { strings, isSinhala } = useLanguage();
   const order = route?.params?.order || {
     id: 'SK1024',
     itemName: 'Fresh tomatos',
@@ -88,25 +90,23 @@ export default function TrackOrderScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Top Green Gradient Header */}
-      <LinearGradient
-        colors={['#43A047', '#7CB342', '#F4F7F4']}
-        style={styles.gradientHeader}
-      >
+      {/* Frosted Glass Header */}
+      <View style={styles.gradientHeader}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={styles.backButton}
               accessibilityLabel="Go back"
+              activeOpacity={0.7}
             >
               <Ionicons name="chevron-back" size={22} color="#1E3821" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Track order</Text>
+            <Text style={styles.headerTitle}>{strings.trackingTitle}</Text>
             <View style={{ width: 36 }} />
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Top Real Sri Lankan Map fetched from Google Maps */}
@@ -118,13 +118,13 @@ export default function TrackOrderScreen({ route, navigation }) {
         <View style={styles.verificationCodeCard}>
           <View style={styles.codeHeaderRow}>
             <Ionicons name="key" size={16} color="#2E7D32" />
-            <Text style={styles.codeHeaderTitle}>Customer Verification Code</Text>
+            <Text style={styles.codeHeaderTitle}>{strings.deliveryOtpTitle}</Text>
           </View>
           <Text style={styles.codeDigitsBig}>
             {verificationCode.split('').join(' ')}
           </Text>
           <Text style={styles.codeHintText}>
-            🔒 Provide this 4-digit code to delivery partner {driverName} upon arrival to verify and complete your delivery.
+            🔒 {strings.deliveryOtpDesc}
           </Text>
         </View>
 
@@ -133,8 +133,8 @@ export default function TrackOrderScreen({ route, navigation }) {
           <View style={styles.deliveredCard}>
             <Ionicons name="checkmark-circle" size={26} color="#2E7D32" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.deliveredCardTitle}>Delivered Successfully!</Text>
-              <Text style={styles.deliveredCardSub}>Your produce has arrived safely. Thank you!</Text>
+              <Text style={styles.deliveredCardTitle}>{strings.deliverySuccessTitle}</Text>
+              <Text style={styles.deliveredCardSub}>{strings.deliverySuccessSub}</Text>
             </View>
           </View>
         )}
@@ -144,7 +144,7 @@ export default function TrackOrderScreen({ route, navigation }) {
           <Image source={{ uri: DRIVER_IMG }} style={styles.driverAvatar} />
           <View style={styles.driverInfo}>
             <Text style={styles.driverName}>{driverName}</Text>
-            <Text style={styles.driverRole}>Delivery partner • Motorbike (WP AB-4827)</Text>
+            <Text style={styles.driverRole}>{strings.driverDetails} • Motorbike (WP AB-4827)</Text>
             <View style={styles.ratingRow}>
               <Ionicons name="star" size={14} color="#FBC02D" />
               <Text style={styles.ratingText}>4.7 (128 reviews)</Text>
@@ -164,7 +164,7 @@ export default function TrackOrderScreen({ route, navigation }) {
 
         {/* Real-time Order Status Stepper */}
         <View style={styles.timelineCard}>
-          <Text style={styles.timelineHeading}>Live Delivery Progress</Text>
+          <Text style={styles.timelineHeading}>{strings.orderStatus}</Text>
 
           {/* Step 1: Order Placed */}
           <View style={styles.stepRow}>
@@ -175,8 +175,8 @@ export default function TrackOrderScreen({ route, navigation }) {
               <View style={[styles.stepLine, currentStage >= 2 ? styles.stepLineActive : styles.stepLineInactive]} />
             </View>
             <View style={styles.stepContent}>
-              <Text style={styles.stepTitle}>Order Placed</Text>
-              <Text style={styles.stepTime}>Order confirmed by system</Text>
+              <Text style={styles.stepTitle}>{strings.orderConfirmed}</Text>
+              <Text style={styles.stepTime}>{isSinhala ? "පද්ධතිය මඟින් තහවුරු විය" : "கணினி மூலம் உறுதி செய்யப்பட்டது"}</Text>
             </View>
           </View>
 
@@ -190,9 +190,9 @@ export default function TrackOrderScreen({ route, navigation }) {
             </View>
             <View style={styles.stepContent}>
               <Text style={[styles.stepTitle, currentStage >= 2 && styles.stepTitleActive]}>
-                {currentStage >= 2 ? "Picked up from Sunil's Farm" : "Farmer will confirm"}
+                {strings.preparing}
               </Text>
-              <Text style={styles.stepTime}>Dambadeniya depot</Text>
+              <Text style={styles.stepTime}>{isSinhala ? "ගොවිපොළෙන් සූදානම් කරමින්" : "பண்ணையில் இருந்து பேக்கிங்"}</Text>
             </View>
           </View>
 
@@ -206,10 +206,10 @@ export default function TrackOrderScreen({ route, navigation }) {
             </View>
             <View style={styles.stepContent}>
               <Text style={[styles.stepTitle, currentStage >= 3 && styles.stepTitleActive]}>
-                Out for delivery
+                {strings.outForDelivery}
               </Text>
               <Text style={styles.stepTime}>
-                {currentStage >= 3 ? "On A6 Highway • ETA 22 min" : "Waiting for pickup"}
+                {currentStage >= 3 ? (isSinhala ? "මාර්ගයේ පැමිණෙමින් • විනාඩි 20" : "வருகிறது • 20 நிமிடம்") : (isSinhala ? "රියදුරු වෙත භාරදීමට නියමිතයි" : "எடுக்க காத்திருக்கிறது")}
               </Text>
             </View>
           </View>
@@ -223,10 +223,10 @@ export default function TrackOrderScreen({ route, navigation }) {
             </View>
             <View style={styles.stepContent}>
               <Text style={[styles.stepTitle, currentStage >= 4 && styles.stepTitleActive]}>
-                Delivered
+                {strings.delivered}
               </Text>
               <Text style={styles.stepTime}>
-                {currentStage >= 4 ? "Verified with customer code" : "Pending arrival"}
+                {currentStage >= 4 ? (isSinhala ? "OTP කේතය මඟින් තහවුරු විය" : "OTP குறியீட்டுடன் முடிந்தது") : (isSinhala ? "ළඟාවීමට නියමිතයි" : "வருகை நிலுவையில் உள்ளது")}
               </Text>
             </View>
           </View>
@@ -252,12 +252,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 18,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.95)',
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
   safeArea: {
-    paddingTop: Platform.OS === 'web' ? 24 : 10,
+    paddingTop: Platform.OS === 'web' ? 44 : 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -270,19 +279,21 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#1B2E1E',
+    letterSpacing: -0.3,
   },
   liveIndicatorPill: {
     flexDirection: 'row',
@@ -376,19 +387,20 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   driverCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderRadius: 22,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E2EBE2',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   driverAvatar: {
     width: 50,
@@ -426,27 +438,31 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   actionCircleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F1F5F1',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#E0E8E0',
-  },
-  timelineCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#E2EBE2',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#000',
     shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+  },
+  timelineCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
     elevation: 2,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   timelineHeading: {
     fontSize: 14,
@@ -514,17 +530,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   productSummaryCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderRadius: 22,
+    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2EBE2',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 2,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   productThumb: {
     width: 64,

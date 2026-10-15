@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,160 +9,149 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useLanguage } from '../../context/LanguageContext';
 
 const farmHeader = require('../../../assets/onboarding/role-farm-header.png');
 
 export default function RoleSelectionScreen({ navigation, route }) {
-  const [selectedRole, setSelectedRole] = useState(null);
+  const { language, strings, setLanguage } = useLanguage();
+  const [selectedRole, setSelectedRole] = useState('Buyer');
   const { width } = useWindowDimensions();
-  const headerHeight = Math.min(width * 0.45, 190);
-  const selectedLanguage = route?.params?.selectedLanguage ?? route?.params?.language ?? 'en';
+  const headerHeight = Math.min(width * 0.42, 175);
+
+  React.useEffect(() => {
+    if (route?.params?.selectedLanguage && (route.params.selectedLanguage === 'si' || route.params.selectedLanguage === 'ta')) {
+      setLanguage(route.params.selectedLanguage);
+    }
+  }, [route?.params?.selectedLanguage]);
+
+  const activeLang = route?.params?.selectedLanguage || language || 'si';
 
   const continueToRegistration = () => {
     if (!selectedRole) return;
 
     navigation.navigate('RegistrationScreen', {
-      selectedLanguage,
+      selectedLanguage: activeLang,
       selectedRole,
     });
   };
 
-  return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.content}>
-          <Image
-            source={farmHeader}
-            resizeMode="cover"
-            accessibilityLabel="Fresh Vegi farmers harvesting vegetables"
-            style={[styles.headerImage, { height: headerHeight }]}
-          />
+  const ROLES = [
+    {
+      id: 'Farmer',
+      title: strings.farmerTitle,
+      desc: strings.farmerDesc,
+      icon: 'sprout',
+    },
+    {
+      id: 'Buyer',
+      title: strings.buyerTitle,
+      desc: strings.buyerDesc,
+      icon: 'basket-outline',
+    },
+    {
+      id: 'Driver',
+      title: strings.driverTitle,
+      desc: strings.driverDesc,
+      icon: 'moped',
+    },
+  ];
 
-          <LinearGradient
-            colors={['#81ee50', '#4edb48']}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.panel}
-          >
+  return (
+    <View style={styles.background}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {/* Subtle ambient light glow */}
+        <View style={styles.ambientGlow} />
+
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Top Header Card */}
+          <View style={styles.headerWrapper}>
+            <Image
+              source={farmHeader}
+              resizeMode="cover"
+              accessibilityLabel="Fresh Vegi farmers harvesting vegetables"
+              style={[styles.headerImage, { height: headerHeight }]}
+            />
+            <View style={styles.headerOverlay} />
+            <View style={styles.topNavPill}>
+              <Pressable
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+              >
+                <Ionicons name="chevron-back" size={20} color="#1B3820" />
+              </Pressable>
+              <Text style={styles.topNavTitle}>AgriMarketplace</Text>
+              <View style={{ width: 36 }} />
+            </View>
+          </View>
+
+          {/* Main Glass Panel */}
+          <View style={styles.glassPanel}>
             <View style={styles.headingBlock}>
-              <Text style={styles.heading}>Choose your role</Text>
-              <Text style={styles.subtitle}>How will you use Fresh Vegi?</Text>
+              <View style={styles.pillBadge}>
+                <Ionicons name="sparkles" size={13} color="#2E7D32" />
+                <Text style={styles.pillBadgeText}>{strings.personalize}</Text>
+              </View>
+              <Text style={styles.heading}>{strings.chooseRole}</Text>
+              <Text style={styles.subtitle}>{strings.chooseRoleSub}</Text>
             </View>
 
             <View style={styles.roleChoices}>
-              <Pressable
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selectedRole === 'Farmer' }}
-                onPress={() => setSelectedRole('Farmer')}
-                style={[styles.roleCard, selectedRole === 'Farmer' && styles.roleCardSelected]}
-              >
-                <View
-                  style={[
-                    styles.iconCircle,
-                    selectedRole === 'Farmer' && styles.iconCircleSelected,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="sprout"
-                    size={27}
-                    color={selectedRole === 'Farmer' ? '#fff' : '#28743a'}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.roleLabel,
-                    selectedRole === 'Farmer' && styles.roleLabelSelected,
-                  ]}
-                >
-                  Farmer
-                </Text>
-                <Text
-                  style={[
-                    styles.roleDescription,
-                    selectedRole === 'Farmer' && styles.roleDescriptionSelected,
-                  ]}
-                >
-                  Sell your produce
-                </Text>
-              </Pressable>
-
-              <Pressable
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selectedRole === 'Buyer' }}
-                onPress={() => setSelectedRole('Buyer')}
-                style={[styles.roleCard, selectedRole === 'Buyer' && styles.roleCardSelected]}
-              >
-                <View
-                  style={[
-                    styles.iconCircle,
-                    selectedRole === 'Buyer' && styles.iconCircleSelected,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="basket-outline"
-                    size={27}
-                    color={selectedRole === 'Buyer' ? '#fff' : '#28743a'}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.roleLabel,
-                    selectedRole === 'Buyer' && styles.roleLabelSelected,
-                  ]}
-                >
-                  Buyer
-                </Text>
-                <Text
-                  style={[
-                    styles.roleDescription,
-                    selectedRole === 'Buyer' && styles.roleDescriptionSelected,
-                  ]}
-                >
-                  Shop fresh produce
-                </Text>
-              </Pressable>
-
-              <Pressable
-                accessibilityRole="radio"
-                accessibilityState={{ checked: selectedRole === 'Driver' }}
-                onPress={() => setSelectedRole('Driver')}
-                style={[styles.roleCard, selectedRole === 'Driver' && styles.roleCardSelected]}
-              >
-                <View
-                  style={[
-                    styles.iconCircle,
-                    selectedRole === 'Driver' && styles.iconCircleSelected,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="moped"
-                    size={27}
-                    color={selectedRole === 'Driver' ? '#fff' : '#28743a'}
-                  />
-                </View>
-                <Text
-                  style={[
-                    styles.roleLabel,
-                    selectedRole === 'Driver' && styles.roleLabelSelected,
-                  ]}
-                >
-                  Driver
-                </Text>
-                <Text
-                  style={[
-                    styles.roleDescription,
-                    selectedRole === 'Driver' && styles.roleDescriptionSelected,
-                  ]}
-                >
-                  Deliver orders
-                </Text>
-              </Pressable>
+              {ROLES.map((r) => {
+                const isSelected = selectedRole === r.id;
+                return (
+                  <Pressable
+                    key={r.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: isSelected }}
+                    onPress={() => setSelectedRole(r.id)}
+                    style={({ pressed }) => [
+                      styles.roleCard,
+                      isSelected && styles.roleCardSelected,
+                      pressed && styles.roleCardPressed,
+                    ]}
+                  >
+                    {isSelected && (
+                      <View style={styles.selectedCheckBadge}>
+                        <Ionicons name="checkmark" size={12} color="#FFFFFF" />
+                      </View>
+                    )}
+                    <View
+                      style={[
+                        styles.iconCircle,
+                        isSelected && styles.iconCircleSelected,
+                      ]}
+                    >
+                      <MaterialCommunityIcons
+                        name={r.icon}
+                        size={28}
+                        color={isSelected ? '#2E7D32' : '#5E6D62'}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.roleLabel,
+                        isSelected && styles.roleLabelSelected,
+                      ]}
+                    >
+                      {r.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.roleDescription,
+                        isSelected && styles.roleDescriptionSelected,
+                      ]}
+                    >
+                      {r.desc}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
 
             <Pressable
@@ -169,129 +159,248 @@ export default function RoleSelectionScreen({ navigation, route }) {
               accessibilityState={{ disabled: selectedRole === null }}
               disabled={selectedRole === null}
               onPress={continueToRegistration}
-              style={[styles.continueButton, selectedRole === null && styles.continueButtonDisabled]}
+              style={({ pressed }) => [
+                styles.continueButton,
+                pressed && styles.buttonPressed,
+              ]}
             >
-              <Text style={styles.continueText}>Continue</Text>
-              <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
+              <Text style={styles.continueText}>
+                {selectedRole === 'Farmer'
+                  ? strings.continueAsFarmer
+                  : (selectedRole === 'Buyer' ? strings.continueAsBuyer : strings.continueAsDriver)}
+              </Text>
+              <Ionicons name="arrow-forward" size={18} color="#fff" />
             </Pressable>
-          </LinearGradient>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: '#f1fae9',
+  background: {
     flex: 1,
+    backgroundColor: '#EDECEB',
+  },
+  ambientGlow: {
+    position: 'absolute',
+    top: -50,
+    alignSelf: 'center',
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(129, 199, 132, 0.16)',
+    filter: 'blur(60px)',
+  },
+  safeArea: {
+    flex: 1,
+    paddingTop: Platform.OS === 'web' ? 44 : 10,
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 24,
   },
-  content: {
-    flex: 1,
+  headerWrapper: {
+    marginHorizontal: 16,
+    borderRadius: 28,
+    overflow: 'hidden',
+    position: 'relative',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
   },
   headerImage: {
     width: '100%',
   },
-  panel: {
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-    flex: 1,
-    marginTop: -8,
-    paddingBottom: 28,
-    paddingHorizontal: 22,
-    paddingTop: 28,
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20, 40, 25, 0.22)',
+  },
+  topNavPill: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    right: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    backdropFilter: 'blur(16px)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+  },
+  topNavTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  glassPanel: {
+    marginHorizontal: 16,
+    marginTop: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(24px)',
+    borderRadius: 30,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 18,
+    paddingVertical: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
   },
   headingBlock: {
     alignItems: 'center',
-    marginBottom: 23,
+    marginBottom: 20,
+  },
+  pillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginBottom: 8,
+    gap: 4,
+  },
+  pillBadgeText: {
+    color: '#2E7D32',
+    fontSize: 11,
+    fontWeight: '700',
   },
   heading: {
-    color: '#1d5d2a',
-    fontFamily: 'serif',
-    fontSize: 25,
-    fontWeight: '700',
+    color: '#1B3820',
+    fontSize: 23,
+    fontWeight: '800',
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    color: '#39703c',
-    fontSize: 13,
-    marginTop: 5,
+    color: '#65746A',
+    fontSize: 12,
+    marginTop: 4,
     textAlign: 'center',
   },
   roleChoices: {
     flexDirection: 'row',
     gap: 8,
+    marginBottom: 20,
   },
   roleCard: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
-    borderColor: 'rgba(40, 116, 58, 0.24)',
-    borderRadius: 14,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+    backdropFilter: 'blur(16px)',
+    borderColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 20,
+    borderWidth: 1.5,
     flex: 1,
     justifyContent: 'center',
-    minHeight: 136,
-    paddingHorizontal: 4,
+    minHeight: 140,
+    paddingHorizontal: 6,
     paddingVertical: 14,
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 1,
   },
   roleCardSelected: {
-    backgroundColor: '#28743a',
-    borderColor: '#1e612e',
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    borderColor: '#2E7D32',
     borderWidth: 2,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
     elevation: 4,
-    shadowColor: '#1c522a',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 7,
+  },
+  roleCardPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.97 }],
+  },
+  selectedCheckBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#2E7D32',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconCircle: {
     alignItems: 'center',
-    backgroundColor: '#e5f6dc',
-    borderRadius: 22,
-    height: 44,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    borderRadius: 24,
+    height: 48,
     justifyContent: 'center',
-    width: 44,
+    width: 48,
+    marginBottom: 8,
   },
   iconCircleSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    backgroundColor: 'rgba(46, 125, 50, 0.12)',
   },
   roleLabel: {
-    color: '#1d5d2a',
-    fontSize: 16,
+    color: '#34453A',
+    fontSize: 15,
     fontWeight: '700',
-    marginTop: 9,
+    marginBottom: 3,
   },
   roleLabelSelected: {
-    color: '#fff',
+    color: '#1B3820',
   },
   roleDescription: {
-    color: '#648167',
-    fontSize: 11,
-    marginTop: 3,
+    color: '#76857B',
+    fontSize: 10.5,
     textAlign: 'center',
+    lineHeight: 14,
   },
   roleDescriptionSelected: {
-    color: '#e4f5df',
+    color: '#2E7D32',
+    fontWeight: '600',
   },
   continueButton: {
     alignItems: 'center',
-    backgroundColor: '#28743a',
-    borderRadius: 12,
+    backgroundColor: '#2E7D32',
+    borderRadius: 26,
     flexDirection: 'row',
-    gap: 9,
+    gap: 8,
     justifyContent: 'center',
-    marginTop: 23,
-    minHeight: 52,
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  continueButtonDisabled: {
-    backgroundColor: 'rgba(40, 116, 58, 0.52)',
+  buttonPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
   },
   continueText: {
     color: '#fff',
     fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

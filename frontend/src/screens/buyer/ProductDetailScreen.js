@@ -3,6 +3,7 @@ import {
   Alert,
   Image,
   Linking,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -331,32 +332,41 @@ function ProductDetailScreen({ route, navigation }) {
 // ─── Colors ───────────────────────────────────────────────────────────────────
 const COLORS = {
   green: '#2E7D32',
-  background: '#F5F7F5',
-  dark: '#1A1A1A',
-  muted: '#68736B',
-  line: '#E5EAE6',
-  white: '#FFFFFF',
+  background: '#EDECEB',
+  dark: '#1B2E1E',
+  muted: '#5A6E5D',
+  line: 'rgba(255, 255, 255, 0.95)',
+  white: 'rgba(255, 255, 255, 0.82)',
 };
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: COLORS.background },
-  scrollContent: { paddingBottom: 24 },
+  scrollContent: { paddingBottom: 40 },
 
   // Hero
   hero: { height: 270, backgroundColor: '#D5E8D6', position: 'relative' },
   heroImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   backButton: {
-    position: 'absolute', top: 14, left: 14,
+    position: 'absolute', top: Platform.OS === 'web' ? 44 : 14, left: 14,
     width: 38, height: 38, borderRadius: 19,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(16px)' } : {}),
   },
-  heroActions: { position: 'absolute', top: 14, left: 62, flexDirection: 'row', gap: 8 },
+  heroActions: {
+    position: 'absolute', top: Platform.OS === 'web' ? 44 : 14, left: 62,
+    flexDirection: 'row', gap: 8,
+  },
   heroActionBtn: {
     width: 38, height: 38, borderRadius: 19,
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
     alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(16px)' } : {}),
   },
   heroDots: {
     position: 'absolute', bottom: 12, alignSelf: 'center',
@@ -371,22 +381,22 @@ const styles = StyleSheet.create({
   // Tags
   tagRow: { flexDirection: 'row', gap: 8, marginBottom: 10, flexWrap: 'wrap' },
   tagGreen: {
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, backgroundColor: '#EAF5EB',
-    borderWidth: 1, borderColor: '#B9D9BC',
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   tagGreenText: { color: COLORS.green, fontSize: 11, fontWeight: '700' },
   tagYellow: {
-    paddingHorizontal: 10, paddingVertical: 5,
-    borderRadius: 20, backgroundColor: '#FFF8E1',
-    borderWidth: 1, borderColor: '#FFE082',
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 20, backgroundColor: 'rgba(255, 248, 225, 0.85)',
+    borderWidth: 1.5, borderColor: 'rgba(255, 224, 130, 0.9)',
   },
   tagYellowText: { color: '#795548', fontSize: 11, fontWeight: '700' },
 
   // Product name & price
   productName: { color: COLORS.dark, fontSize: 22, fontWeight: '800', marginBottom: 8, lineHeight: 28 },
   priceRatingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  price: { color: COLORS.green, fontSize: 22, fontWeight: '800' },
+  price: { color: COLORS.green, fontSize: 24, fontWeight: '800' },
   priceUnit: { color: COLORS.muted, fontSize: 14, fontWeight: '500' },
   ratingWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   ratingVal: { color: COLORS.dark, fontSize: 13, fontWeight: '800' },
@@ -395,9 +405,11 @@ const styles = StyleSheet.create({
   // Farmer Card
   farmerCard: {
     flexDirection: 'row', alignItems: 'center', gap: 10,
-    padding: 12, borderRadius: 12,
-    borderWidth: 1, borderColor: COLORS.line,
-    backgroundColor: COLORS.white, marginBottom: 10,
+    padding: 14, borderRadius: 20,
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: 'rgba(255, 255, 255, 0.82)', marginBottom: 12,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   farmerPhoto: { width: 50, height: 50, borderRadius: 25, backgroundColor: '#E5ECE6' },
   farmerInfo: { flex: 1, gap: 4 },
@@ -407,7 +419,7 @@ const styles = StyleSheet.create({
   farmerRatingText: { color: COLORS.muted, fontSize: 12 },
   verifiedBadge: {
     paddingHorizontal: 8, paddingVertical: 4,
-    borderRadius: 6, backgroundColor: '#EAF5EB',
+    borderRadius: 8, backgroundColor: 'rgba(46, 125, 50, 0.12)',
   },
   verifiedText: { color: COLORS.green, fontSize: 10, fontWeight: '800', letterSpacing: 0.3 },
 
@@ -416,58 +428,65 @@ const styles = StyleSheet.create({
   callButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 7, minHeight: 46,
-    borderWidth: 1.5, borderColor: COLORS.green,
-    borderRadius: 10, backgroundColor: COLORS.white,
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 16, backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
   },
   callButtonText: { color: COLORS.green, fontSize: 14, fontWeight: '700' },
   chatButton: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
     gap: 7, minHeight: 46,
-    borderRadius: 10, backgroundColor: COLORS.green,
+    borderRadius: 16, backgroundColor: COLORS.green,
+    shadowColor: COLORS.green, shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 3 },
   },
-  chatButtonText: { color: COLORS.white, fontSize: 14, fontWeight: '700' },
+  chatButtonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700' },
 
   // Specifications
   sectionLabel: {
-    color: COLORS.muted, fontSize: 12, fontWeight: '800',
-    letterSpacing: 0.5, marginBottom: 10,
+    color: COLORS.dark, fontSize: 13, fontWeight: '700',
+    letterSpacing: 0.3, marginBottom: 10,
   },
   specCard: {
-    borderWidth: 1, borderColor: COLORS.line,
-    borderRadius: 12, backgroundColor: COLORS.white,
-    paddingHorizontal: 14, marginBottom: 12,
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20, backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    paddingHorizontal: 16, marginBottom: 14,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
     overflow: 'hidden',
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   specRow: {
     flexDirection: 'row', justifyContent: 'space-between',
     alignItems: 'center', minHeight: 50,
   },
-  specDivider: { borderTopWidth: 1, borderTopColor: COLORS.line },
+  specDivider: { borderTopWidth: 1, borderTopColor: 'rgba(0, 0, 0, 0.05)' },
   specKey: { color: COLORS.muted, fontSize: 13 },
   specVal: { color: COLORS.dark, fontSize: 13, fontWeight: '700' },
   specValGreen: { color: COLORS.green },
 
   // Qty input
-  qtyInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  qtyInputWrap: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   qtyBtn: {
-    width: 30, height: 30, borderRadius: 15,
-    backgroundColor: '#EAF5EB',
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(46, 125, 50, 0.12)',
     alignItems: 'center', justifyContent: 'center',
   },
   qtyInput: {
-    width: 48, height: 34,
-    borderWidth: 1, borderColor: COLORS.line,
-    borderRadius: 8, textAlign: 'center',
+    width: 52, height: 36,
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 10, textAlign: 'center',
     color: COLORS.green, fontSize: 14, fontWeight: '800',
-    backgroundColor: COLORS.white,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   qtyUnit: { color: COLORS.muted, fontSize: 13, fontWeight: '600' },
 
   // Order preview
   orderPreview: {
     flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12,
-    backgroundColor: '#EAF5EB', borderRadius: 10, marginBottom: 12,
+    alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)', borderRadius: 16, marginBottom: 12,
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000', shadowOpacity: 0.03, shadowRadius: 6, shadowOffset: { width: 0, height: 2 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(16px)' } : {}),
   },
   orderPreviewLabel: { color: COLORS.dark, fontSize: 13, fontWeight: '600' },
   orderPreviewVal: { color: COLORS.green, fontSize: 16, fontWeight: '800' },
@@ -475,11 +494,12 @@ const styles = StyleSheet.create({
   // Order Now button
   orderBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 8, minHeight: 54,
-    borderRadius: 12, backgroundColor: COLORS.green, marginBottom: 6,
+    gap: 8, minHeight: 52,
+    borderRadius: 18, backgroundColor: COLORS.green, marginBottom: 6,
+    shadowColor: COLORS.green, shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 4 },
   },
   orderBtnDisabled: { backgroundColor: '#A5C8A7' },
-  orderBtnText: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
+  orderBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '800' },
   qtyWarning: { color: '#C62828', fontSize: 12, textAlign: 'center', marginBottom: 10 },
 
   // Buyer Reviews
@@ -489,9 +509,11 @@ const styles = StyleSheet.create({
   },
   seeAllText: { color: COLORS.green, fontSize: 13, fontWeight: '700' },
   reviewCard: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1, borderColor: COLORS.line,
-    borderRadius: 12, padding: 12, marginBottom: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.82)',
+    borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.95)',
+    borderRadius: 20, padding: 14, marginBottom: 10,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   reviewHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 },
   reviewAvatar: {
@@ -499,7 +521,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.green,
     alignItems: 'center', justifyContent: 'center',
   },
-  reviewAvatarText: { color: COLORS.white, fontSize: 14, fontWeight: '800' },
+  reviewAvatarText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
   reviewerInfo: { flex: 1 },
   reviewerName: { color: COLORS.dark, fontSize: 13, fontWeight: '700' },
   reviewDate: { color: COLORS.muted, fontSize: 11, marginTop: 1 },

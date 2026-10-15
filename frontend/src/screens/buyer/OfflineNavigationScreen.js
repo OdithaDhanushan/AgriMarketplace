@@ -47,17 +47,15 @@ export default function OfflineNavigationScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Top Green Gradient Header */}
-      <LinearGradient
-        colors={['#43A047', '#7CB342', '#F4F7F4']}
-        style={styles.gradientHeader}
-      >
+      {/* Frosted Glass Header */}
+      <View style={styles.gradientHeader}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               onPress={() => navigation.goBack()}
               style={styles.backButton}
               accessibilityLabel="Go back"
+              activeOpacity={0.7}
             >
               <Ionicons name="chevron-back" size={22} color="#1E3821" />
             </TouchableOpacity>
@@ -65,7 +63,7 @@ export default function OfflineNavigationScreen({ route, navigation }) {
             <View style={{ width: 36 }} />
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Red Low Network Banner */}
@@ -128,12 +126,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 18,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   safeArea: {
-    paddingTop: Platform.OS === 'web' ? 24 : 10,
+    paddingTop: Platform.OS === 'web' ? 44 : 10,
   },
   headerRow: {
     flexDirection: 'row',
@@ -146,19 +153,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#1B2E1E',
   },
   content: {
     padding: 16,

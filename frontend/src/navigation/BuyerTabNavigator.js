@@ -8,6 +8,7 @@ import CartCheckoutScreen from '../screens/buyer/CartCheckoutScreen';
 import OrdersScreen from '../screens/buyer/OrdersScreen';
 import ProfileScreen from '../screens/buyer/ProfileScreen';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 
 const Tab = createBottomTabNavigator();
 const CartStack = createNativeStackNavigator();
@@ -23,13 +24,14 @@ function CartStackNavigator({ navigation: tabNav }) {
 
 const COLORS = {
   green: '#2E7D32',
-  muted: '#68736B',
-  white: '#FFFFFF',
-  line: '#E5EAE6',
+  muted: '#7A867E',
+  glass: 'rgba(255, 255, 255, 0.84)',
+  border: 'rgba(255, 255, 255, 0.95)',
 };
 
 export default function BuyerTabNavigator() {
   const { totalCount } = useCart();
+  const { strings } = useLanguage();
 
   return (
     <Tab.Navigator
@@ -37,34 +39,62 @@ export default function BuyerTabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.green,
         tabBarInactiveTintColor: COLORS.muted,
-        tabBarBadge: route.name === 'My Cart' && totalCount > 0 ? totalCount : undefined,
+        tabBarBadge: route.name === 'CartTab' && totalCount > 0 ? totalCount : undefined,
         tabBarStyle: {
-          backgroundColor: COLORS.white,
-          borderTopColor: COLORS.line,
-          borderTopWidth: 1,
-          height: 62,
-          paddingBottom: 8,
+          position: 'absolute',
+          bottom: 14,
+          left: 16,
+          right: 16,
+          backgroundColor: COLORS.glass,
+          backdropFilter: 'blur(24px)',
+          borderRadius: 26,
+          borderWidth: 1.5,
+          borderColor: COLORS.border,
+          height: 60,
+          paddingBottom: 6,
           paddingTop: 6,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.08,
+          shadowRadius: 18,
+          elevation: 6,
         },
         tabBarLabelStyle: {
           fontSize: 10,
-          fontWeight: '600',
+          fontWeight: '700',
+          marginTop: -2,
         },
-        tabBarIcon: ({ color, size }) => {
+        tabBarIcon: ({ color, size, focused }) => {
           const icons = {
-            Explore: 'search',
-            'My Cart': 'cart-outline',
-            Orders: 'receipt-outline',
-            Profile: 'person-outline',
+            ExploreTab: focused ? 'search' : 'search-outline',
+            CartTab: focused ? 'cart' : 'cart-outline',
+            OrdersTab: focused ? 'receipt' : 'receipt-outline',
+            ProfileTab: focused ? 'person' : 'person-outline',
           };
-          return <Ionicons name={icons[route.name]} size={size} color={color} />;
+          return <Ionicons name={icons[route.name] || 'ellipse'} size={size} color={color} />;
         },
       })}
     >
-      <Tab.Screen name="Explore" component={BuyerHomeScreen} />
-      <Tab.Screen name="My Cart" component={CartStackNavigator} />
-      <Tab.Screen name="Orders" component={OrdersScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen
+        name="ExploreTab"
+        component={BuyerHomeScreen}
+        options={{ tabBarLabel: strings.home }}
+      />
+      <Tab.Screen
+        name="CartTab"
+        component={CartStackNavigator}
+        options={{ tabBarLabel: strings.cart }}
+      />
+      <Tab.Screen
+        name="OrdersTab"
+        component={OrdersScreen}
+        options={{ tabBarLabel: strings.orders }}
+      />
+      <Tab.Screen
+        name="ProfileTab"
+        component={ProfileScreen}
+        options={{ tabBarLabel: strings.profile }}
+      />
     </Tab.Navigator>
   );
 }

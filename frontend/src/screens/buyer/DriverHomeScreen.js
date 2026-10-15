@@ -449,7 +449,7 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: Platform.OS === 'web' ? 24 : 8,
+    paddingTop: Platform.OS === 'web' ? 44 : 8,
   },
   glassHeaderShell: {
     paddingHorizontal: 16,

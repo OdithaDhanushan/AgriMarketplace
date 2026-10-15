@@ -97,17 +97,15 @@ export default function DeliveryJobScreen({ route, navigation }) {
 
   return (
     <View style={styles.container}>
-      {/* Top Green Gradient Header */}
-      <LinearGradient
-        colors={['#43A047', '#7CB342', '#F4F7F4']}
-        style={styles.gradientHeader}
-      >
+      {/* Frosted Glass Header */}
+      <View style={styles.gradientHeader}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.headerRow}>
             <TouchableOpacity
               onPress={() => navigation.navigate('DriverHome')}
               style={styles.backButton}
               accessibilityLabel="Back to Driver Home"
+              activeOpacity={0.7}
             >
               <Ionicons name="chevron-back" size={20} color="#1E3821" />
             </TouchableOpacity>
@@ -116,12 +114,13 @@ export default function DeliveryJobScreen({ route, navigation }) {
               onPress={handleLogout}
               style={styles.logoutButton}
               accessibilityLabel="Driver Logout"
+              activeOpacity={0.7}
             >
               <Ionicons name="log-out-outline" size={17} color="#C62828" />
             </TouchableOpacity>
           </View>
         </SafeAreaView>
-      </LinearGradient>
+      </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* "New Delivery" Badge */}
@@ -204,22 +203,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#EDECEB',
   },
   gradientHeader: {
-    paddingBottom: 18,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderBottomWidth: 1.5,
+    borderBottomColor: 'rgba(255, 255, 255, 0.95)',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+    ...(Platform.OS === 'web' ? { backdropFilter: 'blur(20px)' } : {}),
   },
   safeArea: {
-    paddingTop: Platform.OS === 'web' ? 24 : 10,
+    paddingTop: Platform.OS === 'web' ? 44 : 10,
   },
   backButton: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   headerRow: {
     flexDirection: 'row',
@@ -245,18 +253,17 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.2)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#1B2E1E',
   },
   logoutButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(254, 242, 242, 0.85)',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FECACA',
   },
   content: {
     padding: 16,

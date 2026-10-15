@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   Modal,
+  Platform,
   RefreshControl,
   SafeAreaView,
   ScrollView,
@@ -406,16 +407,16 @@ export default function BuyerHomeScreen({ navigation }) {
 
 const COLORS = {
   green: '#2E7D32',
-  background: '#F5F7F5',
-  dark: '#1A1A1A',
-  muted: '#68736B',
-  line: '#E5EAE6',
-  white: '#FFFFFF',
-  headerBg: '#F0F7F0',
+  background: '#EDECEB',
+  dark: '#1B3820',
+  muted: '#65746A',
+  line: 'rgba(255, 255, 255, 0.95)',
+  white: 'rgba(255, 255, 255, 0.8)',
+  headerBg: 'rgba(255, 255, 255, 0.85)',
 };
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
+  screen: { flex: 1, backgroundColor: '#EDECEB' },
 
   // Header
   header: {
@@ -423,9 +424,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: Platform.OS === 'web' ? 44 : 12,
+    paddingBottom: 12,
     backgroundColor: COLORS.headerBg,
+    backdropFilter: 'blur(20px)',
+    borderBottomWidth: 1.5,
+    borderBottomColor: COLORS.line,
   },
   appTitle: { color: COLORS.green, fontSize: 22, fontWeight: '800' },
   appSubtitle: { color: COLORS.muted, fontSize: 9, fontWeight: '700', letterSpacing: 0.5, marginTop: 1 },
@@ -544,16 +548,22 @@ const styles = StyleSheet.create({
   productList: { flex: 1 },
 
   // Product list
-  listContent: { paddingHorizontal: 16, paddingBottom: 24, gap: 10 },
+  listContent: { paddingHorizontal: 16, paddingBottom: 85, gap: 12 },
   productCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.white,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.line,
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(16px)',
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     overflow: 'hidden',
-    paddingRight: 10,
+    paddingRight: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 3,
   },
   productImage: { width: 90, height: 90, backgroundColor: '#E5ECE6' },
   placeholderImg: { justifyContent: 'center', alignItems: 'center' },

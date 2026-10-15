@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import {
   FlatList,
   Image,
+  Platform,
   RefreshControl,
   SafeAreaView,
   StyleSheet,
@@ -15,11 +16,11 @@ import { useCart } from '../../context/CartContext';
 const COLORS = {
   green: '#2E7D32',
   accent: '#4CAF50',
-  background: '#F8F9FA',
-  dark: '#212121',
-  muted: '#68736B',
-  line: '#E5EAE6',
-  white: '#FFFFFF',
+  background: '#EDECEB',
+  dark: '#1B3820',
+  muted: '#65746A',
+  line: 'rgba(255, 255, 255, 0.95)',
+  white: 'rgba(255, 255, 255, 0.82)',
 };
 
 export default function OrdersScreen({ navigation }) {
@@ -202,32 +203,34 @@ export default function OrdersScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
+  screen: { flex: 1, backgroundColor: '#EDECEB' },
   header: {
     paddingHorizontal: 18,
-    paddingTop: 14,
+    paddingTop: Platform.OS === 'web' ? 44 : 12,
     paddingBottom: 12,
-    backgroundColor: COLORS.white,
-    borderBottomWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(20px)',
+    borderBottomWidth: 1.5,
     borderBottomColor: COLORS.line,
   },
-  title: { color: COLORS.dark, fontSize: 24, fontWeight: '800' },
+  title: { color: COLORS.dark, fontSize: 24, fontWeight: '800', letterSpacing: -0.3 },
   subtitle: { color: COLORS.muted, fontSize: 13, marginTop: 2 },
-  listContent: { padding: 16, paddingBottom: 32 },
+  listContent: { padding: 16, paddingBottom: 85 },
 
   // Order Card
   orderCard: {
     backgroundColor: COLORS.white,
-    borderRadius: 14,
-    borderWidth: 1,
+    backdropFilter: 'blur(20px)',
+    borderRadius: 24,
+    borderWidth: 1.5,
     borderColor: COLORS.line,
-    padding: 14,
+    padding: 16,
     marginBottom: 14,
     shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   cardHeader: {
     flexDirection: 'row',

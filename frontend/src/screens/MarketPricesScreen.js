@@ -596,12 +596,12 @@ export default function MarketPricesScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f6f8f7', position: 'relative' },
-  scrollContent: { paddingBottom: 16 },
+  container: { flex: 1, backgroundColor: '#EDECEB', position: 'relative' },
+  scrollContent: { paddingBottom: 24 },
   headerBackground: { width: '100%', height: 215 },
   headerOverlay: {
     flex: 1,
-    paddingHorizontal: 20, // 👈 20px Inset
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === 'web' ? 44 : 14,
   },
   topRow: {
@@ -614,14 +614,16 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.88)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 20, // 👈 20px Inset
+    marginLeft: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
   },
   mainTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowRadius: 6,
@@ -642,27 +644,36 @@ const styles = StyleSheet.create({
   todayHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(20px)',
     padding: 14,
-    borderRadius: 16,
+    borderRadius: 22,
     marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
     elevation: 2,
     shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 4 },
   },
-  todayTitle: { fontSize: 15, fontWeight: 'bold', color: '#222' },
-  todayDate: { fontSize: 12, color: '#777' },
+  todayTitle: { fontSize: 15, fontWeight: '800', color: '#1B3820' },
+  todayDate: { fontSize: 12, color: '#65746A' },
 
   // Featured Card Styles
   featuredCard: {
-    backgroundColor: '#eaf4eb',
-    borderRadius: 18,
+    backgroundColor: 'rgba(234, 244, 235, 0.85)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: 24,
     padding: 16,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#d2ebd5',
+    borderWidth: 1.5,
+    borderColor: 'rgba(210, 235, 213, 0.85)',
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 3,
   },
   featuredBadgeRow: {
     flexDirection: 'row',

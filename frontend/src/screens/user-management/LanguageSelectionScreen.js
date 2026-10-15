@@ -1,103 +1,175 @@
 import React, { useState } from 'react';
 import {
+  Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLanguage } from '../../context/LanguageContext';
 
 const LANGUAGES = [
-  { code: 'en', label: 'English', nativeName: 'English' },
-  { code: 'si', label: 'Sinhala', nativeName: 'සිංහල' },
-  { code: 'ta', label: 'Tamil', nativeName: 'தமிழ்' },
+  { code: 'si', label: 'Sinhala', nativeName: 'සිංහල', flag: '🇱🇰' },
+  { code: 'ta', label: 'Tamil', nativeName: 'தமிழ்', flag: '🇱🇰' },
 ];
 
 export default function LanguageSelectionScreen({ navigation }) {
-  const [selectedLanguage, setSelectedLanguage] = useState(null);
+  const { language, setLanguage } = useLanguage();
+  const [selectedLanguage, setSelectedLanguage] = useState(language || 'si');
+
+  const isSinhala = selectedLanguage === 'si';
+
+  const headingText = isSinhala ? 'ඔබගේ භාෂාව තෝරන්න' : 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்';
+  const subtitleText = isSinhala
+    ? 'භාෂාව තෝරා ඉදිරියට යන්න'
+    : 'தொடர மொழியைத் தேர்ந்தெடுக்கவும்';
+  const continueText = isSinhala ? 'ඉදිරියට යන්න' : 'தொடரவும்';
+
+  const handleContinue = () => {
+    setLanguage(selectedLanguage);
+    navigation.navigate('LoginScreen', { selectedLanguage });
+  };
 
   return (
-    <LinearGradient
-      colors={['#d1e5d3', '#a2d09d', '#69b65a', '#399b32']}
-      locations={[0, 0.32, 0.68, 1]}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-      style={styles.background}
-    >
+    <View style={styles.background}>
       <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        {/* Decorative subtle ambient glass glow */}
+        <View style={styles.ambientGlow} />
+
         <View style={styles.content}>
-          <View style={styles.headingBlock}>
-            <Text style={styles.heading}>Choose your language</Text>
-            <Text style={styles.subtitle}>භාෂාව තෝරන්න · மொழியைத் தேர்ந்தெடுக்கவும்</Text>
+          <View style={styles.glassHeaderCard}>
+            <View style={styles.iconCircle}>
+              <Ionicons name="globe-outline" size={26} color="#2E7D32" />
+            </View>
+            <Text style={styles.heading}>{headingText}</Text>
+            <Text style={styles.subtitle}>{subtitleText}</Text>
           </View>
 
           <View style={styles.options}>
-            {LANGUAGES.map((language) => {
-              const isSelected = selectedLanguage === language.code;
+            {LANGUAGES.map((langItem) => {
+              const isSelected = selectedLanguage === langItem.code;
 
               return (
                 <Pressable
-                  key={language.code}
+                  key={langItem.code}
                   accessibilityRole="radio"
                   accessibilityState={{ checked: isSelected }}
-                  onPress={() => setSelectedLanguage(language.code)}
-                  style={[styles.option, isSelected && styles.optionSelected]}
+                  onPress={() => {
+                    setSelectedLanguage(langItem.code);
+                    setLanguage(langItem.code);
+                  }}
+                  style={({ pressed }) => [
+                    styles.option,
+                    isSelected && styles.optionSelected,
+                    pressed && styles.optionPressed,
+                  ]}
                 >
                   <View style={[styles.radio, isSelected && styles.radioSelected]}>
                     {isSelected && <View style={styles.radioDot} />}
                   </View>
-                  <Text style={styles.languageLabel}>{language.label}</Text>
-                  <Text style={styles.nativeName}>{language.nativeName}</Text>
+                  <View style={styles.flagBox}>
+                    <Text style={styles.flagText}>{langItem.flag}</Text>
+                  </View>
+                  <View style={styles.labelsCol}>
+                    <Text style={[styles.languageLabel, isSelected && styles.languageLabelSelected]}>
+                      {langItem.label}
+                    </Text>
+                    <Text style={styles.nativeName}>{langItem.nativeName}</Text>
+                  </View>
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={22} color="#2E7D32" />
+                  )}
                 </Pressable>
               );
             })}
           </View>
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Continue to sign in"
-          accessibilityState={{ disabled: selectedLanguage === null }}
-          disabled={selectedLanguage === null}
-          onPress={() => navigation.navigate('LoginScreen', { selectedLanguage })}
-          style={[styles.continueButton, selectedLanguage === null && styles.continueDisabled]}
-        >
-          <Text style={styles.continueText}>Continue</Text>
-        </Pressable>
+        <View style={styles.bottomBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Continue to sign in"
+            onPress={handleContinue}
+            style={({ pressed }) => [
+              styles.continueButton,
+              pressed && styles.buttonPressed,
+            ]}
+          >
+            <Text style={styles.continueText}>{continueText}</Text>
+            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
+          </Pressable>
+        </View>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   background: {
     flex: 1,
+    backgroundColor: '#EDECEB',
+    position: 'relative',
+  },
+  ambientGlow: {
+    position: 'absolute',
+    top: -50,
+    alignSelf: 'center',
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: 'rgba(129, 199, 132, 0.16)',
+    filter: 'blur(60px)',
   },
   safeArea: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingBottom: 18,
+    justifyContent: 'space-between',
+    paddingTop: Platform.OS === 'web' ? 48 : 16,
   },
   content: {
     flex: 1,
     justifyContent: 'center',
+    paddingHorizontal: 22,
   },
-  headingBlock: {
-    marginBottom: 30,
+  glassHeaderCard: {
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(20px)',
+    borderRadius: 28,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    paddingVertical: 22,
+    paddingHorizontal: 18,
+    alignItems: 'center',
+    marginBottom: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 18,
+    elevation: 3,
+  },
+  iconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: 'rgba(46, 125, 50, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(46, 125, 50, 0.22)',
   },
   heading: {
-    color: '#28743a',
-    fontFamily: 'serif',
-    fontSize: 30,
-    fontWeight: '700',
+    color: '#1B3820',
+    fontSize: 21,
+    fontWeight: '800',
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    color: '#fff',
-    fontSize: 14,
-    lineHeight: 22,
-    marginTop: 9,
+    color: '#65746A',
+    fontSize: 13,
+    marginTop: 6,
     textAlign: 'center',
   },
   options: {
@@ -105,61 +177,106 @@ const styles = StyleSheet.create({
   },
   option: {
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.88)',
-    borderColor: 'rgba(40, 116, 58, 0.18)',
-    borderRadius: 12,
-    borderWidth: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.74)',
+    backdropFilter: 'blur(16px)',
+    borderColor: 'rgba(255, 255, 255, 0.92)',
+    borderRadius: 22,
+    borderWidth: 1.5,
     flexDirection: 'row',
     minHeight: 64,
     paddingHorizontal: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
   },
   optionSelected: {
-    backgroundColor: '#fff',
-    borderColor: '#28743a',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderColor: '#2E7D32',
     borderWidth: 2,
+    shadowOpacity: 0.08,
+  },
+  optionPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.985 }],
   },
   radio: {
     alignItems: 'center',
-    borderColor: '#56845c',
-    borderRadius: 10,
+    borderColor: '#9EAA9F',
+    borderRadius: 11,
     borderWidth: 1.5,
-    height: 20,
+    height: 22,
     justifyContent: 'center',
-    marginRight: 13,
-    width: 20,
+    marginRight: 12,
+    width: 22,
   },
   radioSelected: {
-    borderColor: '#28743a',
+    borderColor: '#2E7D32',
   },
   radioDot: {
-    backgroundColor: '#28743a',
+    backgroundColor: '#2E7D32',
     borderRadius: 5,
     height: 10,
     width: 10,
   },
-  languageLabel: {
-    color: '#245d31',
+  flagBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  flagText: {
+    fontSize: 18,
+  },
+  labelsCol: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
+  },
+  languageLabel: {
+    color: '#243D2A',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  languageLabelSelected: {
+    color: '#1B3820',
   },
   nativeName: {
-    color: '#49744f',
-    fontSize: 16,
+    color: '#65746A',
+    fontSize: 13,
+    marginTop: 2,
+    fontWeight: '600',
+  },
+  bottomBar: {
+    paddingHorizontal: 22,
+    paddingBottom: Platform.OS === 'web' ? 24 : 14,
   },
   continueButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#28743a',
-    borderRadius: 12,
     justifyContent: 'center',
-    minHeight: 54,
+    backgroundColor: '#2E7D32',
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
+    elevation: 4,
+    gap: 8,
   },
-  continueDisabled: {
-    backgroundColor: 'rgba(40, 116, 58, 0.48)',
+  buttonPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.98 }],
   },
   continueText: {
-    color: '#fff',
-    fontSize: 16,
+    color: '#FFFFFF',
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

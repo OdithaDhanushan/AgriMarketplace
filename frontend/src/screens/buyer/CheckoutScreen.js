@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Image,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -218,33 +219,52 @@ function CheckoutScreen({ route, navigation }) {
 const COLORS = {
   green: '#2E7D32',
   accent: '#4CAF50',
-  background: '#F5F7F5',
-  dark: '#1A1A1A',
-  muted: '#68736B',
-  line: '#E5EAE6',
-  white: '#FFFFFF',
+  background: '#EDECEB',
+  dark: '#1B3820',
+  muted: '#65746A',
+  line: 'rgba(255, 255, 255, 0.95)',
+  white: 'rgba(255, 255, 255, 0.82)',
 };
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: COLORS.background },
+  screen: { flex: 1, backgroundColor: '#EDECEB' },
 
   // Header
-  header: { height: 54, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center' },
-  backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  header: {
+    minHeight: 56,
+    paddingHorizontal: 12,
+    paddingTop: Platform.OS === 'web' ? 44 : 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(20px)',
+    borderBottomWidth: 1.5,
+    borderBottomColor: COLORS.line,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.line,
+  },
 
-  content: { paddingHorizontal: 16, paddingBottom: 90 },
+  content: { paddingHorizontal: 16, paddingBottom: 95 },
 
   // Address
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 12,
     marginBottom: 8,
   },
   sectionIconRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sectionTitle: { color: COLORS.dark, fontSize: 14, fontWeight: '700' },
-  sectionLabel: { color: COLORS.dark, fontSize: 14, fontWeight: '700', marginTop: 16, marginBottom: 10 },
+  sectionTitle: { color: COLORS.dark, fontSize: 14.5, fontWeight: '800' },
+  sectionLabel: { color: COLORS.dark, fontSize: 14.5, fontWeight: '800', marginTop: 16, marginBottom: 10 },
   editButton: { minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   editText: { color: COLORS.green, fontSize: 13, fontWeight: '700' },
   addressCard: {

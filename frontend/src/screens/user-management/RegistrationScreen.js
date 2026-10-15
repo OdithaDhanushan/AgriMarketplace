@@ -14,6 +14,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { registerUser } from '../../services/api';
 
 const COPY = {
@@ -108,13 +109,17 @@ const INITIAL_FORM = {
 
 export default function RegistrationScreen({ navigation, route }) {
   const [selectedRole, setSelectedRole] = useState(route?.params?.selectedRole ?? 'Farmer');
-  const [selectedLanguage] = useState(route?.params?.selectedLanguage ?? 'en');
+  const { language, setLanguage } = useLanguage();
+  const effectiveLanguage = (route?.params?.selectedLanguage === 'si' || route?.params?.selectedLanguage === 'ta')
+    ? route.params.selectedLanguage
+    : (language || 'si');
+  const [selectedLanguage] = useState(effectiveLanguage);
   const [form, setForm] = useState(INITIAL_FORM);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
-  const copy = COPY[selectedLanguage] ?? COPY.en;
+  const copy = COPY[effectiveLanguage] || COPY.si;
 
   const updateField = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -403,137 +408,155 @@ export default function RegistrationScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: '#f2faef',
+    backgroundColor: '#EDECEB',
     flex: 1,
+    paddingTop: Platform.OS === 'web' ? 40 : 10,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
+    paddingBottom: 28,
   },
   content: {
     alignSelf: 'center',
-    maxWidth: 480,
-    paddingBottom: 20,
-    paddingTop: 12,
+    maxWidth: 440,
     width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.78)',
+    backdropFilter: 'blur(24px)',
+    borderRadius: 32,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.95)',
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 3,
   },
   brand: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 7,
+    gap: 8,
     justifyContent: 'center',
   },
   brandName: {
-    color: '#174b31',
-    fontSize: 21,
-    fontWeight: '700',
+    color: '#1B5E20',
+    fontSize: 20,
+    fontWeight: '800',
+    letterSpacing: -0.3,
   },
   headingBlock: {
     alignItems: 'center',
-    marginTop: 17,
+    marginTop: 10,
   },
   heading: {
-    color: '#123e28',
-    fontSize: 25,
-    fontWeight: '700',
-    lineHeight: 32,
+    color: '#1B3820',
+    fontSize: 23,
+    fontWeight: '800',
+    lineHeight: 29,
     textAlign: 'center',
+    letterSpacing: -0.3,
   },
   subtitle: {
-    color: '#234936',
-    fontSize: 13,
-    lineHeight: 20,
+    color: '#65746A',
+    fontSize: 12.5,
+    lineHeight: 18,
     marginTop: 4,
     textAlign: 'center',
   },
   profileLabel: {
-    color: '#183e2b',
-    fontSize: 16,
+    color: '#243D2C',
+    fontSize: 14,
     fontWeight: '700',
-    marginBottom: 10,
-    marginTop: 22,
+    marginBottom: 8,
+    marginTop: 18,
     textAlign: 'center',
   },
   roleSelector: {
     alignSelf: 'center',
-    backgroundColor: '#e9f4e9',
-    borderColor: '#bfd6c0',
-    borderRadius: 28,
+    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+    borderRadius: 24,
     borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
     flexDirection: 'row',
     maxWidth: 420,
-    minHeight: 48,
-    padding: 4,
+    minHeight: 46,
+    padding: 3,
     width: '100%',
   },
   roleOption: {
     alignItems: 'center',
-    borderRadius: 24,
+    borderRadius: 21,
     flex: 1,
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     justifyContent: 'center',
-    minHeight: 40,
+    minHeight: 38,
     paddingHorizontal: 8,
   },
   roleOptionSelected: {
-    backgroundColor: '#399e4e',
+    backgroundColor: '#2E7D32',
     elevation: 2,
-    shadowColor: '#236c38',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.16,
-    shadowRadius: 4,
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
   },
   roleText: {
-    color: '#174b31',
-    fontSize: 14,
+    color: '#5C6C60',
+    fontSize: 13,
     fontWeight: '600',
   },
   roleTextSelected: {
     color: '#fff',
+    fontWeight: '700',
   },
   form: {
-    gap: 12,
-    marginTop: 24,
+    gap: 10,
+    marginTop: 16,
   },
   inputShell: {
     alignItems: 'center',
-    backgroundColor: 'rgba(229, 243, 230, 0.62)',
-    borderColor: '#5e9e6a',
-    borderRadius: 28,
-    borderWidth: 1.2,
+    backgroundColor: 'rgba(255, 255, 255, 0.65)',
+    borderColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    borderWidth: 1.5,
     flexDirection: 'row',
-    minHeight: 54,
-    paddingHorizontal: 15,
+    minHeight: 50,
+    paddingHorizontal: 14,
   },
   input: {
-    color: '#193c2b',
+    color: '#1F3325',
     flex: 1,
-    fontSize: 14,
-    marginLeft: 12,
+    fontSize: 13.5,
+    marginLeft: 10,
     minWidth: 0,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   createButton: {
     alignItems: 'center',
-    backgroundColor: '#399e4e',
-    borderRadius: 28,
+    backgroundColor: '#2E7D32',
+    borderRadius: 26,
     elevation: 4,
     justifyContent: 'center',
-    marginTop: 22,
-    minHeight: 56,
-    shadowColor: '#1e6733',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    marginTop: 18,
+    minHeight: 52,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.24,
+    shadowRadius: 16,
   },
   createButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
+    letterSpacing: 0.2,
   },
   createButtonDisabled: {
     opacity: 0.75,
@@ -543,16 +566,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    marginTop: 17,
+    marginTop: 16,
   },
   loginPromptText: {
-    color: '#1e3225',
-    fontSize: 13,
+    color: '#65746A',
+    fontSize: 12.5,
   },
   loginLink: {
-    color: '#174b31',
-    fontSize: 13,
+    color: '#2E7D32',
+    fontSize: 12.5,
     fontWeight: '700',
-    textDecorationLine: 'underline',
   },
 });
