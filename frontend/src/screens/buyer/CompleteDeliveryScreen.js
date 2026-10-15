@@ -2,6 +2,7 @@ import React, { useRef, useState } from 'react';
 import {
   Alert,
   Image,
+  Platform,
   SafeAreaView,
   ScrollView,
   StyleSheet,
