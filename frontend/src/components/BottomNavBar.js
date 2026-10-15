@@ -21,9 +21,18 @@ export default function BottomNavBar({ activeTab = 'Explore', navigation }) {
       </TouchableOpacity>
 
       {/* 2. My Cart */}
-      <TouchableOpacity style={styles.navItem}>
-        <Ionicons name="cart-outline" size={20} color="#888" />
-        <Text style={styles.navText}>My Cart</Text>
+      <TouchableOpacity
+        style={[styles.navItem, activeTab === 'MyCart' && styles.navItemActive]}
+        onPress={() => navigation && navigation.navigate('MyCart')}
+      >
+        <Ionicons
+          name={activeTab === 'MyCart' ? 'cart' : 'cart-outline'}
+          size={20}
+          color={activeTab === 'MyCart' ? '#2e7d32' : '#888'}
+        />
+        <Text style={activeTab === 'MyCart' ? styles.navTextActive : styles.navText}>
+          My Cart
+        </Text>
       </TouchableOpacity>
 
       {/* 3. Orders (Navigates to FarmerOrdersScreen) */}
